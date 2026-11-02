@@ -105,6 +105,11 @@ cat > "$DEB/usr/share/metainfo/be.chrypox.TwinPanel.metainfo.xml" <<EOF
       <caption xml:lang="fr">Le thème clair</caption>
       <image type="source" width="1280" height="800">$SHOTS/linux-clair-fr.png</image>
     </screenshot>
+    <screenshot>
+      <caption>The integrated terminal below the two panels</caption>
+      <caption xml:lang="fr">Le terminal intégré sous les deux panneaux</caption>
+      <image type="source" width="1280" height="800">$SHOTS/linux-terminal-fr.png</image>
+    </screenshot>
   </screenshots>
   <content_rating type="oars-1.1"/>
   <releases>
