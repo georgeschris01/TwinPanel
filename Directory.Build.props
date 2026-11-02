@@ -7,6 +7,9 @@
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <!-- Version de TwinPanel : à augmenter avant chaque nouvel installateur (0.7.1, 0.8.0…). -->
     <Version>0.8.4</Version>
+    <!-- Version Linux, numérotée à part depuis zéro : à augmenter à chaque livraison (0.1.0-beta, 0.1.1-beta…). -->
+    <LinuxVersion>0.1.0-beta</LinuxVersion>
+    <Version Condition="!$([MSBuild]::IsOSPlatform('Windows'))">$(LinuxVersion)</Version>
     <Product>TwinPanel</Product>
     <Company>chrypox</Company>
     <Authors>Georges Christophe (chrypox)</Authors>

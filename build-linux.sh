@@ -4,13 +4,13 @@
 #
 # Fabrique le paquet .deb et l'AppImage de TwinPanel, pour Linux 64 bits (x86-64).
 # À lancer sous Linux, à la racine du projet :  ./build-linux.sh [version]
-# Sans version, celle de Directory.Build.props est utilisée. Résultat dans dist/linux/.
+# Sans version, LinuxVersion de Directory.Build.props est utilisée. Résultat dans dist/linux/.
 set -euo pipefail
 
 cd "$(dirname "$(readlink -f "$0")")"
 
 DOTNET="${DOTNET:-$(command -v dotnet || echo "$HOME/.dotnet/dotnet")}"
-VERSION="${1:-$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' Directory.Build.props)}"
+VERSION="${1:-$(sed -n 's:.*<LinuxVersion>\(.*\)</LinuxVersion>.*:\1:p' Directory.Build.props)}"
 # Pour dpkg, « ~ » classe une bêta avant la version finale.
 DEB_VERSION="${VERSION/-/\~}"
 OUT=dist/linux

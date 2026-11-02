@@ -1171,7 +1171,8 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     private Task ShowAbout()
     {
-        var version = typeof(MainWindowViewModel).Assembly.GetName().Version?.ToString(3) ?? "?";
+        // Le numéro complet, pour que « beta » reste visible ; ce qui suit « + » est la référence du commit.
+        var version = (System.Reflection.CustomAttributeExtensions.GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>(typeof(MainWindowViewModel).Assembly)?.InformationalVersion ?? "?").Split('+')[0];
         return _dialogs.ShowAboutAsync($"TwinPanel {version}",
             L.T("Gestionnaire de fichiers à deux panneaux, gratuit.\nCréé par chrypox, avec l'aide de l'IA Claude Code."),
             [$".NET {Environment.Version} — {Environment.OSVersion.VersionString}", L.F("Réglages : {0}", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "TwinPanel"))]);
