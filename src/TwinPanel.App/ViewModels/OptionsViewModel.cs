@@ -1049,7 +1049,8 @@ public partial class OptionsViewModel : ObservableObject
                 L.F("Récupérer la configuration envoyée par {0} le {1:dd/MM/yyyy HH:mm} ?\nLes réglages communs seront remplacés. Les connexions d'ici absentes du fichier sont gardées.", package.Machine, package.SavedUtc.ToLocalTime()))) return;
 
         var connections = _connections!;
-        int count = await Task.Run(() => ConfigSync.ApplyConnections(package, connections));
+        // Sur le fil de l'interface : la barre des lecteurs suit les changements de la liste.
+        int count = ConfigSync.ApplyConnections(package, connections);
         state.LastRevision = package.Revision;
         state.Save(connections.Directory);
 
