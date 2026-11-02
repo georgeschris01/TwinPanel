@@ -14,6 +14,8 @@ Gestionnaire de fichiers à deux panneaux, gratuit, moderne et complet. Windows 
 
 **[Télécharger TwinPanel](../../releases/latest)** (installateur pour Windows).
 
+> **Message « Windows a protégé votre ordinateur » :** TwinPanel est gratuit et n'est pas signé, car un certificat de signature est payant chaque année. Windows affiche donc ce message tant que le programme n'est pas assez connu. Cliquez sur **Informations complémentaires**, puis sur **Exécuter quand même**. Vérifiez que le fichier vient bien de cette page ; son empreinte SHA-256 est donnée avec chaque version.
+
 Pour demander une fonction ou signaler un problème : ouvrez une [« Issue »](../../issues) sur la page GitHub de TwinPanel. Voir [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 Ce qui suit est le guide complet. C'est le même texte que dans le programme (touche **F1**).

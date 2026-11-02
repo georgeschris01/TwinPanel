@@ -14,6 +14,8 @@ A free, modern and complete two-panel file manager. Windows for now, Linux next.
 
 **[Download TwinPanel](../../releases/latest)** (Windows installer).
 
+> **“Windows protected your PC” message:** TwinPanel is free and not signed, because a signing certificate must be paid for every year. Windows therefore shows this message until the program is well enough known. Click **More info**, then **Run anyway**. Make sure the file comes from this page; its SHA-256 checksum is given with each version.
+
 To request a feature or report a problem: open an [“Issue”](../../issues) on the TwinPanel GitHub page. See [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 What follows is the full guide. It is the same text as in the program (**F1** key).
