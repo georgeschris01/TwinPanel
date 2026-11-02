@@ -19,7 +19,7 @@ A free, modern and complete two-panel file manager. For Windows, and for Linux a
 
 **[TwinPanel for Windows](../../releases/latest)** (installer).
 
-**[TwinPanel for Linux, beta version](../../releases/tag/linux-v0.1.5-beta)**: `.deb` package for Debian and its derivatives, or AppImage. This beta has only been tested on Debian 13 with KDE: some defects may remain.
+**[TwinPanel for Linux, beta version](../../releases/tag/linux-v0.1.9-beta)**: `.deb` package for Debian and its derivatives, or AppImage. This beta has only been tested on Debian 13 with KDE: some defects may remain.
 
 ```
 sudo apt install ./twinpanel_*_amd64.deb
