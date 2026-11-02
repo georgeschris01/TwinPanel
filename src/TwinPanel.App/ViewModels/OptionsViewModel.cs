@@ -490,6 +490,7 @@ public partial class OptionsViewModel : ObservableObject
             TwinPanel.Core.Settings.TerminalShell.PowerShell7 => "PowerShell 7",
             TwinPanel.Core.Settings.TerminalShell.Cmd => L.T("Invite de commandes (cmd)"),
             TwinPanel.Core.Settings.TerminalShell.Wsl => L.T("Linux (WSL)"),
+            TwinPanel.Core.Settings.TerminalShell.UserShell => L.F("Mon shell ({0})", Path.GetFileName(TwinPanel.Core.Terminal.TerminalShells.LoginShell())),
             _ => L.T("Autre programme…"),
         }))];
     [ObservableProperty] private bool _integratedEnabled = true;

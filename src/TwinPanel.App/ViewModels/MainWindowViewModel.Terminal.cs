@@ -163,20 +163,15 @@ public partial class MainWindowViewModel
     {
         family ??= new TerminalFamily();
         ApplyTerminalSettings();
-        if (!OperatingSystem.IsWindows())
-        {
-            await _dialogs.ShowErrorAsync("Terminal", L.T("Le terminal intégré n'existe pour l'instant que sous Windows."));
-            return;
-        }
         var tab = Terminal.Add(Path.GetFileName(directory.TrimEnd(Path.DirectorySeparatorChar)) is { Length: > 0 } name ? name : directory);
         tab.CopyNumber = family.Next();
         tab.Reopen = () => OpenLocalTerminalAsync(shell, directory, family);
         var chosen = new TerminalSettings { IntegratedShell = shell, IntegratedShellPath = _settings.Terminal.IntegratedShellPath };
         try
         {
-            tab.Start(new ConPtyConnection(TerminalShells.CommandLine(chosen), directory, Terminal.Columns, Terminal.Rows), Terminal.Columns, Terminal.Rows);
+            tab.Start(TerminalShells.Connect(chosen, directory, Terminal.Columns, Terminal.Rows), Terminal.Columns, Terminal.Rows);
         }
-        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or IOException or DllNotFoundException or EntryPointNotFoundException)
+        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or IOException or DllNotFoundException or EntryPointNotFoundException or PlatformNotSupportedException)
         {
             Terminal.CloseTab(tab);
             await _dialogs.ShowErrorAsync("Terminal", L.F("Le terminal n'a pas pu démarrer : {0}", ex.Message));

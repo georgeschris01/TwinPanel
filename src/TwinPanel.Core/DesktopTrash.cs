@@ -152,6 +152,6 @@ public static class DesktopTrash
         return (File.GetUnixFileMode(folder) & ~OwnerOnly & ~UnixFileMode.StickyBit) == UnixFileMode.None;
     }
 
-    [DllImport("libc", EntryPoint = "getuid")]
+    [DllImport("libc.so.6", EntryPoint = "getuid")]
     private static extern uint GetUserId();
 }
