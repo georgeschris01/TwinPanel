@@ -131,6 +131,22 @@ public sealed class KnownHosts
         }
     }
 
+    /// <summary>
+    /// Ajoute ce qu'une autre machine connaît. Si ce serveur est déjà connu ici avec une autre empreinte, celle d'ici
+    /// reste : le fichier reçu ne doit jamais pouvoir faire taire l'alerte « la clé du serveur a changé ».
+    /// </summary>
+    public void Merge(IEnumerable<KnownSshHost> hosts, IEnumerable<TrustedCertificate> certificates)
+    {
+        lock (_gate)
+        {
+            foreach (var h in hosts)
+                if (!_data.Ssh.Any(x => SameHost(x.Host, x.Port, h.Host, h.Port) && x.KeyType == h.KeyType)) _data.Ssh.Add(h);
+            foreach (var c in certificates)
+                if (!_data.Certificates.Any(x => SameHost(x.Host, x.Port, c.Host, c.Port))) _data.Certificates.Add(c);
+            Save();
+        }
+    }
+
     private static bool SameHost(string h1, int p1, string h2, int p2) =>
         p1 == p2 && string.Equals(h1, h2, StringComparison.OrdinalIgnoreCase);
 

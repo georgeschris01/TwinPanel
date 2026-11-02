@@ -325,6 +325,15 @@ TwinPanel retente tout seul (3 fois par défaut), puis propose **Reprendre**. La
 
 Si TwinPanel a été fermé pendant un transfert, il propose au démarrage suivant **Reprendre**, **Plus tard** ou **Oublier**. Pour y revenir : ≡ → Connexions → Transferts non terminés.
 
+### Retrouver sa configuration sur une autre machine
+
+Options → Synchronisation : choisis un dossier partagé entre tes machines (Nextcloud, OneDrive, Syncthing, clé USB…), puis **Envoyer**. Sur l'autre machine, Windows ou Linux, indique ce dossier et clique sur **Récupérer**, puis sur OK. Au tout premier lancement, TwinPanel le propose de lui-même.
+
+- **Ce qui voyage** : connexions, clés SSH, mots de passe enregistrés, serveurs connus, commandes enregistrées, thème, couleurs, raccourcis et langue.
+- **Ce qui reste sur chaque machine** : dossiers et onglets, favoris, éditeurs, terminal, boutons et taille de la fenêtre.
+- **Phrase secrète** : tout le fichier est chiffré avec une phrase d'au moins 12 caractères, demandée à chaque fois. TwinPanel ne la garde pas : **si tu l'oublies, personne ne pourra plus ouvrir le fichier**. Il te restera à ressaisir tes mots de passe et à envoyer de nouveau.
+- **Rien n'est automatique** : Récupérer garde les connexions absentes du fichier, et Envoyer remplace le fichier, en prévenant si une autre machine y a écrit depuis. Une connexion supprimée sur une machine reste donc sur les autres.
+
 ## Archives
 
 `Entrée` ouvre une archive comme un dossier. `Retour arrière` en sort.

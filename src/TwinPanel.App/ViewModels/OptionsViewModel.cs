@@ -274,7 +274,7 @@ public partial class OptionsViewModel : ObservableObject
     private IOptionsHost? _host;
 
     public static IReadOnlyList<string> Pages { get; } =
-        ["Display", "Colors", "Behavior", "Startup", "Shortcuts", "ButtonBar", "StartMenu", "Editors", "Terminal", "Backup"];
+        ["Display", "Colors", "Behavior", "Startup", "Shortcuts", "ButtonBar", "StartMenu", "Editors", "Terminal", "Backup", "Sync"];
 
     public OptionsViewModel(AppSettings settings, ConnectionStore? connections, IDialogService dialogs, string? page = null)
     {
@@ -287,6 +287,7 @@ public partial class OptionsViewModel : ObservableObject
         Fonts = BuildFontList();
         HangWatchdog.Step($"Options : {Fonts.Count} polices ; chargement des réglages");
         LoadFrom(settings);
+        if (connections is not null) SyncFolder = SyncState.Load(connections.Directory).Folder;
         HangWatchdog.Step("Options : réglages chargés");
         SelectedPage = Math.Max(0, page is null ? 0 : Pages.ToList().IndexOf(page));
     }
@@ -946,6 +947,119 @@ public partial class OptionsViewModel : ObservableObject
         }
         Message = msg;
     }
+
+    // ---- Synchronisation entre machines ---------------------------------------------------------------------
+
+    [ObservableProperty] private string _syncFolder = string.Empty;
+    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(SendSyncCommand), nameof(FetchSyncCommand))] private bool _syncIdle = true;
+
+    [RelayCommand]
+    private async Task BrowseSyncFolder()
+    {
+        if (_host is not null && await _host.PickFolderAsync(L.T("Dossier de synchronisation")) is { } path) SyncFolder = path;
+    }
+
+    /// <summary>L'état est écrit après chaque envoi ou récupération, sans attendre « OK » : annuler les Options ne les défait pas.</summary>
+    private SyncState? CurrentSyncState()
+    {
+        var folder = SyncFolder.Trim();
+        if (_connections is null) return null;
+        if (folder.Length == 0 || !Directory.Exists(folder))
+        {
+            Message = L.T("Choisis d'abord un dossier qui existe.");
+            return null;
+        }
+        var state = SyncState.Load(_connections.Directory);
+        state.Folder = folder;
+        return state;
+    }
+
+    private async Task<string?> AskSyncPassphraseAsync(bool isNew)
+    {
+        var prompts = new ConnectionPrompts();
+        var first = await prompts.AskSecretAsync(new SecretRequest(L.T("Phrase secrète"),
+            isNew ? L.F("Choisis une phrase secrète d'au moins {0} caractères :", ConfigSync.MinPassphraseLength) : L.T("Phrase secrète de la synchronisation :"), false));
+        if (first is null || first.Value.Length == 0) return null;
+        if (!isNew) return first.Value;
+        if (first.Value.Length < ConfigSync.MinPassphraseLength)
+        {
+            Message = L.F("Il faut au moins {0} caractères : ce fichier peut se retrouver en ligne.", ConfigSync.MinPassphraseLength);
+            return null;
+        }
+        var second = await prompts.AskSecretAsync(new SecretRequest(L.T("Phrase secrète"), L.T("Retape-la pour confirmer :"), false));
+        if (second is null) return null;
+        if (second.Value == first.Value) return first.Value;
+        Message = L.T("Les deux phrases ne sont pas identiques. Rien n'a été envoyé.");
+        return null;
+    }
+
+    /// <summary>Le coffre doit être ouvert : les mots de passe et les clés voyagent aussi.</summary>
+    private async Task<bool> SyncVaultReadyAsync() =>
+        _connections!.Vault.IsUnlocked || await new ConnectionPrompts().UnlockVaultAsync(_connections.Vault);
+
+    private async Task RunSyncAsync(Func<Task> work)
+    {
+        SyncIdle = false;
+        try { await work(); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException or SyncPassphraseException
+                                       or VaultLockedException or VaultKeyringException or InvalidOperationException or System.Security.Cryptography.CryptographicException)
+        {
+            await _dialogs.ShowErrorAsync(L.T("Synchronisation"), ex.Message);
+        }
+        finally { SyncIdle = true; }
+    }
+
+    [RelayCommand(CanExecute = nameof(SyncIdle))]
+    private Task SendSync() => RunSyncAsync(async () =>
+    {
+        if (CurrentSyncState() is not { } state || !await SyncVaultReadyAsync()) return;
+        bool isNew = !ConfigSync.Exists(state.Folder);
+        if (isNew && !await _dialogs.ConfirmAsync(L.T("Synchronisation"), L.T("Tes connexions, tes clés SSH et tes mots de passe enregistrés vont être chiffrés dans un fichier, avec une phrase secrète que tu vas choisir.\n\nElle te sera demandée à chaque envoi et sur chaque machine. TwinPanel ne la garde pas et ne l'envoie nulle part.\n\nSi tu l'oublies, personne ne pourra plus ouvrir ce fichier. Note-la en lieu sûr.\n\nContinuer ?"))) return;
+        if (await AskSyncPassphraseAsync(isNew) is not { } phrase) return;
+
+        var snapshot = SettingsStore.Clone(_settings);
+        SaveTo(snapshot); // y compris ce qui vient d'être modifié dans cette fenêtre
+        var connections = _connections!;
+        if (!isNew)
+        {
+            // Une faute de frappe ne doit pas rechiffrer le fichier avec une autre phrase.
+            var previous = await Task.Run(() => ConfigSync.Read(state.Folder, phrase));
+            if (previous.Revision != state.LastRevision && !await _dialogs.ConfirmAsync(L.T("Synchronisation"),
+                    L.F("Le fichier a été envoyé par {0} le {1:dd/MM/yyyy HH:mm}, et cette machine ne l'a pas récupéré.\nL'envoi va le remplacer : ce qui n'existe que là-bas sera perdu. Continuer ?", previous.Machine, previous.SavedUtc.ToLocalTime()))) return;
+        }
+        var package = ConfigSync.Build(snapshot, connections);
+        await Task.Run(() => ConfigSync.Write(state.Folder, phrase, package));
+        state.LastRevision = package.Revision;
+        state.Save(connections.Directory);
+        Message = L.F("Configuration envoyée : {0} connexion(s), {1} secret(s).", package.Connections.Profiles.Count, package.Secrets.Count);
+    });
+
+    [RelayCommand(CanExecute = nameof(SyncIdle))]
+    private Task FetchSync() => RunSyncAsync(async () =>
+    {
+        if (CurrentSyncState() is not { } state) return;
+        if (!ConfigSync.Exists(state.Folder))
+        {
+            Message = L.F("Aucun fichier {0} dans ce dossier.", ConfigSync.FileName);
+            return;
+        }
+        if (!await SyncVaultReadyAsync() || await AskSyncPassphraseAsync(isNew: false) is not { } phrase) return;
+        var package = await Task.Run(() => ConfigSync.Read(state.Folder, phrase));
+        if (!await _dialogs.ConfirmAsync(L.T("Synchronisation"),
+                L.F("Récupérer la configuration envoyée par {0} le {1:dd/MM/yyyy HH:mm} ?\nLes réglages communs seront remplacés. Les connexions d'ici absentes du fichier sont gardées.", package.Machine, package.SavedUtc.ToLocalTime()))) return;
+
+        var connections = _connections!;
+        int count = await Task.Run(() => ConfigSync.ApplyConnections(package, connections));
+        state.LastRevision = package.Revision;
+        state.Save(connections.Directory);
+
+        var restored = SettingsStore.Clone(_settings);
+        SaveTo(restored); // ce qui vient d'être modifié ici et ne voyage pas reste affiché
+        package.Settings.ApplyTo(restored);
+        _settings.Terminal.SavedCommands = restored.Terminal.SavedCommands;
+        LoadFrom(restored);
+        Message = L.F("{0} connexion(s) reçue(s). Réglages chargés : « OK » pour les appliquer.", count);
+    });
 }
 
 /// <summary>Nom lisible des icônes intégrées.</summary>

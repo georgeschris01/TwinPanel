@@ -166,6 +166,66 @@ public sealed class ConnectionStore
     public IEnumerable<ConnectionProfile> ProfilesUsingKey(Guid keyId) =>
         _doc.Profiles.Where(p => p.KeyId == keyId || (p.IdentityId is { } i && FindIdentity(i)?.KeyId == keyId));
 
+    // ---- Synchronisation entre machines
+
+    /// <summary>Copie de la liste, sans ce qui ne vaut que sur ce PC (chemins locaux).</summary>
+    public ConnectionDocument CopyForSync()
+    {
+        var copy = JsonSerializer.Deserialize<ConnectionDocument>(JsonSerializer.Serialize(_doc, Json), Json)!;
+        foreach (var p in copy.Profiles) p.LocalDirectory = p.ClientCertificatePath = string.Empty;
+        foreach (var k in copy.Keys) k.ImportedFrom = string.Empty;
+        return copy;
+    }
+
+    /// <summary>
+    /// Reçoit la liste d'une autre machine : même identifiant, ou même serveur créé des deux côtés, la fiche reçue
+    /// remplace celle d'ici, qui garde ses chemins locaux. Ce qui n'existe qu'ici reste. Les secrets passent d'abord :
+    /// si le coffre les refuse, rien d'autre n'a changé. Retourne le nombre de connexions reçues.
+    /// </summary>
+    public int MergeSynced(ConnectionDocument incoming, IReadOnlyDictionary<string, string> secrets)
+    {
+        foreach (var (id, value) in secrets) Vault.Set(id, value);
+        foreach (var key in incoming.Keys)
+        {
+            Replace(_doc.Keys, key, k => k.Id == key.Id);
+            if (!key.SavePassphrase) Vault.Remove(SecretIds.KeyPassphrase(key.Id));
+        }
+        foreach (var identity in incoming.Identities)
+        {
+            Replace(_doc.Identities, identity, i => i.Id == identity.Id);
+            if (!identity.SavePassword) Vault.Remove(SecretIds.IdentityPassword(identity.Id));
+        }
+        int count = 0;
+        foreach (var profile in incoming.Profiles)
+        {
+            if (profile.Validate().Count > 0) continue;
+            var here = _doc.Profiles.FirstOrDefault(p => p.Id == profile.Id) ?? _doc.Profiles.FirstOrDefault(p => IsSameServer(p, profile));
+            if (here is not null)
+            {
+                profile.LocalDirectory = here.LocalDirectory;
+                profile.ClientCertificatePath = here.ClientCertificatePath;
+                if (here.Id != profile.Id)
+                {
+                    _doc.Profiles.Remove(here);
+                    foreach (var p in _doc.Profiles.Where(p => p.JumpHostId == here.Id)) p.JumpHostId = profile.Id;
+                    Vault.RemoveAllFor(here.Id);
+                }
+            }
+            profile.Name = UniqueName(profile.Name, profile.Id);
+            Replace(_doc.Profiles, profile, p => p.Id == profile.Id);
+            if (!profile.SavePassword) Vault.Remove(SecretIds.Password(profile.Id));
+            if (!profile.SaveProxyPassword) Vault.Remove(SecretIds.ProxyPassword(profile.Id));
+            if (!profile.SaveClientCertificatePassword) Vault.Remove(SecretIds.CertificatePassword(profile.Id));
+            count++;
+        }
+        Save();
+        return count;
+    }
+
+    private static bool IsSameServer(ConnectionProfile a, ConnectionProfile b) =>
+        a.Protocol == b.Protocol && a.Port == b.Port && string.Equals(a.Host, b.Host, StringComparison.OrdinalIgnoreCase)
+        && string.Equals(a.Name, b.Name, StringComparison.CurrentCultureIgnoreCase);
+
     // ---- Export / import (sans secrets)
 
     /// <summary>Exporte des connexions (et les clés publiques / identités qu'elles utilisent) SANS aucun secret.</summary>

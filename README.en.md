@@ -325,6 +325,15 @@ TwinPanel retries by itself (3 times by default), then offers **Resume**. Resumi
 
 If TwinPanel was closed during a transfer, at the next startup it offers **Resume**, **Later** or **Forget**. To come back to it: ≡ → Connections → Unfinished transfers.
 
+### Get your configuration back on another machine
+
+Options → Synchronization: choose a folder shared between your machines (Nextcloud, OneDrive, Syncthing, USB stick…), then **Send**. On the other machine, Windows or Linux, point to that folder and click **Fetch**, then OK. On the very first launch, TwinPanel offers this by itself.
+
+- **What travels**: connections, SSH keys, saved passwords, known servers, saved commands, theme, colors, shortcuts and language.
+- **What stays on each machine**: folders and tabs, favorites, editors, terminal, buttons and window size.
+- **Passphrase**: the whole file is encrypted with a passphrase of at least 12 characters, asked every time. TwinPanel does not keep it: **if you forget it, nobody can open the file any more**. You will then have to type your passwords again and send again.
+- **Nothing is automatic**: Fetch keeps connections that are not in the file, and Send replaces the file, warning you if another machine wrote to it since. A connection deleted on one machine therefore stays on the others.
+
 ## Archives
 
 `Enter` opens an archive like a folder. `Backspace` leaves it.

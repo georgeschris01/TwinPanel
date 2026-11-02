@@ -40,6 +40,7 @@ public partial class MainWindow : Window
             if (DataContext is not MainWindowViewModel vm) return;
             await vm.InitializeAsync();
             LeftPanel.FocusList();
+            await vm.OfferFirstStartSyncAsync();
             await vm.OfferPendingTransfersAsync();
         };
         Activated += (_, _) => Vm?.SetAppActive(true);
