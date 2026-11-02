@@ -2,6 +2,7 @@
 // Licence TwinPanel 1.0 (gratuit, non commercial, sans modification) : voir le fichier LICENSE.
 using TwinPanel.Core;
 using TwinPanel.Core.Archives;
+using TwinPanel.Core.Remote;
 
 namespace TwinPanel.App.ViewModels;
 
@@ -95,8 +96,39 @@ public partial class MainWindowViewModel
         return true;
     }
 
+    /// <summary>
+    /// Entrée sur une archive d'un serveur : elle est téléchargée une fois, avec sa progression, puis le panneau l'ouvre comme une archive du PC.
+    /// Si le panneau a changé de dossier entre-temps, il n'est pas déplacé.
+    /// </summary>
+    private Task OpenRemoteArchiveAsync(FileEntry entry)
+    {
+        if (_remote?.FindForPath(entry.FullPath) is not { } session) return Task.CompletedTask;
+        var tab = ActivePanel.Current;
+        var folder = tab.CurrentPath;
+        var onServer = RemotePart(entry.FullPath);
+        Operations.Start(new OperationJobViewModel(L.F("Ouverture de {0} depuis {1}", entry.Name, session.Profile.Name), transfer: true, async (progress, ct, pause) =>
+        {
+            var copy = await Task.Run(() => ServerArchives.OpenAsync(session.OpenWorkerAsync, onServer, folder, progress, ct, pause), ct);
+            Avalonia.Threading.Dispatcher.UIThread.Post(async () =>
+            {
+                try { if (tab.CurrentPath == folder) await tab.NavigateAsync(copy.LocalPath); }
+                finally { copy.IsOpening = false; }
+            });
+        }));
+        return Task.CompletedTask;
+    }
+
+    /// <summary>Une copie sans onglet n'a plus de raison d'être. Pendant une opération, on attend : elle peut être en train de la lire.</summary>
+    private void CloseUnusedServerArchives()
+    {
+        var copies = ServerArchives.All;
+        if (copies.Count == 0 || Operations.Jobs.Any(j => j.IsActive)) return;
+        var shown = Left.Tabs.Concat(Right.Tabs).Select(t => ServerArchives.Find(t.CurrentPath)).ToHashSet();
+        foreach (var copy in copies.Where(c => !c.IsOpening && !shown.Contains(c))) ServerArchives.Close(copy);
+    }
+
     /// <summary>F5 / F6 vers une archive.</summary>
-    private async Task AddToArchiveAsync(string archive, string inner, IReadOnlyList<FileEntry> items, bool move, ConflictPolicy? chosenPolicy)
+    private async Task AddToArchiveAsync(string archive, string inner, IReadOnlyList<FileEntry> items, bool move, ConflictPolicy? chosenPolicy, RemoteSession? source = null)
     {
         if (await EditRefusalAsync(archive) is { } refusal)
         {
@@ -126,7 +158,15 @@ public partial class MainWindowViewModel
         }
         ActivePanel.Current.MarkAll(false);
         var what = items.Count == 1 ? $"« {items[0].Name} »" : L.F("{0} éléments", items.Count);
-        StartArchiveEdit(archive, L.F("{0} de {1} dans {2}", (move ? L.T("Déplacement") : L.T("Ajout")), what, Path.GetFileName(archive)), new ArchiveEdits
+        var title = L.F("{0} de {1} dans {2}", (move ? L.T("Déplacement") : L.T("Ajout")), what, Path.GetFileName(archive));
+        if (source is not null)
+        {
+            var remoteItems = items.Select(ToRemoteItem).ToList();
+            Operations.Start(new OperationJobViewModel(title, transfer: true, (progress, ct, pause) =>
+                Task.Run(() => RemoteArchives.AddFromServerAsync(source, remoteItems, archive, inner, policy, move, progress, ct, pause), ct)) { ExclusiveKey = archive });
+            return;
+        }
+        StartArchiveEdit(archive, title, new ArchiveEdits
         {
             Add = items.Select(i => new ArchiveAddition(i.FullPath, inner)).ToList(),
             Policy = policy,

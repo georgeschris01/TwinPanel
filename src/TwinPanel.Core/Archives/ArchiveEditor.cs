@@ -83,6 +83,8 @@ public static class ArchiveEditor
         if (EncryptedRefusal(archivePath) is { } refusal) throw new FileOperationException(refusal);
         var info = new FileInfo(archivePath);
         var (length, stamp) = (info.Length, info.LastWriteTimeUtc);
+        var server = Remote.ServerArchives.Find(info.FullName);
+        server?.EnsureUnchangedAsync(ct).GetAwaiter().GetResult();
         var index = ArchiveIndex.Load(info.FullName);
         var password = !index.IsEncrypted ? null
             : ArchivePasswords.Get(info.FullName) ?? throw new ArchivePasswordException(info.FullName, wrong: false);
@@ -101,6 +103,8 @@ public static class ArchiveEditor
             info.Refresh();
             if (info.Length != length || info.LastWriteTimeUtc != stamp)
                 throw new FileOperationException(L.F("« {0} » a changé pendant l'opération : rien n'a été remplacé.", info.Name));
+            // Archive d'un serveur : le serveur d'abord. S'il refuse, la copie reste identique à ce qu'il contient.
+            server?.ReplaceAsync(part, progress, ct).GetAwaiter().GetResult();
             File.Move(part, info.FullName, overwrite: true);
         }
         finally

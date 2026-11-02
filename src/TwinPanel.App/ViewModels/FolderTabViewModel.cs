@@ -44,6 +44,9 @@ public partial class FolderTabViewModel : ObservableObject, IDisposable
     /// <summary>Ouverture d'un fichier distant (Entrée) : branché par la fenêtre principale (téléchargement puis ouverture).</summary>
     public static Func<FileEntry, Task>? RemoteFileOpener { get; set; }
 
+    /// <summary>Entrée sur une archive d'un serveur : branché par la fenêtre principale (téléchargement avec progression).</summary>
+    public static Func<FileEntry, Task>? RemoteArchiveOpener { get; set; }
+
     /// <summary>Fichier d'une archive ouvert depuis une copie temporaire (copie, archive) : surveillé pour ne pas perdre une modification.</summary>
     public static Action<string, string, string>? ArchiveCopyOpened { get; set; }
 
@@ -540,6 +543,9 @@ public partial class FolderTabViewModel : ObservableObject, IDisposable
             case null: return;
             case { IsParentLink: true }: await GoUpAsync(); break;
             case { IsDirectory: true } d: await NavigateAsync(d.FullPath); break;
+            case { } f when IsRemote && OpenArchivesWithEnter && TwinPanel.Core.Archives.ArchivePath.IsArchiveFile(f.Name) && RemoteArchiveOpener is not null:
+                await RemoteArchiveOpener(f.Entry);
+                break;
             case { } f when IsRemote:
                 if (RemoteFileOpener is not null) await RemoteFileOpener(f.Entry);
                 break;

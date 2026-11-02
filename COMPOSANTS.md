@@ -3,7 +3,7 @@
 Tout ce que TwinPanel utilise et qui ne vient pas de nous, ainsi que le plan de nos propres modules.
 **À mettre à jour à chaque ajout, retrait ou changement de version** (le journal note aussi chaque changement).
 
-Dernière mise à jour : 02/11/2026 (Windows 0.8.5 ; Linux 0.1.7-beta).
+Dernière mise à jour : 02/11/2026 (Windows 0.8.6 ; Linux 0.1.8-beta).
 
 ---
 

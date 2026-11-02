@@ -443,11 +443,6 @@ public partial class MainWindowViewModel : ObservableObject
         if (!go) return;
         var defaultDestination = destination ?? OtherPanel.Current.CurrentPath;
         bool intoArchive = ArchivePath.TrySplit(defaultDestination, out _, out _);
-        if (intoArchive && fromPanel && SessionOf(ActivePanel.Current) is not null)
-        {
-            await _dialogs.ShowErrorAsync("Archive", L.T("Copie d'abord les fichiers du serveur sur le PC, puis ajoute-les à l'archive."));
-            return;
-        }
         if (await RemoteTransferAsync(move, items, destination, fromPanel, forced)) return;
 
         if (fromPanel && ArchivePath.TrySplit(ActivePanel.Current.CurrentPath, out var archive, out var innerBase))

@@ -347,6 +347,8 @@ Si TwinPanel a été fermé pendant un transfert, il propose au démarrage suiva
 
 Une archive modifiée est réécrite à côté, relue, puis elle remplace l'original : il faut de la place libre, et c'est long sur les gros fichiers.
 
+Tout cela fonctionne aussi entre une archive et un serveur, dans les deux sens, et pour une archive qui se trouve sur un serveur. `Entrée` la télécharge une fois dans un dossier temporaire, avec une barre de progression ; la copie disparaît quand plus aucun onglet ne la montre. Pour modifier une archive d'un serveur, TwinPanel réécrit la copie, puis remplace l'archive sur le serveur en gardant ses droits. Une grosse archive est donc téléchargée, puis renvoyée en entier. Si elle a changé sur le serveur depuis son ouverture, rien n'est remplacé : sortez-en, puis rouvrez-la.
+
 Le mot de passe d'une archive reste en mémoire jusqu'à la fermeture de TwinPanel et n'est enregistré nulle part. Dans un zip chiffré, le contenu est protégé, mais les noms des fichiers restent visibles.
 
 ## Médias

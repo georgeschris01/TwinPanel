@@ -13,6 +13,8 @@ namespace TwinPanel.Core.Remote;
 public static class RemoteTransfer
 {
     public const string PartSuffix = ".twinpanel-part";
+    /// <summary>Fichier remplacé, gardé à côté le temps de mettre le nouveau à sa place.</summary>
+    public const string AsideSuffix = ".twinpanel-old";
 
     private sealed class Reporter(IProgress<TransferProgress>? progress, long bytesTotal, int filesTotal)
     {

@@ -347,6 +347,8 @@ If TwinPanel was closed during a transfer, at the next startup it offers **Resum
 
 An edited archive is rewritten next to the original, read back, then it replaces the original: free space is needed, and it takes time on large files.
 
+All of this also works between an archive and a server, in both directions, and for an archive that is on a server. `Enter` downloads it once to a temporary folder, with a progress bar; the copy disappears when no tab shows it any more. To modify an archive on a server, TwinPanel rewrites the copy, then replaces the archive on the server and keeps its permissions. A large archive is therefore downloaded, then sent back in full. If it has changed on the server since it was opened, nothing is replaced: leave it, then open it again.
+
 An archive password stays in memory until TwinPanel closes and is saved nowhere. In an encrypted zip, the content is protected, but file names remain visible.
 
 ## Media

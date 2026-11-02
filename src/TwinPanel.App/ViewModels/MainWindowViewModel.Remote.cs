@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using TwinPanel.App.Services;
 using TwinPanel.Core;
+using TwinPanel.Core.Archives;
 using TwinPanel.Core.Operations;
 using TwinPanel.Core.Remote;
 using TwinPanel.Core.Settings;
@@ -37,6 +38,7 @@ public partial class MainWindowViewModel
             try { _store.Save(_settings); } catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
         };
         FolderTabViewModel.RemoteFileOpener = OpenRemoteFileAsync;
+        FolderTabViewModel.RemoteArchiveOpener = OpenRemoteArchiveAsync;
         FolderTabViewModel.ArchiveCopyOpened = (local, archive, inner) => _remoteEdits?.WatchArchiveCopy(local, archive, inner);
         FolderTabViewModel.ArchivePasswordAsker = UnlockArchiveAsync;
         StartRemoteRefresh();
@@ -327,7 +329,8 @@ public partial class MainWindowViewModel
         await _remote.CloseAsync(session);
         var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         foreach (var panel in new[] { Left, Right })
-            foreach (var tab in panel.Tabs.Where(t => PanelRemotePath.TryParse(t.CurrentPath, out var p) && p.Session.Equals(session.Alias, StringComparison.OrdinalIgnoreCase)))
+            foreach (var tab in panel.Tabs.Where(t => (PanelRemotePath.TryParse(t.CurrentPath, out var p) && p.Session.Equals(session.Alias, StringComparison.OrdinalIgnoreCase))
+                                                      || ServerArchives.Find(t.CurrentPath)?.IsOn(session.Alias) == true))
                 await tab.NavigateAsync(home);
         StatusMessage = L.F("Déconnecté de {0}.", session.Profile.Name);
     }
@@ -437,11 +440,8 @@ public partial class MainWindowViewModel
         var defaultDestination = destination ?? OtherPanel.Current.CurrentPath;
         bool destRemote = PanelRemotePath.TryParse(defaultDestination, out _);
         if (src is null && !destRemote) return false;
-        if (fromPanel && ActivePanel.Current.IsInsideArchive)
-        {
-            await _dialogs.ShowErrorAsync("Archive", L.T("Extrais d'abord les fichiers de l'archive (F5 vers un dossier local), puis envoie-les sur le serveur."));
-            return true;
-        }
+        bool fromArchive = fromPanel && ActivePanel.Current.IsInsideArchive;
+        if (fromArchive && move && await EditableArchiveAsync() is null) return true;
 
         var verb = move ? L.T("Déplacer") : L.T("Copier");
         var what = items.Count == 1 ? $"« {items[0].Name} »" : L.F("{0} éléments", items.Count);
@@ -461,6 +461,11 @@ public partial class MainWindowViewModel
         {
             if (src is null) return false; // local → local : le chemin habituel s'en charge
             destPath = Path.IsPathRooted(destText) ? destText : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), destText);
+            if (ArchivePath.TrySplit(destPath, out var targetArchive, out var targetInner))
+            {
+                await AddToArchiveAsync(targetArchive, targetInner, items, move, forced ?? request.Policy, src);
+                return true;
+            }
             if (!Directory.Exists(destPath))
             {
                 if (!await _dialogs.ConfirmAsync(L.T("Dossier inexistant"), L.F("Le dossier{0}{1}{2}n'existe pas. Le créer ?", Environment.NewLine, destPath, Environment.NewLine))) return true;
@@ -494,6 +499,18 @@ public partial class MainWindowViewModel
                 if (await _dialogs.AskConflictAsync(conflicts) is not { } chosen) return true;
                 policy = chosen;
             }
+        }
+
+        if (fromArchive)
+        {
+            ArchivePath.TrySplit(ActivePanel.Current.CurrentPath, out var archive, out var innerBase);
+            var keys = items.Select(i => ArchivePath.TrySplit(i.FullPath, out _, out var key) ? key : string.Empty).Where(k => k.Length > 0).ToList();
+            var server = dst!;
+            ActivePanel.Current.MarkAll(false);
+            Operations.Start(new OperationJobViewModel(L.F("{0} de {1} vers {2}:{3}", (move ? L.T("Déplacement") : L.T("Envoi")), what, server.Profile.Name, destPath), transfer: true,
+                (progress, ct, pause) => Task.Run(() => RemoteArchives.ExtractToServerAsync(server, archive, keys, innerBase, destPath, policy, move, progress, ct, pause), ct))
+                { ExclusiveKey = move ? archive : null });
+            return true;
         }
 
         ActivePanel.Current.MarkAll(false);
