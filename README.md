@@ -423,7 +423,7 @@ Paramètres des boutons et du menu : `%P` dossier actif, `%N` nom de l'élément
 
 ### Comment changer la langue ?
 
-Options → Affichage → Langue. TwinPanel propose de redémarrer. Au premier lancement, il suit la langue de Windows.
+Options → Affichage → Langue. TwinPanel propose de redémarrer. Au premier lancement, il suit la langue du système.
 
 ### Je ne retrouve pas une fonction.
 

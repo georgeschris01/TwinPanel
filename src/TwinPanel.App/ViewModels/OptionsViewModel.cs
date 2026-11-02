@@ -299,9 +299,9 @@ public partial class OptionsViewModel : ObservableObject
     // ---- Affichage
     /// <summary>Les noms des langues restent écrits dans leur propre langue, pour qu'on retrouve toujours la sienne.</summary>
     public static IReadOnlyList<Choice<string>> Languages { get; } =
-        [new(string.Empty, L.T("Automatique (langue de Windows)")), new(L.French, "Français"), new(L.English, "English")];
+        [new(string.Empty, L.T("Automatique (langue du système)")), new(L.French, "Français"), new(L.English, "English")];
 
-    public static IReadOnlyList<Choice<string>> Themes { get; } = [new("System", L.T("Comme Windows")), new("Light", L.T("Clair")), new("Dark", L.T("Sombre"))];
+    public static IReadOnlyList<Choice<string>> Themes { get; } = [new("System", L.T("Comme le système")), new("Light", L.T("Clair")), new("Dark", L.T("Sombre"))];
     public static IReadOnlyList<Choice<double>> RowHeights { get; } = [new(22, L.T("Compacte")), new(28, L.T("Normale")), new(34, L.T("Aérée"))];
     public static IReadOnlyList<Choice<SizeMode>> SizeDisplays { get; } =
         [new(SizeMode.Auto, L.T("Automatique (o, Ko, Mo, Go)")), new(SizeMode.Bytes, L.T("En octets (1 234 567 o)")), new(SizeMode.Kilobytes, L.T("En Ko (1 206 Ko)"))];
@@ -483,6 +483,9 @@ public partial class OptionsViewModel : ObservableObject
         TermKind.Custom => L.T("Sur ce PC, « Automatique » ouvre : le terminal par défaut du système."),
         _ => L.T("Sur ce PC, « Automatique » ouvre : PowerShell (Windows Terminal n'est pas installé)."),
     };
+
+    /// <summary>Sous Linux, les thèmes d'icônes sont en SVG, que TwinPanel ne sait pas afficher : l'option n'est pas proposée.</summary>
+    public bool ShellIconsAvailable => TwinPanel.App.Services.ShellIcons.IsSupported;
 
     // ---- Terminal intégré
     /// <summary>Seulement les programmes installés sur ce PC, plus « Autre programme ».</summary>

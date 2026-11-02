@@ -87,7 +87,7 @@ public sealed class ConnectionPrompts : IConnectionPrompts
         once.Click += (_, _) => { result = CertificateDecision.AcceptOnce; w.Close(); };
         refuse.Click += (_, _) => w.Close();
         w.Content = Dialogs.Stack(
-            Dialogs.Text(L.F("Le certificat de {0}:{1} n'est pas reconnu par Windows.", p.Host, p.Port), bold: true),
+            Dialogs.Text(L.F("Le certificat de {0}:{1} n'est pas reconnu par le système.", p.Host, p.Port), bold: true),
             Dialogs.Text(string.Join(Environment.NewLine, p.Problems.Select(x => "• " + x)), color: Brushes.IndianRed),
             Dialogs.Mono(L.F("Sujet :     {0}\nÉmetteur :  {1}\nValide du {2:dd/MM/yyyy} au {3:dd/MM/yyyy}\nSHA-256 :\n{4}", p.Subject, p.Issuer, p.NotBefore, p.NotAfter, p.Sha256)),
             Dialogs.Text(L.T("Normal pour un serveur personnel avec un certificat auto-signé : vérifie l'empreinte SHA-256 avant d'accepter. ") +

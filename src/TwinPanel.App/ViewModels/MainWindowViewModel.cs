@@ -264,6 +264,11 @@ public partial class MainWindowViewModel : ObservableObject
 
     // ---- Ligne de commande ------------------------------------------------------------------
 
+    /// <summary>Sous Linux, la commande est lancée sans fenêtre : pas de console à garder ouverte.</summary>
+    public string CommandLineHint => OperatingSystem.IsWindows()
+        ? L.T("Commande (Entrée : exécuter, Maj+Entrée : garder la console ouverte)")
+        : L.T("Commande (Entrée : exécuter)");
+
     /// <summary>
     /// "cd chemin" change de dossier dans le panneau actif ; toute autre commande est passée à cmd.exe
     /// dans le dossier actif. keepOpen (Maj+Entrée) garde la fenêtre de console ouverte.

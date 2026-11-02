@@ -423,7 +423,7 @@ Parameters for buttons and the menu: `%P` active folder, `%N` item name, `%F` it
 
 ### How do I change the language?
 
-Options → View → Language. TwinPanel offers to restart. At the first launch, it follows the Windows language.
+Options → View → Language. TwinPanel offers to restart. At the first launch, it follows the system language.
 
 ### I cannot find a feature.
 

@@ -808,8 +808,15 @@ public partial class ConnectionManagerViewModel : ObservableObject
     private async Task RemoveMasterPassword()
     {
         if (!_store.Vault.HasMasterPassword) return;
-        if (!await _dialogs.ConfirmAsync(L.T("Retirer le mot de passe maître"),
-                L.T("Les secrets resteront chiffrés par Windows, mais sans mot de passe maître. Continuer ?"))) return;
+        if (!_store.Vault.CanWorkWithoutMaster)
+        {
+            await _dialogs.ShowErrorAsync(L.T("Retirer le mot de passe maître"), L.T("Sur ce système, le mot de passe maître est obligatoire."));
+            return;
+        }
+        var question = OperatingSystem.IsLinux()
+            ? L.T("Les secrets resteront protégés par le trousseau de Linux, mais sans mot de passe maître. Continuer ?")
+            : L.T("Les secrets resteront chiffrés par Windows, mais sans mot de passe maître. Continuer ?");
+        if (!await _dialogs.ConfirmAsync(L.T("Retirer le mot de passe maître"), question)) return;
         if (!_store.Vault.IsUnlocked && !await _prompts.UnlockVaultAsync(_store.Vault)) return;
         await Task.Run(() => _store.Vault.SetMasterPassword(null));
         RefreshVault();

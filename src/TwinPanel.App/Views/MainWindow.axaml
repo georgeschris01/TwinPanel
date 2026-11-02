@@ -238,7 +238,7 @@
         <TextBlock Classes="subtle" VerticalAlignment="Center" MaxWidth="420" TextTrimming="PrefixCharacterEllipsis"
                    Text="{Binding ActivePanel.Current.CurrentPath, StringFormat='{}{0}&gt;'}" />
         <TextBox x:Name="CommandBox" Grid.Column="1" Text="{Binding CommandLine}" BorderThickness="0"
-                 Background="Transparent" PlaceholderText="{l:T 'Commande (Entrée : exécuter, Maj+Entrée : garder la console ouverte)'}" />
+                 Background="Transparent" PlaceholderText="{Binding CommandLineHint}" />
       </Grid>
     </Border>
 

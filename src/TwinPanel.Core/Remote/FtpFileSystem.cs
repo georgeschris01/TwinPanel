@@ -27,7 +27,7 @@ internal static class CertificateCheck
 
         var problems = new List<string>();
         if (errors.HasFlag(SslPolicyErrors.RemoteCertificateNameMismatch)) problems.Add(L.F("Le certificat n'est pas au nom de « {0} ».", p.Host));
-        if (errors.HasFlag(SslPolicyErrors.RemoteCertificateChainErrors)) problems.Add(L.T("Le certificat n'est pas reconnu par Windows (auto-signé, autorité inconnue, ou expiré)."));
+        if (errors.HasFlag(SslPolicyErrors.RemoteCertificateChainErrors)) problems.Add(L.T("Le certificat n'est pas reconnu par le système (auto-signé, autorité inconnue, ou expiré)."));
         if (errors.HasFlag(SslPolicyErrors.RemoteCertificateNotAvailable)) problems.Add(L.T("Le serveur n'a pas fourni de certificat."));
         if (DateTime.Now > cert.NotAfter) problems.Add(L.F("Le certificat a expiré le {0:dd/MM/yyyy}.", cert.NotAfter));
         if (DateTime.Now < cert.NotBefore) problems.Add(L.F("Le certificat n'est valable qu'à partir du {0:dd/MM/yyyy}.", cert.NotBefore));

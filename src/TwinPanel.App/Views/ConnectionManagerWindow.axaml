@@ -206,7 +206,7 @@
                   </StackPanel>
                   <StackPanel IsVisible="{Binding IsTls}">
                     <TextBlock Classes="section" Text="{l:T 'Chiffrement TLS'}" />
-                    <TextBlock TextWrapping="Wrap" Text="{l:T 'Un certificat reconnu par Windows est accepté directement. Sinon (certificat auto-signé…), ses détails sont affichés et tu choisis : refuser, accepter une fois, ou lui faire toujours confiance.'}" />
+                    <TextBlock TextWrapping="Wrap" Text="{l:T 'Un certificat reconnu par le système est accepté directement. Sinon (certificat auto-signé…), ses détails sont affichés et tu choisis : refuser, accepter une fois, ou lui faire toujours confiance.'}" />
                     <TextBlock Classes="label" Text="{l:T 'Version minimale'}" />
                     <ComboBox ItemsSource="{x:Static vm:ProfileEditor.TlsLevels}" SelectedItem="{Binding TlsMinimum}" HorizontalAlignment="Stretch" />
                     <TextBlock Classes="label" Text="{l:T 'Certificat client (.pfx / .p12), si le serveur en demande un'}" />
