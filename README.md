@@ -344,8 +344,10 @@ Un vrai terminal dans le bas de la fenêtre, écrit pour TwinPanel : les couleur
 
 ### L'ouvrir
 
-- `F12` ou le bouton **Terminal** de la barre du haut ouvre le panneau. Si le clavier est déjà dans le terminal, `F12` le masque : les terminaux continuent de tourner.
+- `F12` ouvre le panneau. Si le clavier est déjà dans le terminal, `F12` le masque : les terminaux continuent de tourner.
+- Le bouton **Terminal** de la barre du haut déroule un menu : afficher ou masquer, nouveau terminal, dupliquer, un programme de ton PC ou un de tes serveurs SFTP / SCP.
 - `Ctrl+F12` ou le bouton **+** ouvre un autre terminal, dans un nouvel onglet.
+- Le bouton **⧉** d'un onglet le duplique : même programme ou même serveur, dans son dossier de départ.
 - Le terminal démarre dans le dossier du panneau actif.
 - Sur un serveur SFTP ou SCP, il ouvre un shell sur ce serveur, avec les mêmes identifiants, le même rebond et le même contrôle du serveur que le panneau.
 - Tire la séparation au-dessus du terminal pour changer sa hauteur : TwinPanel s'en souvient.
@@ -360,6 +362,17 @@ Un vrai terminal dans le bas de la fenêtre, écrit pour TwinPanel : les couleur
 - Avant de coller plusieurs lignes dans un programme qui les exécuterait aussitôt, TwinPanel demande confirmation.
 
 Quand le clavier est dans le terminal, toutes les touches vont au programme qui y tourne : `F5` ne copie pas de fichier. Seuls `F12` et `Alt+F4` restent à TwinPanel. Clique sur une liste pour revenir aux fichiers.
+
+### Commandes enregistrées
+
+Le bouton **Commandes** affiche ou cache un panneau à droite du terminal.
+
+- **Ajouter** : donne un nom et écris la commande, telle qu'elle doit être envoyée.
+- **Exécuter** lance la commande dans le terminal affiché. **Copier** la met dans le presse-papiers.
+- **Demander avant de lancer** : une confirmation, utile pour `rm` ou `reboot`.
+- **Seulement sur ce serveur** : la commande n'apparaît que sur ce serveur. Sinon, elle apparaît partout.
+
+Les commandes sont enregistrées en clair dans tes réglages : n'y mets jamais de mot de passe.
 
 ### Remonter dans le texte
 

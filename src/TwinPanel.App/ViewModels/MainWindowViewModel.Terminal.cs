@@ -2,26 +2,55 @@
 // Licence TwinPanel 1.0 (gratuit, non commercial, sans modification) : voir le fichier LICENSE.
 using CommunityToolkit.Mvvm.Input;
 using TwinPanel.Core.Remote;
+using TwinPanel.Core.Settings;
 using TwinPanel.Core.Terminal;
 
 namespace TwinPanel.App.ViewModels;
 
 public partial class MainWindowViewModel
 {
+    private TerminalCommandsViewModel? _terminalCommands;
+
     /// <summary>Panneau du terminal intégré, sous les deux listes.</summary>
     public TerminalPanelViewModel Terminal { get; } = new();
 
+    /// <summary>Commandes enregistrées, à droite du terminal.</summary>
+    public TerminalCommandsViewModel TerminalCommands => _terminalCommands ??= CreateTerminalCommands();
+
     public bool IsTerminalEnabled => _settings.Terminal.IntegratedEnabled;
+
+    /// <summary>Serveurs SSH proposés par le bouton Terminal : les plus récemment utilisés d'abord.</summary>
+    public IReadOnlyList<ConnectionProfile> TerminalServers =>
+        (_connections?.Profiles ?? []).Where(p => RemoteProtocols.IsSsh(p.Protocol))
+            .OrderByDescending(p => p.LastUsedUtc ?? DateTime.MinValue).ThenBy(p => p.Name).Take(15).ToList();
+
+    public bool IsServerConnected(ConnectionProfile profile) => _remote?.FindByProfile(profile.Id) is not null;
+
+    private TerminalCommandsViewModel CreateTerminalCommands()
+    {
+        var commands = new TerminalCommandsViewModel(Terminal, _dialogs, () => _settings.Terminal, SaveTerminalCommands, text => StatusMessage = text);
+        commands.Refresh();
+        return commands;
+    }
+
+    private void SaveTerminalCommands()
+    {
+        try { _store.Save(_settings); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { StatusMessage = ex.Message; }
+    }
+
+    private bool TerminalAllowed()
+    {
+        if (IsTerminalEnabled) return true;
+        StatusMessage = L.T("Le terminal intégré est désactivé (Options → Terminal).");
+        return false;
+    }
 
     /// <summary>F12 : ouvre le panneau, y met le clavier, ou le masque si le clavier y est déjà. Les terminaux continuent de tourner.</summary>
     [RelayCommand]
     private async Task ToggleTerminal()
     {
-        if (!IsTerminalEnabled)
-        {
-            StatusMessage = L.T("Le terminal intégré est désactivé (Options → Terminal).");
-            return;
-        }
+        if (!TerminalAllowed()) return;
         if (Terminal.IsOpen)
         {
             if (Terminal.HasFocus) Terminal.Hide();
@@ -32,7 +61,7 @@ public partial class MainWindowViewModel
         else Terminal.Show();
     }
 
-    /// <summary>Bouton de la barre du haut : un clic prend le clavier, il ne sert donc qu'à afficher ou masquer.</summary>
+    /// <summary>Un clic dans un menu prend le clavier : ici, on affiche ou on masque, sans regarder où il est.</summary>
     [RelayCommand]
     private async Task ToggleTerminalPanel()
     {
@@ -44,31 +73,65 @@ public partial class MainWindowViewModel
     [RelayCommand]
     private async Task NewTerminal()
     {
-        if (!IsTerminalEnabled)
+        if (!TerminalAllowed()) return;
+        var current = ActivePanel.Current;
+        if (!current.IsRemote)
         {
-            StatusMessage = L.T("Le terminal intégré est désactivé (Options → Terminal).");
+            await OpenLocalTerminalAsync(_settings.Terminal.IntegratedShell, ActiveLocalFolder());
             return;
         }
-        ApplyTerminalSettings();
-        var current = ActivePanel.Current;
-        if (current.IsRemote) await OpenRemoteTerminalAsync(current);
-        else await OpenLocalTerminalAsync(current);
+        if (SessionOf(current) is not { } session || !RemoteProtocols.IsSsh(session.Profile.Protocol))
+        {
+            await _dialogs.ShowErrorAsync("Terminal", L.T("Un terminal ne peut s'ouvrir que sur ton PC ou sur un serveur SSH (SFTP / SCP)."));
+            return;
+        }
+        var directory = !current.IsInsideArchive && PanelRemotePath.TryParse(current.CurrentPath, out var path) ? path.Path : null;
+        await OpenServerTerminalAsync(session.Profile, directory);
     }
 
-    private async Task OpenLocalTerminalAsync(FolderTabViewModel folder)
+    /// <summary>Bouton Terminal : un programme précis, sur ce PC.</summary>
+    [RelayCommand]
+    private async Task NewShellTerminal(TerminalShell shell)
     {
+        if (TerminalAllowed()) await OpenLocalTerminalAsync(shell, ActiveLocalFolder());
+    }
+
+    /// <summary>Bouton Terminal : un serveur, connecté ou non. La connexion passe par le coffre, comme pour un panneau.</summary>
+    [RelayCommand]
+    private async Task NewServerTerminal(ConnectionProfile? profile)
+    {
+        if (profile is not null && TerminalAllowed()) await OpenServerTerminalAsync(profile, null);
+    }
+
+    /// <summary>Rouvre le même programme ou le même serveur, dans le dossier de départ de ce terminal.</summary>
+    [RelayCommand]
+    private async Task DuplicateTerminal(TerminalTabViewModel? tab)
+    {
+        if ((tab ?? Terminal.Selected)?.Reopen is { } reopen && TerminalAllowed()) await reopen();
+    }
+
+    private string ActiveLocalFolder()
+    {
+        var folder = ActivePanel.Current;
+        return !folder.IsRemote && !folder.IsInsideArchive && Directory.Exists(folder.CurrentPath)
+            ? folder.CurrentPath
+            : Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+    }
+
+    private async Task OpenLocalTerminalAsync(TerminalShell shell, string directory)
+    {
+        ApplyTerminalSettings();
         if (!OperatingSystem.IsWindows())
         {
             await _dialogs.ShowErrorAsync("Terminal", L.T("Le terminal intégré n'existe pour l'instant que sous Windows."));
             return;
         }
-        var directory = !folder.IsInsideArchive && Directory.Exists(folder.CurrentPath)
-            ? folder.CurrentPath
-            : Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         var tab = Terminal.Add(Path.GetFileName(directory.TrimEnd(Path.DirectorySeparatorChar)) is { Length: > 0 } name ? name : directory);
+        tab.Reopen = () => OpenLocalTerminalAsync(shell, directory);
+        var chosen = new TerminalSettings { IntegratedShell = shell, IntegratedShellPath = _settings.Terminal.IntegratedShellPath };
         try
         {
-            tab.Start(new ConPtyConnection(TerminalShells.CommandLine(_settings.Terminal), directory, Terminal.Columns, Terminal.Rows), Terminal.Columns, Terminal.Rows);
+            tab.Start(new ConPtyConnection(TerminalShells.CommandLine(chosen), directory, Terminal.Columns, Terminal.Rows), Terminal.Columns, Terminal.Rows);
         }
         catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or IOException or DllNotFoundException or EntryPointNotFoundException)
         {
@@ -77,18 +140,25 @@ public partial class MainWindowViewModel
         }
     }
 
-    private async Task OpenRemoteTerminalAsync(FolderTabViewModel folder)
+    private async Task OpenServerTerminalAsync(ConnectionProfile profile, string? directory)
     {
-        if (SessionOf(folder) is not { } session || !RemoteProtocols.IsSsh(session.Profile.Protocol))
-        {
-            await _dialogs.ShowErrorAsync("Terminal", L.T("Un terminal ne peut s'ouvrir que sur ton PC ou sur un serveur SSH (SFTP / SCP)."));
-            return;
-        }
-        var directory = !folder.IsInsideArchive && PanelRemotePath.TryParse(folder.CurrentPath, out var path) ? path.Path : null;
-        var tab = Terminal.Add(session.Profile.Name);
+        ApplyTerminalSettings();
+        if (_remote is null) return;
+        var tab = Terminal.Add(profile.Name);
+        tab.ServerId = profile.Id;
+        tab.ServerName = profile.Name;
+        tab.Reopen = () => OpenServerTerminalAsync(profile, directory);
         var cancellation = tab.Cancellation.Token;
+        _terminalCommands?.Refresh();
         try
         {
+            // Rend la connexion déjà ouverte, ou en ouvre une avec les questions habituelles.
+            var session = await Task.Run(() => _remote.ConnectAsync(profile, _connections, _prompts!, cancellation), cancellation);
+            if (session is null)
+            {
+                Terminal.CloseTab(tab);
+                return;
+            }
             var connection = await session.OpenTerminalAsync(Terminal.Columns, Terminal.Rows, directory, cancellation);
             if (!Terminal.Tabs.Contains(tab))
             {

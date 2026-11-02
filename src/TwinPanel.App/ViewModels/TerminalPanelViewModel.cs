@@ -17,6 +17,13 @@ public sealed partial class TerminalTabViewModel(string name) : ObservableObject
     [ObservableProperty] private string _title = name;
     [ObservableProperty] private TerminalSession? _session;
 
+    /// <summary>Rouvre le même programme ou le même serveur (Dupliquer).</summary>
+    public Func<Task>? Reopen { get; set; }
+
+    /// <summary>Serveur de ce terminal ; nul : terminal du PC.</summary>
+    public Guid? ServerId { get; set; }
+    public string ServerName { get; set; } = string.Empty;
+
     /// <summary>Annule une connexion en cours si l'onglet est fermé avant la fin.</summary>
     public CancellationTokenSource Cancellation { get; } = new();
 
@@ -79,6 +86,9 @@ public sealed partial class TerminalPanelViewModel : ObservableObject
 
     public event Action? FocusTerminalRequested;
     public event Action? FocusFilesRequested;
+    public event Action<string>? CopyRequested;
+
+    public void RequestCopy(string text) => CopyRequested?.Invoke(text);
 
     public TerminalTabViewModel Add(string name)
     {
@@ -112,6 +122,8 @@ public sealed partial class TerminalPanelViewModel : ObservableObject
         if (tab is null) return;
         int index = Tabs.IndexOf(tab);
         if (index < 0) return;
+        // La liste vide sa sélection dès la suppression : on regarde avant.
+        bool wasSelected = Selected == tab;
         Tabs.RemoveAt(index);
         tab.Close();
         if (Tabs.Count == 0)
@@ -120,7 +132,7 @@ public sealed partial class TerminalPanelViewModel : ObservableObject
             Hide();
             return;
         }
-        if (Selected == tab) Selected = Tabs[Math.Min(index, Tabs.Count - 1)];
+        if (wasSelected) Selected = Tabs[Math.Min(index, Tabs.Count - 1)];
     }
 
     partial void OnSelectedChanged(TerminalTabViewModel? value)

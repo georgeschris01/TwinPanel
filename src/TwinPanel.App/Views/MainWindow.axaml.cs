@@ -20,6 +20,7 @@ public partial class MainWindow : Window
         CommandBox.AddHandler(KeyDownEvent, OnCommandBoxKeyDown, RoutingStrategies.Tunnel);
         FavoritesFlyout.Opening += (_, _) => BuildFavoritesMenu();
         ((MenuFlyout)ConnectionsButton.Flyout!).Opening += (_, _) => BuildConnectionsMenu();
+        ((MenuFlyout)TerminalButton.Flyout!).Opening += (_, _) => BuildTerminalMenu();
         RecentFlyout.Opening += (_, _) =>
         {
             if (Vm is { } vm) AppMenus.FillRecent(RecentFlyout.Items, vm);
@@ -116,7 +117,12 @@ public partial class MainWindow : Window
             vm.Terminal.Rows = rows;
         };
         vm.Terminal.FocusFilesRequested += FocusActiveList;
-        vm.Terminal.FocusTerminalRequested += () => Dispatcher.UIThread.Post(() => TerminalScreen.Focus(), DispatcherPriority.Loaded);
+        vm.Terminal.FocusTerminalRequested += () => Dispatcher.UIThread.Post(() =>
+        {
+            TerminalScreen.ScrollToEnd();
+            TerminalScreen.Focus();
+        }, DispatcherPriority.Loaded);
+        vm.Terminal.CopyRequested += text => _ = Clipboard?.SetTextAsync(text);
         vm.Terminal.PropertyChanging += (_, e) =>
         {
             if (e.PropertyName == nameof(TerminalPanelViewModel.IsOpen) && vm.Terminal.IsOpen) RememberTerminalHeight();
@@ -156,8 +162,8 @@ public partial class MainWindow : Window
     private void OnPreviewKeyDown(object? sender, KeyEventArgs e)
     {
         if (Vm is not { } vm) return;
-        // Dans le terminal, ces touches sont celles du programme qui y tourne.
-        if (e.Source is TerminalView) return;
+        // Dans le terminal, ces touches sont celles du programme qui y tourne ; dans le panneau des commandes, celles du texte.
+        if (e.Source is TerminalView || CommandsPane.IsKeyboardFocusWithin) return;
 
         // Ici et pas dans les raccourcis de la fenêtre : la liste garde les touches fléchées (Alt+Bas n'y arriverait pas).
         if (_historyGestures.Any(g => g.Matches(e)))
@@ -232,6 +238,45 @@ public partial class MainWindow : Window
         foreach (var fav in vm.Favorites)
             remove.Items.Add(new MenuItem { Header = fav.Name, Command = vm.RemoveFavoriteCommand, CommandParameter = fav });
         items.Add(remove);
+    }
+
+    /// <summary>Bouton Terminal : reconstruit à chaque ouverture (serveurs et programmes installés peuvent changer).</summary>
+    private void BuildTerminalMenu()
+    {
+        if (Vm is not { } vm) return;
+        var items = ((MenuFlyout)TerminalButton.Flyout!).Items;
+        items.Clear();
+        items.Add(TerminalItem(vm, "ToggleTerminal", L.T("Afficher / masquer le terminal"), vm.ToggleTerminalPanelCommand));
+        items.Add(TerminalItem(vm, "NewTerminal", L.T("Nouveau terminal ici"), vm.NewTerminalCommand));
+        var duplicate = TerminalItem(vm, "DuplicateTerminal", L.T("Dupliquer ce terminal"), vm.DuplicateTerminalCommand);
+        duplicate.IsEnabled = vm.Terminal.Selected?.Reopen is not null;
+        items.Add(duplicate);
+
+        items.Add(new Separator());
+        items.Add(new MenuItem { Header = L.T("Sur ce PC"), IsEnabled = false });
+        foreach (var shell in OptionsViewModel.IntegratedShells)
+        {
+            if (shell.Value == TwinPanel.Core.Settings.TerminalShell.Custom && string.IsNullOrWhiteSpace(vm.Settings.Terminal.IntegratedShellPath)) continue;
+            items.Add(new MenuItem { Header = shell.Label, Command = vm.NewShellTerminalCommand, CommandParameter = shell.Value });
+        }
+
+        items.Add(new Separator());
+        items.Add(new MenuItem { Header = L.T("Sur un serveur"), IsEnabled = false });
+        var servers = vm.TerminalServers;
+        if (servers.Count == 0) items.Add(new MenuItem { Header = L.T("(aucun serveur SFTP / SCP enregistré)"), IsEnabled = false });
+        foreach (var profile in servers)
+        {
+            var header = vm.IsServerConnected(profile) ? L.F("{0}  ● connecté", profile.Name) : profile.Name;
+            items.Add(new MenuItem { Header = header, Command = vm.NewServerTerminalCommand, CommandParameter = profile });
+        }
+    }
+
+    private static MenuItem TerminalItem(MainWindowViewModel vm, string id, string header, System.Windows.Input.ICommand command)
+    {
+        var item = new MenuItem { Header = header, Command = command };
+        if (TwinPanel.App.Services.CommandCatalog.Find(id) is { } info && AppMenus.Gesture(TwinPanel.App.Services.CommandCatalog.GesturesFor(info, vm.Settings.Shortcuts)) is { } gesture)
+            item.InputGesture = gesture;
+        return item;
     }
 
     /// <summary>Menu des connexions : gestionnaire, connexion rapide, connexions ouvertes, connexions enregistrées.</summary>

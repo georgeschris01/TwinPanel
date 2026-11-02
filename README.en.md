@@ -344,8 +344,10 @@ A real terminal at the bottom of the window, written for TwinPanel: colours, `vi
 
 ### Opening it
 
-- `F12` or the **Terminal** button in the top bar opens the panel. If the keyboard is already in the terminal, `F12` hides it: terminals keep running.
+- `F12` opens the panel. If the keyboard is already in the terminal, `F12` hides it: terminals keep running.
+- The **Terminal** button in the top bar opens a menu: show or hide, new terminal, duplicate, a program on your PC or one of your SFTP / SCP servers.
 - `Ctrl+F12` or the **+** button opens another terminal in a new tab.
+- The **⧉** button on a tab duplicates it: same program or same server, in its starting folder.
 - The terminal starts in the folder of the active panel.
 - On an SFTP or SCP server, it opens a shell on that server, with the same credentials, jump host and server check as the panel.
 - Drag the separator above the terminal to change its height: TwinPanel remembers it.
@@ -360,6 +362,17 @@ A real terminal at the bottom of the window, written for TwinPanel: colours, `vi
 - Before pasting several lines into a program that would run them at once, TwinPanel asks for confirmation.
 
 When the keyboard is in the terminal, every key goes to the program running there: `F5` does not copy a file. Only `F12` and `Alt+F4` stay with TwinPanel. Click a list to go back to your files.
+
+### Saved commands
+
+The **Commands** button shows or hides a panel to the right of the terminal.
+
+- **Add**: give a name and write the command, exactly as it should be sent.
+- **Run** starts the command in the terminal on display. **Copy** puts it on the clipboard.
+- **Ask before running**: a confirmation, useful for `rm` or `reboot`.
+- **Only on this server**: the command only appears on that server. Otherwise it appears everywhere.
+
+Commands are saved as plain text in your settings: never put a password in them.
 
 ### Scrolling back
 

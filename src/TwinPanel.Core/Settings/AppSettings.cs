@@ -249,6 +249,21 @@ public sealed class TerminalSettings
     public string IntegratedShellPath { get; set; } = string.Empty;
     public double IntegratedFontSize { get; set; } = 13;
     public double IntegratedHeight { get; set; } = 260;
+    public bool CommandsPanelOpen { get; set; }
+    /// <summary>En clair dans les réglages, comme les boutons personnels : jamais de mot de passe ici.</summary>
+    public List<SavedTerminalCommand> SavedCommands { get; set; } = [];
+}
+
+/// <summary>Commande enregistrée du terminal.</summary>
+public sealed class SavedTerminalCommand
+{
+    public string Name { get; set; } = string.Empty;
+    public string Command { get; set; } = string.Empty;
+    /// <summary>Confirmation avant de lancer (rm, reboot…).</summary>
+    public bool AskFirst { get; set; }
+    /// <summary>Réservée à ce serveur ; nulle : proposée partout.</summary>
+    public Guid? ServerId { get; set; }
+    public string ServerName { get; set; } = string.Empty;
 }
 
 /// <summary>Lecture / écriture des réglages en JSON (%APPDATA%\TwinPanel\settings.json).</summary>

@@ -480,6 +480,14 @@ public sealed class TerminalView : Control
         session.Send(text);
     }
 
+    /// <summary>Revient à la dernière ligne.</summary>
+    public void ScrollToEnd()
+    {
+        if (_scroll == 0) return;
+        _scroll = 0;
+        InvalidateVisual();
+    }
+
     private void ScrollBy(int lines)
     {
         if (Session is not { } session) return;

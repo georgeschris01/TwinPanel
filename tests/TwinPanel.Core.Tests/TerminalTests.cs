@@ -348,6 +348,51 @@ public class TerminalKeysTests
     }
 }
 
+public class TerminalCommandsTests
+{
+    [Fact]
+    public void Common_commands_appear_everywhere_and_server_commands_only_there()
+    {
+        Guid server = Guid.NewGuid(), other = Guid.NewGuid();
+        var all = new[]
+        {
+            new SavedTerminalCommand { Name = "commune" },
+            new SavedTerminalCommand { Name = "ici", ServerId = server },
+            new SavedTerminalCommand { Name = "ailleurs", ServerId = other },
+        };
+        Assert.Equal(["commune"], TerminalCommands.Visible(all, null).Select(c => c.Name));
+        Assert.Equal(["commune", "ici"], TerminalCommands.Visible(all, server).Select(c => c.Name));
+    }
+
+    [Theory]
+    [InlineData("ls -la", false, "ls -la\r")]
+    [InlineData("ls -la\r\n", false, "ls -la\r")]
+    [InlineData("cd /\nls", false, "cd /\rls\r")]
+    [InlineData("ls", true, "\u001b[200~ls\u001b[201~\r")]
+    public void A_command_is_sent_as_written_then_started(string command, bool bracketed, string expected) =>
+        Assert.Equal(expected, TerminalCommands.Input(command, bracketed));
+
+    [Fact]
+    public void Saved_commands_survive_the_settings_file()
+    {
+        var path = Path.Combine(Path.GetTempPath(), "twinpanel-" + Guid.NewGuid() + ".json");
+        try
+        {
+            var id = Guid.NewGuid();
+            var store = new SettingsStore(path);
+            var settings = new AppSettings();
+            settings.Terminal.SavedCommands.Add(new SavedTerminalCommand { Name = "n", Command = "c", AskFirst = true, ServerId = id, ServerName = "s" });
+            settings.Terminal.CommandsPanelOpen = true;
+            store.Save(settings);
+            var loaded = new SettingsStore(path).Load().Terminal;
+            var command = Assert.Single(loaded.SavedCommands);
+            Assert.Equal(("n", "c", true, id, "s"), (command.Name, command.Command, command.AskFirst, command.ServerId!.Value, command.ServerName));
+            Assert.True(loaded.CommandsPanelOpen);
+        }
+        finally { File.Delete(path); }
+    }
+}
+
 public class TerminalBacklogTests
 {
     /// <summary>Connexion simulée : un énorme texte déjà arrivé et en attente de lecture.</summary>
