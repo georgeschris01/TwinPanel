@@ -28,7 +28,8 @@ internal static class Program
                 };
                 HangWatchdog.Start();
             }).StartWithClassicDesktopLifetime(args);
-            if (RestartAfterExit && Environment.ProcessPath is { } program)
+            // Dans une AppImage, le programme vit dans un dossier temporaire qui disparaît à la fermeture : on repart du fichier AppImage.
+            if (RestartAfterExit && (Environment.GetEnvironmentVariable("APPIMAGE") ?? Environment.ProcessPath) is { } program)
                 System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(program) { UseShellExecute = false });
         }
         catch (Exception ex)
