@@ -1166,7 +1166,7 @@ public partial class MainWindowViewModel : ObservableObject
     {
         var version = typeof(MainWindowViewModel).Assembly.GetName().Version?.ToString(3) ?? "?";
         return _dialogs.ShowAboutAsync($"TwinPanel {version}",
-            L.T("Gestionnaire de fichiers à deux panneaux, gratuit.\nÉcrit de zéro par chrypox."),
+            L.T("Gestionnaire de fichiers à deux panneaux, gratuit.\nCréé par chrypox, avec l'aide de l'IA Claude Code."),
             [$".NET {Environment.Version} — {Environment.OSVersion.VersionString}", L.F("Réglages : {0}", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "TwinPanel"))]);
     }
 
