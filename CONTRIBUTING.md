@@ -2,7 +2,7 @@
 
 **Français** · [English](#contributing-to-twinpanel)
 
-TwinPanel est écrit et maintenu par son auteur. Vous pouvez y participer par les « Issues » (tickets) de ce dépôt.
+TwinPanel est maintenu par son auteur. Vous pouvez y participer par les « Issues » (tickets) de ce dépôt.
 
 ## Demander une fonction
 
@@ -41,7 +41,7 @@ GitHub permet à chacun de copier un dépôt public sur son propre compte. Cette
 
 [Français](#contribuer-à-twinpanel) · **English**
 
-TwinPanel is written and maintained by its author. You can take part through the Issues of this repository.
+TwinPanel is maintained by its author. You can take part through the Issues of this repository.
 
 ## Requesting a feature
 

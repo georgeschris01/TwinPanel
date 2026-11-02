@@ -18,6 +18,24 @@ A free, modern and complete two-panel file manager. Windows for now, Linux next.
 
 To request a feature or report a problem: open an [“Issue”](../../issues) on the TwinPanel GitHub page. See [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
+## The origin of this project (Why and how?)
+
+This software was born from a very personal need. Since 2003, I have used the excellent **Total Commander** every day, and I find it absolutely brilliant. However, for my specific use, some features were missing or not entirely optimal.
+
+So I decided to create **TwinPanel**, originally just for my own use and my wife's. After I showed it to friends who wanted to try it, they strongly encouraged me to share it and make it available to other potential users, because it could be of great service — even though other similar projects exist on the market.
+
+### Complete transparency with you:
+
+I want to be 100% honest with everyone: **I know absolutely nothing about programming and I speak no language other than French**.
+
+**TwinPanel** came into being, was entirely coded and was translated into English thanks to the help of the artificial intelligence **Claude Code**. The AI guided me step by step to turn my needs into lines of code and to generate the English version of the software, so that it can reach as many people as possible.
+
+The program is shared here as it is, wholeheartedly, with the sole aim of being useful. It is entirely free, but as you can read in the License section below, it remains protected to ensure it is never commercialized or distorted.
+
+Welcome to all future TwinPanel users!
+
+## Guide
+
 What follows is the full guide. It is the same text as in the program (**F1** key).
 
 <!-- guide -->

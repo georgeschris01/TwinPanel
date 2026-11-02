@@ -18,6 +18,24 @@ Gestionnaire de fichiers à deux panneaux, gratuit, moderne et complet. Windows 
 
 Pour demander une fonction ou signaler un problème : ouvrez une [« Issue »](../../issues) sur la page GitHub de TwinPanel. Voir [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
+## À l'origine de ce projet (Pourquoi et comment ?)
+
+Ce logiciel est né d'un besoin très personnel. Depuis 2003, j'utilise au quotidien l'excellent logiciel **Total Commander**, que je trouve absolument génial. Cependant, pour mon utilisation précise, certaines fonctionnalités me manquaient ou n'étaient pas totalement optimales.
+
+J'ai donc décidé de créer **TwinPanel**, à la base uniquement pour mon usage personnel et celui de ma femme. Après l'avoir montré à des amis qui ont souhaité le tester, ces derniers m'ont vivement conseillé de le partager et de le mettre à disposition d'autres utilisateurs potentiels, car il pourrait rendre de grands services — et ce, malgré l'existence d'autres projets similaires sur le marché.
+
+### Une totale transparence avec vous :
+
+Je tiens à être 100 % honnête avec tout le monde : **je n'y connais absolument rien en programmation et je ne parle pas d'autre langue que le français**.
+
+**TwinPanel** a pu voir le jour, être entièrement codé et traduit en anglais grâce à l'aide de l'intelligence artificielle **Claude Code**. L'IA m'a accompagné pas à pas pour traduire mes besoins en lignes de code et pour générer la version anglaise du logiciel afin qu'il soit accessible au plus grand nombre.
+
+Le programme est partagé ici tel quel, de bon cœur, dans le seul but d'être utile. Il est entièrement gratuit, mais comme vous pourrez le lire dans la section Licence ci-dessous, il reste protégé pour garantir qu'il ne soit jamais commercialisé ou dénaturé.
+
+Bienvenue à tous les futurs utilisateurs de TwinPanel !
+
+## Guide
+
 Ce qui suit est le guide complet. C'est le même texte que dans le programme (touche **F1**).
 
 <!-- guide -->
