@@ -1,0 +1,58 @@
+<!-- TwinPanel — © 2026 Georges Christophe (chrypox). Tous droits réservés.
+     Licence TwinPanel 1.0 (gratuit, non commercial, sans modification) : voir le fichier LICENSE. -->
+<UserControl xmlns="https://github.com/avaloniaui"
+        xmlns:l="using:TwinPanel.App.Views"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:TwinPanel.App.ViewModels"
+             x:Class="TwinPanel.App.Views.ViewerControl"
+             x:DataType="vm:ViewerViewModel">
+  <DockPanel>
+    <!-- Barre d'outils (masquée dans la vue rapide) -->
+    <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,8" IsVisible="{Binding !IsCompact}">
+      <Button Content="{l:T 'Texte (1)'}" Command="{Binding ShowTextCommand}" Margin="0,0,6,0" />
+      <Button Content="{l:T 'Hexa (2)'}" Command="{Binding ShowHexCommand}" Margin="0,0,6,0" />
+      <Button Content="Image (3)" Command="{Binding ShowImageCommand}" IsVisible="{Binding CanShowImage}" Margin="0,0,6,0" />
+      <Button Content="{l:T 'Média (4)'}" Command="{Binding ShowMediaCommand}" IsVisible="{Binding CanShowMedia}" Margin="0,0,12,0" />
+      <ComboBox ItemsSource="{x:Static vm:ViewerViewModel.Encodings}" SelectedItem="{Binding SelectedEncoding}" Width="190" Margin="0,0,12,0" />
+      <CheckBox Content="{l:T 'Retour à la ligne'}" IsChecked="{Binding Wrap}" Margin="0,0,12,0" />
+      <TextBox x:Name="FindBox" Text="{Binding FindText}" Width="200" PlaceholderText="{l:T 'Rechercher (Ctrl+F)'}" Margin="0,0,6,0">
+        <TextBox.KeyBindings>
+          <KeyBinding Gesture="Enter" Command="{Binding FindNextCommand}" />
+        </TextBox.KeyBindings>
+      </TextBox>
+      <Button Content="{l:T 'Suivant (F3)'}" Command="{Binding FindNextCommand}" Margin="0,0,12,0" />
+      <Button Content="◀ P" Command="{Binding PreviousCommand}" ToolTip.Tip="{l:T 'Fichier précédent (P)'}" Margin="0,0,4,0" />
+      <Button Content="N ▶" Command="{Binding NextCommand}" ToolTip.Tip="{l:T 'Fichier suivant (N)'}" />
+    </WrapPanel>
+
+    <TextBlock DockPanel.Dock="Bottom" Classes="subtle" Margin="0,6,0,0" Text="{Binding Status}" TextTrimming="CharacterEllipsis" />
+
+    <Border Background="{DynamicResource PanelBackground}" BorderBrush="{DynamicResource PanelBorder}"
+            BorderThickness="1" CornerRadius="8" ClipToBounds="True">
+      <Panel>
+        <ListBox x:Name="LinesList" IsVisible="{Binding IsLines}" ItemsSource="{Binding Lines}"
+                 SelectedIndex="{Binding SelectedLine, Mode=TwoWay}" Background="Transparent"
+                 FontFamily="Consolas,Menlo,monospace" FontSize="12.5">
+          <ListBox.Styles>
+            <Style Selector="ListBoxItem">
+              <Setter Property="Padding" Value="8,0" />
+              <Setter Property="MinHeight" Value="0" />
+            </Style>
+          </ListBox.Styles>
+          <ListBox.ItemTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding}" TextWrapping="{Binding $parent[UserControl].DataContext.Wrap, Converter={x:Static vm:WrapConverter.Instance}}" />
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+
+        <ScrollViewer IsVisible="{Binding IsImage}" HorizontalScrollBarVisibility="Auto">
+          <Image Source="{Binding Image}" Stretch="Uniform" StretchDirection="DownOnly" Margin="8" />
+        </ScrollViewer>
+
+        <TextBlock IsVisible="{Binding IsInfo}" Text="{Binding Info}" Margin="20" TextWrapping="Wrap"
+                   HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" FontSize="15" />
+      </Panel>
+    </Border>
+  </DockPanel>
+</UserControl>

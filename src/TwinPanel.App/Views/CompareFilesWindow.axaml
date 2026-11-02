@@ -1,0 +1,42 @@
+<!-- TwinPanel — © 2026 Georges Christophe (chrypox). Tous droits réservés.
+     Licence TwinPanel 1.0 (gratuit, non commercial, sans modification) : voir le fichier LICENSE. -->
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:l="using:TwinPanel.App.Views"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:TwinPanel.App.ViewModels"
+        xmlns:conv="using:TwinPanel.App.Converters"
+        x:Class="TwinPanel.App.Views.CompareFilesWindow"
+        x:DataType="vm:CompareFilesViewModel"
+        Title="{l:T 'Comparer le contenu'}" Width="1200" Height="760" MinWidth="700" MinHeight="400"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource AppBackground}">
+  <DockPanel Margin="16">
+    <Grid DockPanel.Dock="Top" ColumnDefinitions="*,16,*">
+      <TextBlock Text="{Binding LeftPath}" FontWeight="SemiBold" TextTrimming="PrefixCharacterEllipsis" />
+      <TextBlock Grid.Column="2" Text="{Binding RightPath}" FontWeight="SemiBold" TextTrimming="PrefixCharacterEllipsis" />
+    </Grid>
+    <TextBlock DockPanel.Dock="Top" Classes="subtle" Margin="0,6,0,8" Text="{Binding Summary}" />
+    <Border Background="{DynamicResource PanelBackground}" BorderBrush="{DynamicResource PanelBorder}"
+            BorderThickness="1" CornerRadius="8" ClipToBounds="True" IsVisible="{Binding IsText}">
+      <ListBox ItemsSource="{Binding Lines}" Background="Transparent" FontFamily="Consolas,Menlo,monospace" FontSize="12">
+        <ListBox.Styles>
+          <Style Selector="ListBoxItem">
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="MinHeight" Value="0" />
+          </Style>
+        </ListBox.Styles>
+        <ListBox.ItemTemplate>
+          <DataTemplate>
+            <Grid ColumnDefinitions="48,*,1,48,*" Background="{Binding Kind, Converter={x:Static conv:DiffKindToBrushConverter.Instance}}">
+              <TextBlock Classes="subtle" Text="{Binding LeftNo}" HorizontalAlignment="Right" Margin="0,1,8,1" />
+              <TextBlock Grid.Column="1" Text="{Binding Left}" TextTrimming="CharacterEllipsis" Margin="0,1" />
+              <Rectangle Grid.Column="2" Fill="{DynamicResource PanelBorder}" />
+              <TextBlock Grid.Column="3" Classes="subtle" Text="{Binding RightNo}" HorizontalAlignment="Right" Margin="0,1,8,1" />
+              <TextBlock Grid.Column="4" Text="{Binding Right}" TextTrimming="CharacterEllipsis" Margin="0,1" />
+            </Grid>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </Border>
+  </DockPanel>
+</Window>

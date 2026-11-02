@@ -1,0 +1,94 @@
+<!-- TwinPanel — © 2026 Georges Christophe (chrypox). Tous droits réservés.
+     Licence TwinPanel 1.0 (gratuit, non commercial, sans modification) : voir le fichier LICENSE. -->
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:l="using:TwinPanel.App.Views"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:TwinPanel.App.ViewModels"
+        x:Class="TwinPanel.App.Views.MultiRenameWindow"
+        x:DataType="vm:MultiRenameViewModel"
+        Title="{l:T 'Renommage multiple'}" Width="900" Height="640" MinWidth="640" MinHeight="420"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Background="{DynamicResource AppBackground}">
+  <DockPanel Margin="16">
+    <!-- Boutons -->
+    <Grid DockPanel.Dock="Bottom" ColumnDefinitions="*,Auto,Auto" Margin="0,12,0,0">
+      <TextBlock Classes="subtle" VerticalAlignment="Center" Text="{Binding Status}" />
+      <Button Grid.Column="1" x:Name="RenameButton" Content="{l:T 'Renommer'}" IsDefault="True" Margin="0,0,8,0"
+              Classes="accent" IsEnabled="{Binding CanRename}" />
+      <Button Grid.Column="2" x:Name="CancelButton" Content="{l:T 'Fermer'}" IsCancel="True" />
+    </Grid>
+
+    <!-- Réglages -->
+    <Grid DockPanel.Dock="Top" ColumnDefinitions="*,16,*" RowDefinitions="Auto,Auto,Auto,Auto" >
+      <StackPanel Grid.Column="0" Grid.Row="0" Spacing="4">
+        <TextBlock Classes="subtle" Text="{l:T 'Masque du nom'}" />
+        <TextBox Text="{Binding NameMask}" FontFamily="Consolas,Menlo,monospace" />
+        <WrapPanel Margin="0,4,0,0">
+          <Button Classes="chip" Content="{l:T '[N] nom'}" Tag="[N]" />
+          <Button Classes="chip" Content="{l:T '[N1-3] lettres'}" Tag="[N1-3]" />
+          <Button Classes="chip" Content="{l:T '[C] compteur'}" Tag="[C]" />
+          <Button Classes="chip" Content="{l:T '[YMD] date'}" Tag="[YMD]" />
+          <Button Classes="chip" Content="{l:T '[h][m][s] heure'}" Tag="[h][m][s]" />
+          <Button Classes="chip" Content="{l:T '[P] dossier'}" Tag="[P]" />
+        </WrapPanel>
+        <WrapPanel IsVisible="{Binding CanUseMedia}">
+          <Button Classes="chip" Content="{l:T '[Titre]'}" Tag="{l:T '[Titre]'}" />
+          <Button Classes="chip" Content="{l:T '[Artiste]'}" Tag="{l:T '[Artiste]'}" />
+          <Button Classes="chip" Content="[Album]" Tag="[Album]" />
+          <Button Classes="chip" Content="{l:T '[Piste]'}" Tag="{l:T '[Piste]'}" />
+          <Button Classes="chip" Content="{l:T '[Année]'}" Tag="{l:T '[Année]'}" />
+          <Button Classes="chip" Content="[Genre]" Tag="[Genre]" />
+          <Button Classes="chip" Content="{l:T '[Résolution]'}" Tag="{l:T '[Résolution]'}" />
+          <Button Classes="chip" Content="{l:T '[Durée]'}" Tag="{l:T '[Durée]'}" />
+          <Button Classes="chip" Content="{l:T '[Date de prise de vue]'}" Tag="{l:T '[Date de prise de vue]'}" />
+        </WrapPanel>
+      </StackPanel>
+      <StackPanel Grid.Column="2" Grid.Row="0" Spacing="4">
+        <TextBlock Classes="subtle" Text="{l:T 'Masque de l\'extension'}" />
+        <TextBox Text="{Binding ExtensionMask}" FontFamily="Consolas,Menlo,monospace" />
+      </StackPanel>
+
+      <StackPanel Grid.Column="0" Grid.Row="1" Spacing="4" Margin="0,12,0,0">
+        <TextBlock Classes="subtle" Text="{l:T 'Rechercher'}" />
+        <TextBox Text="{Binding Search}" />
+        <CheckBox Content="{l:T 'Expression régulière ($1, $2… dans le remplacement)'}" IsChecked="{Binding UseRegex}" />
+      </StackPanel>
+      <StackPanel Grid.Column="2" Grid.Row="1" Spacing="4" Margin="0,12,0,0">
+        <TextBlock Classes="subtle" Text="{l:T 'Remplacer par'}" />
+        <TextBox Text="{Binding Replace}" />
+      </StackPanel>
+
+      <StackPanel Grid.Column="0" Grid.Row="2" Spacing="4" Margin="0,12,0,0">
+        <TextBlock Classes="subtle" Text="{l:T 'Majuscules / minuscules'}" />
+        <ComboBox ItemsSource="{x:Static vm:MultiRenameViewModel.Cases}" SelectedItem="{Binding SelectedCase}" HorizontalAlignment="Stretch" />
+      </StackPanel>
+      <Grid Grid.Column="2" Grid.Row="2" ColumnDefinitions="*,8,*,8,*" Margin="0,12,0,0">
+        <StackPanel Spacing="4">
+          <TextBlock Classes="subtle" Text="{l:T 'Compteur : début'}" />
+          <NumericUpDown Value="{Binding CounterStart}" Minimum="0" Increment="1" FormatString="0" />
+        </StackPanel>
+        <StackPanel Grid.Column="2" Spacing="4">
+          <TextBlock Classes="subtle" Text="{l:T 'Pas'}" />
+          <NumericUpDown Value="{Binding CounterStep}" Minimum="1" Increment="1" FormatString="0" />
+        </StackPanel>
+        <StackPanel Grid.Column="4" Spacing="4">
+          <TextBlock Classes="subtle" Text="{l:T 'Chiffres'}" />
+          <NumericUpDown Value="{Binding CounterDigits}" Minimum="1" Maximum="9" Increment="1" FormatString="0" />
+        </StackPanel>
+      </Grid>
+    </Grid>
+
+    <!-- Aperçu -->
+    <Border Margin="0,16,0,0" Background="{DynamicResource PanelBackground}" BorderBrush="{DynamicResource PanelBorder}"
+            BorderThickness="1" CornerRadius="8" ClipToBounds="True">
+      <DataGrid ItemsSource="{Binding Preview}" IsReadOnly="True" GridLinesVisibility="None" HeadersVisibility="Column"
+                CanUserSortColumns="False" RowHeight="26" Background="Transparent">
+        <DataGrid.Columns>
+          <DataGridTextColumn Header="{l:T 'Ancien nom'}" Binding="{Binding Entry.Name}" Width="*" />
+          <DataGridTextColumn Header="{l:T 'Nouveau nom'}" Binding="{Binding NewName}" Width="*" />
+          <DataGridTextColumn Header="{l:T 'Problème'}" Binding="{Binding Problem}" Width="220" />
+        </DataGrid.Columns>
+      </DataGrid>
+    </Border>
+  </DockPanel>
+</Window>

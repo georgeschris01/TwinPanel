@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>TwinPanel.Core</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Lecture des archives 7z, rar, zip, tar, gz, bz2, xz (MIT). 0.48.0+ : corrige la faille zip slip CVE-2026-44788. -->
+    <PackageReference Include="SharpCompress" Version="0.48.1" />
+    <!-- SFTP et SCP (MIT). 2026.0.0 minimum : les versions antérieures ont des failles (CVE-2026-48798, CVE-2026-85756…). -->
+    <PackageReference Include="SSH.NET" Version="2026.0.0" />
+    <!-- FTP et FTPS (MIT, aucune dépendance). 55.1.0 : contrôle du certificat aussi sur les connexions de données. -->
+    <PackageReference Include="FluentFTP" Version="55.1.0" />
+    <!-- Chiffrement des secrets lié au compte Windows (DPAPI), par Microsoft (MIT). -->
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.0" />
+    <!-- Caractéristiques des vidéos / musiques : bibliothèque native MediaInfo (MediaArea, BSD-2), appelée directement. -->
+    <PackageReference Include="MediaInfo.Core.Native" Version="26.10.0" />
+    <!-- Tags des musiques et des MP4 (lecture + écriture), MIT. -->
+    <PackageReference Include="z440.atl.core" Version="7.19.0" />
+    <!-- EXIF / XMP des photos (lecture), Apache-2.0. -->
+    <PackageReference Include="MetadataExtractor" Version="2.9.3" />
+    <!-- Écriture des zip chiffrés en AES-256, MIT. -->
+    <PackageReference Include="SharpZipLib" Version="1.4.2" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="TwinPanel.Core.Tests" />
+    <Using Include="TwinPanel.Core.Localization" />
+    <!-- Traductions anglaises de l'interface. -->
+    <EmbeddedResource Include="Localization\en.json" LogicalName="TwinPanel.Core.Localization.en.json" />
+  </ItemGroup>
+</Project>

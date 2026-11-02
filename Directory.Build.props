@@ -1,0 +1,16 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <!-- Version de TwinPanel : à augmenter avant chaque nouvel installateur (0.7.1, 0.8.0…). -->
+    <Version>0.8.1</Version>
+    <Product>TwinPanel</Product>
+    <Company>chrypox</Company>
+    <Authors>Georges Christophe (chrypox)</Authors>
+    <!-- Affiché dans les propriétés de TwinPanel.exe (clic droit → Propriétés → Détails). -->
+    <Copyright>© 2026 Georges Christophe (chrypox). Licence TwinPanel 1.0 : gratuit, non commercial, sans modification.</Copyright>
+  </PropertyGroup>
+</Project>

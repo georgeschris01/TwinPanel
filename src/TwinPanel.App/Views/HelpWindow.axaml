@@ -1,0 +1,22 @@
+<!-- TwinPanel — © 2026 Georges Christophe (chrypox). Tous droits réservés.
+     Licence TwinPanel 1.0 (gratuit, non commercial, sans modification) : voir le fichier LICENSE. -->
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:l="using:TwinPanel.App.Views"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="TwinPanel.App.Views.HelpWindow"
+        Title="{l:T 'Guide de TwinPanel'}" Width="1000" Height="720" MinWidth="640" MinHeight="420"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource AppBackground}">
+  <Grid ColumnDefinitions="260,*" Margin="12">
+    <DockPanel Margin="0,0,12,0">
+      <TextBox x:Name="SearchBox" DockPanel.Dock="Top" Margin="0,0,0,8" PlaceholderText="{l:T 'Rechercher dans le guide'}" />
+      <ListBox x:Name="ChapterList" Background="Transparent" />
+    </DockPanel>
+    <Border Grid.Column="1" Background="{DynamicResource PanelBackground}" BorderBrush="{DynamicResource PanelBorder}"
+            BorderThickness="1" CornerRadius="8">
+      <ScrollViewer x:Name="PageScroller">
+        <StackPanel x:Name="Page" Margin="20,14" Spacing="8" />
+      </ScrollViewer>
+    </Border>
+  </Grid>
+</Window>

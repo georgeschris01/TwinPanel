@@ -1,0 +1,367 @@
+<!-- TwinPanel — © 2026 Georges Christophe (chrypox). Tous droits réservés.
+     Licence TwinPanel 1.0 (gratuit, non commercial, sans modification) : voir le fichier LICENSE. -->
+<UserControl xmlns="https://github.com/avaloniaui"
+        xmlns:l="using:TwinPanel.App.Views"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:TwinPanel.App.ViewModels"
+             xmlns:conv="using:TwinPanel.App.Converters"
+             xmlns:views="using:TwinPanel.App.Views"
+             x:Class="TwinPanel.App.Views.PanelView"
+             x:DataType="vm:FilePanelViewModel">
+  <UserControl.Styles>
+    <Style Selector="Border.panel">
+      <Setter Property="Background" Value="{DynamicResource PanelBackground}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource PanelBorder}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="ClipToBounds" Value="True" />
+    </Style>
+    <Style Selector="Border.panel.active">
+      <Setter Property="BorderBrush" Value="{DynamicResource SystemControlHighlightAccentBrush}" />
+    </Style>
+
+    <!-- Onglets en "pastilles" -->
+    <Style Selector="ListBox.tabs">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Padding" Value="0" />
+    </Style>
+    <Style Selector="ListBox.tabs ListBoxItem">
+      <Setter Property="Padding" Value="10,4,4,4" />
+      <Setter Property="Margin" Value="0,0,4,0" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="MinHeight" Value="0" />
+    </Style>
+    <Style Selector="ListBox.tabs.wrap ListBoxItem">
+      <Setter Property="Margin" Value="0,0,4,4" />
+    </Style>
+
+    <!-- Fil d'Ariane du chemin -->
+    <Style Selector="ItemsControl.crumbs Button">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="6,3" />
+      <Setter Property="CornerRadius" Value="4" />
+    </Style>
+    <Style Selector="ItemsControl.crumbs ContentPresenter:nth-child(1) TextBlock.sep">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+
+    <Style Selector="DataGrid">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <!-- Boutons de la barre des lecteurs ; celui du lecteur (ou serveur) affiché est surligné -->
+    <Style Selector="Button.drive">
+      <Setter Property="Padding" Value="7,2" />
+      <Setter Property="Margin" Value="0,0,3,3" />
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="CornerRadius" Value="5" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.drive.current">
+      <Setter Property="BorderBrush" Value="{DynamicResource SystemControlHighlightAccentBrush}" />
+      <Setter Property="Background" Value="{DynamicResource ChipBackground}" />
+    </Style>
+    <!-- Couleur choisie pour l'icône d'un disque (Options → Couleurs) ; sinon couleur d'origine du thème -->
+    <Style Selector="PathIcon.tinted">
+      <Setter Property="Foreground" Value="{Binding IconBrush}" />
+    </Style>
+    <!-- Taille du texte des listes : Options → Affichage (ressource mise à jour par la fenêtre principale). -->
+    <Style Selector="DataGridCell">
+      <Setter Property="FontSize" Value="{DynamicResource PanelFontSize}" />
+    </Style>
+    <Style Selector="DataGridColumnHeader">
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Foreground" Value="{DynamicResource SubtleText}" />
+    </Style>
+  </UserControl.Styles>
+
+  <Border Classes="panel" Classes.active="{Binding IsActive}">
+    <DockPanel>
+      <!-- Barre des lecteurs : disques puis connexions (Options → Affichage pour la masquer) -->
+      <ItemsControl DockPanel.Dock="Top" Margin="8,8,8,0" ItemsSource="{Binding DriveBar}" IsVisible="{Binding ShowDriveBar}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <WrapPanel Orientation="Horizontal" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:DriveButtonViewModel">
+            <Panel>
+              <Rectangle Width="1" Height="18" Margin="4,0" Fill="{DynamicResource PanelBorder}" IsVisible="{Binding IsSeparator}" />
+              <Button Classes="drive" Classes.current="{Binding IsCurrent}" IsVisible="{Binding IsButton}" ToolTip.Tip="{Binding Tooltip}"
+                      Command="{Binding $parent[ItemsControl].DataContext.OpenDriveButtonCommand}" CommandParameter="{Binding}">
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                  <PathIcon Data="{Binding Icon}" Width="13" Height="13" Classes.tinted="{Binding HasIconColor}" />
+                  <TextBlock Text="{Binding Label}" VerticalAlignment="Center" MaxWidth="120" TextTrimming="CharacterEllipsis" />
+                  <Ellipse Width="6" Height="6" Fill="#57AB5A" VerticalAlignment="Center" IsVisible="{Binding IsConnected}" />
+                </StackPanel>
+              </Button>
+            </Panel>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <!-- Onglets -->
+      <!-- Beaucoup d'onglets (Options → Affichage) : une ligne avec flèches ‹ › (molette aussi) ou plusieurs lignes.
+           Onglets déplaçables à la souris, aussi vers l'autre panneau ; clic milieu : fermer. -->
+      <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto,Auto,Auto" Margin="8,8,8,0">
+        <ScrollViewer x:Name="TabScroller" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled">
+          <ListBox x:Name="TabList" Classes="tabs"
+                   ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                   ItemsSource="{Binding Tabs}"
+                   SelectedItem="{Binding SelectedTab, Mode=TwoWay}">
+            <ListBox.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Orientation="Horizontal" />
+              </ItemsPanelTemplate>
+            </ListBox.ItemsPanel>
+            <ListBox.ItemTemplate>
+              <DataTemplate>
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <PathIcon Data="{StaticResource IconFolder}" Width="13" Height="13" Foreground="#F2B84B" IsVisible="{Binding !IsLocked}" />
+                  <PathIcon Data="{StaticResource IconLock}" Width="12" Height="12" Foreground="#E08A3C" IsVisible="{Binding IsLocked}" ToolTip.Tip="{Binding LockTooltip}" />
+                  <views:ScrollingText Text="{Binding DisplayTitle}" VerticalAlignment="Center" MaxWidth="160" ToolTip.Tip="{Binding CurrentPath}" />
+                  <Button Classes="icon small" Width="20" Height="20" Padding="4"
+                          ToolTip.Tip="{l:T 'Fermer l\'onglet (Ctrl+W)'}"
+                          Command="{Binding $parent[ListBox].DataContext.CloseTabCommand}"
+                          CommandParameter="{Binding}">
+                    <PathIcon Data="{StaticResource IconClose}" Width="10" Height="10" />
+                  </Button>
+                </StackPanel>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </ScrollViewer>
+        <Button x:Name="TabLeftButton" Grid.Column="1" Classes="icon small" ToolTip.Tip="{l:T 'Onglets précédents'}" IsVisible="False" Padding="0">
+          <TextBlock Text="‹" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,-3,0,0" />
+        </Button>
+        <Button x:Name="TabRightButton" Grid.Column="2" Classes="icon small" ToolTip.Tip="{l:T 'Onglets suivants'}" IsVisible="False" Padding="0">
+          <TextBlock Text="›" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,-3,0,0" />
+        </Button>
+        <Button Grid.Column="3" Classes="icon small" ToolTip.Tip="{l:T 'Nouvel onglet (Ctrl+T)'}" Command="{Binding NewTabCommand}">
+          <PathIcon Data="{StaticResource IconPlus}" />
+        </Button>
+      </Grid>
+
+      <!-- Lecteur + chemin -->
+      <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*,Auto" Margin="8,6,8,4">
+
+        <Border Grid.Column="1" Background="{DynamicResource ChipBackground}" CornerRadius="6" Padding="2" MinHeight="32">
+          <Panel>
+            <ScrollViewer x:Name="CrumbScroller" IsVisible="{Binding !IsEditingPath}"
+                          HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled">
+              <ItemsControl Classes="crumbs" ItemsSource="{Binding Current.Segments}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <StackPanel Orientation="Horizontal">
+                      <TextBlock Classes="sep subtle" Text="›" VerticalAlignment="Center" Margin="2,0" />
+                      <Button Content="{Binding Name}"
+                              Command="{Binding $parent[ItemsControl].DataContext.GoToSegmentCommand}"
+                              CommandParameter="{Binding}" />
+                    </StackPanel>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+            <TextBox x:Name="PathBox" IsVisible="{Binding IsEditingPath}" Text="{Binding PathInput}"
+                     BorderThickness="0" Background="Transparent" VerticalContentAlignment="Center">
+              <TextBox.KeyBindings>
+                <KeyBinding Gesture="Enter" Command="{Binding CommitEditPathCommand}" />
+                <KeyBinding Gesture="Escape" Command="{Binding CancelEditPathCommand}" />
+              </TextBox.KeyBindings>
+            </TextBox>
+          </Panel>
+        </Border>
+
+        <Button Grid.Column="2" Classes="icon small" Margin="4,0,0,0" ToolTip.Tip="{l:T 'Modifier le chemin (Ctrl+L)'}"
+                Command="{Binding BeginEditPathCommand}">
+          <PathIcon Data="{StaticResource IconEdit}" />
+        </Button>
+      </Grid>
+
+      <ProgressBar DockPanel.Dock="Top" IsIndeterminate="True" Height="2" MinHeight="2" Margin="8,0"
+                   IsVisible="{Binding Current.IsLoading}" />
+      <ProgressBar DockPanel.Dock="Top" IsIndeterminate="True" Height="2" MinHeight="2" Margin="8,0"
+                   IsVisible="{Binding Current.IsScanning}" />
+
+      <!-- Pied du panneau -->
+      <Grid DockPanel.Dock="Bottom" ColumnDefinitions="Auto,*,Auto,Auto,Auto" Margin="12,4,12,8">
+        <Border Classes="keycap" Margin="0,0,8,0" IsVisible="{Binding Current.IsFlat}" ToolTip.Tip="{l:T 'Tous les fichiers des sous-dossiers (Ctrl+B pour revenir à la liste normale)'}">
+          <TextBlock Text="{l:T 'Vue à plat'}" />
+        </Border>
+        <TextBlock Grid.Column="1" Classes="subtle" Text="{Binding Current.Summary}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+        <TextBlock Grid.Column="2" Classes="subtle" Margin="12,0,0,0" Text="{Binding Current.SelectionInfo}" VerticalAlignment="Center" />
+        <Button Grid.Column="3" Margin="12,0,0,0" Padding="8,1" MinHeight="0" Content="{l:T 'Arrêter'}" ToolTip.Tip="{l:T 'Arrêter la lecture et garder ce qui a été trouvé (Échap)'}"
+                Command="{Binding StopFlatScanCommand}" IsVisible="{Binding Current.IsScanning}" />
+        <Border Grid.Column="4" Classes="keycap" Margin="12,0,0,0" IsVisible="{Binding QuickSearch, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+          <TextBlock Text="{Binding QuickSearch, StringFormat={l:T 'Recherche : {0}'}}" />
+        </Border>
+      </Grid>
+
+      <Grid ColumnDefinitions="Auto,*">
+        <!-- Arborescence (Ctrl+F8) -->
+        <Border Grid.Column="0" Width="240" Margin="4,0,0,0" IsVisible="{Binding ShowTree}"
+                BorderBrush="{DynamicResource PanelBorder}" BorderThickness="0,0,1,0">
+          <TreeView ItemsSource="{Binding Tree.Roots}" SelectedItem="{Binding Tree.SelectedNode, Mode=TwoWay}" Background="Transparent">
+            <TreeView.Styles>
+              <Style Selector="TreeViewItem">
+                <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+                <Setter Property="MinHeight" Value="26" />
+              </Style>
+            </TreeView.Styles>
+            <TreeView.ItemTemplate>
+              <TreeDataTemplate ItemsSource="{Binding Children}">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <PathIcon Data="{StaticResource IconFolder}" Width="13" Height="13" Foreground="#F2B84B" />
+                  <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+                </StackPanel>
+              </TreeDataTemplate>
+            </TreeView.ItemTemplate>
+          </TreeView>
+        </Border>
+
+        <Panel Grid.Column="1">
+          <Panel IsVisible="{Binding !IsQuickView}">
+          <!-- Liste des fichiers : la ligne surlignée est le curseur ; les fichiers marqués sont en rouge. -->
+          <DataGrid x:Name="FileGrid" Margin="4,0" IsVisible="{Binding !Current.IsThumbnails}"
+                    ItemsSource="{Binding Current.Items}"
+                    SelectedItem="{Binding Current.CurrentItem, Mode=TwoWay}"
+                    SelectionMode="Single"
+                    IsReadOnly="True"
+                    CanUserSortColumns="True"
+                    CanUserResizeColumns="True"
+                    CanUserReorderColumns="True"
+                    GridLinesVisibility="None"
+                    HeadersVisibility="Column"
+                    RowHeight="28">
+            <DataGrid.Columns>
+              <DataGridTemplateColumn Width="32" CanUserSort="False" CanUserResize="False" CanUserReorder="False">
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate>
+                    <Panel>
+                      <PathIcon Width="16" Height="16" HorizontalAlignment="Center" IsVisible="{Binding !HasShellIcon}"
+                                Data="{Binding Category, Converter={x:Static conv:CategoryToGeometryConverter.Instance}}"
+                                Foreground="{Binding IconBrush}" />
+                      <!-- Vraie icône de Windows (Options → Affichage), image 32 px montrée en 16 : nette sur les écrans agrandis -->
+                      <Image Width="16" Height="16" HorizontalAlignment="Center" IsVisible="{Binding HasShellIcon}"
+                             Source="{Binding ShellIcon}" RenderOptions.BitmapInterpolationMode="HighQuality" />
+                    </Panel>
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
+              <DataGridTemplateColumn Header="{l:T 'Nom'}" Width="*" SortMemberPath="Name">
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate>
+                    <!-- Le Panel accueille la case du renommage ; le texte n'occupe que sa largeur, pour distinguer un clic sur le nom. -->
+                    <Panel>
+                      <TextBlock Text="{Binding DisplayName}" Classes="fileName" Classes.marked="{Binding IsMarked}" Classes.colored="{Binding HasNameColor}"
+                                 HorizontalAlignment="Left" VerticalAlignment="Center" Margin="4,0" TextTrimming="CharacterEllipsis" />
+                    </Panel>
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
+              <!-- Vue à plat seulement (Ctrl+B) -->
+              <DataGridTemplateColumn Header="{l:T 'Dossier'}" Width="200" SortMemberPath="Folder" IsVisible="False">
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate>
+                    <TextBlock Text="{Binding FolderText}" Classes.marked="{Binding IsMarked}" VerticalAlignment="Center" Margin="4,0" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding FolderText}" />
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
+              <DataGridTemplateColumn Header="Ext" Width="64" SortMemberPath="Extension">
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate>
+                    <TextBlock Text="{Binding Extension}" Classes.marked="{Binding IsMarked}" VerticalAlignment="Center" Margin="4,0" />
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
+              <DataGridTemplateColumn Header="{l:T 'Taille'}" Width="90" SortMemberPath="Size">
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate>
+                    <TextBlock Text="{Binding SizeText}" Classes.marked="{Binding IsMarked}" VerticalAlignment="Center"
+                               HorizontalAlignment="Right" Margin="4,0,8,0" />
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
+              <DataGridTemplateColumn Header="Date" Width="130" SortMemberPath="Date">
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate>
+                    <TextBlock Text="{Binding DisplayDate}" Classes.marked="{Binding IsMarked}" VerticalAlignment="Center" Margin="4,0" />
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
+              <DataGridTemplateColumn Header="{l:T 'Droits'}" Width="62" SortMemberPath="Mode" IsVisible="False">
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate>
+                    <TextBlock Text="{Binding DisplayMode}" Classes.marked="{Binding IsMarked}" VerticalAlignment="Center" Margin="4,0" FontFamily="Consolas,Menlo,monospace" TextTrimming="CharacterEllipsis" />
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
+              <DataGridTemplateColumn Header="{l:T 'Propriétaire'}" Width="100" SortMemberPath="Owner" IsVisible="False">
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate>
+                    <TextBlock Text="{Binding DisplayOwner}" Classes.marked="{Binding IsMarked}" VerticalAlignment="Center" Margin="4,0" TextTrimming="CharacterEllipsis" />
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
+              <DataGridTemplateColumn Header="{l:T 'Groupe'}" Width="90" SortMemberPath="Group" IsVisible="False">
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate>
+                    <TextBlock Text="{Binding DisplayGroup}" Classes.marked="{Binding IsMarked}" VerticalAlignment="Center" Margin="4,0" TextTrimming="CharacterEllipsis" />
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
+              <DataGridTemplateColumn Header="{l:T 'Durée'}" Width="70" SortMemberPath="MediaDuration" IsVisible="False" CanUserSort="False">
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate>
+                    <TextBlock Text="{Binding MediaDuration}" Classes.marked="{Binding IsMarked}" VerticalAlignment="Center" Margin="4,0" TextTrimming="CharacterEllipsis" />
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
+              <DataGridTemplateColumn Header="{l:T 'Résolution'}" Width="90" SortMemberPath="MediaResolution" IsVisible="False" CanUserSort="False">
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate>
+                    <TextBlock Text="{Binding MediaResolution}" Classes.marked="{Binding IsMarked}" VerticalAlignment="Center" Margin="4,0" TextTrimming="CharacterEllipsis" />
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
+              <DataGridTemplateColumn Header="Codec" Width="110" SortMemberPath="MediaVideoCodec" IsVisible="False" CanUserSort="False">
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate>
+                    <TextBlock Text="{Binding MediaVideoCodec}" Classes.marked="{Binding IsMarked}" VerticalAlignment="Center" Margin="4,0" TextTrimming="CharacterEllipsis" />
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
+              <DataGridTemplateColumn Header="{l:T 'Langues'}" Width="90" SortMemberPath="MediaAudioLanguages" IsVisible="False" CanUserSort="False">
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate>
+                    <TextBlock Text="{Binding MediaAudioLanguages}" Classes.marked="{Binding IsMarked}" VerticalAlignment="Center" Margin="4,0" TextTrimming="CharacterEllipsis" />
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
+            </DataGrid.Columns>
+          </DataGrid>
+
+          <!-- Miniatures (Ctrl+Maj+F1) : mêmes gestes que la liste -->
+          <Grid ColumnDefinitions="*,Auto" Margin="4,0" IsVisible="{Binding Current.IsThumbnails}">
+            <views:ThumbnailView x:Name="ThumbList" />
+            <ScrollBar x:Name="ThumbBar" Grid.Column="1" AllowAutoHide="False" />
+          </Grid>
+          </Panel>
+
+          <!-- Vue rapide (Ctrl+Q) : aperçu de l'élément sous le curseur de l'autre panneau -->
+          <Border IsVisible="{Binding IsQuickView}" Padding="8">
+            <views:ViewerControl DataContext="{Binding QuickView}" />
+          </Border>
+        </Panel>
+      </Grid>
+    </DockPanel>
+  </Border>
+</UserControl>

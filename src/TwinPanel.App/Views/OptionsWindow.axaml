@@ -1,0 +1,403 @@
+<!-- TwinPanel — © 2026 Georges Christophe (chrypox). Tous droits réservés.
+     Licence TwinPanel 1.0 (gratuit, non commercial, sans modification) : voir le fichier LICENSE. -->
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:l="using:TwinPanel.App.Views"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:TwinPanel.App.ViewModels"
+        xmlns:views="using:TwinPanel.App.Views"
+        x:Class="TwinPanel.App.Views.OptionsWindow"
+        x:DataType="vm:OptionsViewModel"
+        Title="Options" Width="1060" Height="720" MinWidth="820" MinHeight="540"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Background="{DynamicResource AppBackground}">
+  <Window.Styles>
+    <Style Selector="TextBlock.h">
+      <Setter Property="FontSize" Value="18" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Margin" Value="0,0,0,8" />
+    </Style>
+    <Style Selector="TextBlock.label">
+      <Setter Property="Foreground" Value="{DynamicResource SubtleText}" />
+      <Setter Property="Margin" Value="0,10,0,3" />
+    </Style>
+    <Style Selector="Border.swatch">
+      <Setter Property="Width" Value="22" />
+      <Setter Property="Height" Value="22" />
+      <Setter Property="CornerRadius" Value="11" />
+      <Setter Property="BorderBrush" Value="{DynamicResource PanelBorder}" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
+  </Window.Styles>
+
+  <DockPanel Margin="12">
+    <Grid DockPanel.Dock="Bottom" ColumnDefinitions="*,Auto" Margin="0,12,0,0">
+      <SelectableTextBlock Text="{Binding Message}" TextWrapping="Wrap" VerticalAlignment="Center" Foreground="{DynamicResource SystemControlHighlightAccentBrush}" />
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+        <Button x:Name="OkButton" Content="OK" Classes="accent" MinWidth="100" IsDefault="True" />
+        <Button x:Name="CancelButton" Content="{l:T 'Annuler'}" MinWidth="90" IsCancel="True" />
+      </StackPanel>
+    </Grid>
+
+    <TabControl TabStripPlacement="Left" SelectedIndex="{Binding SelectedPage}">
+      <!-- ============ Affichage ============ -->
+      <TabItem Header="{l:T 'Affichage'}">
+        <ScrollViewer>
+          <StackPanel Margin="16,0" MaxWidth="640" HorizontalAlignment="Left">
+            <TextBlock Classes="h" Text="{l:T 'Affichage'}" />
+            <TextBlock Classes="label" Text="{l:T 'Langue'}" />
+            <ComboBox ItemsSource="{x:Static vm:OptionsViewModel.Languages}" SelectedItem="{Binding Language}" MinWidth="260" />
+            <TextBlock Classes="label" Text="{l:T 'Thème'}" />
+            <ComboBox ItemsSource="{x:Static vm:OptionsViewModel.Themes}" SelectedItem="{Binding Theme}" MinWidth="260" />
+            <Grid ColumnDefinitions="*,12,140">
+              <StackPanel>
+                <TextBlock Classes="label" Text="{l:T 'Police (vide : Inter, celle de TwinPanel)'}" />
+                <AutoCompleteBox Text="{Binding FontFamily}" ItemsSource="{Binding Fonts}" FilterMode="Contains" MinimumPrefixLength="0" />
+              </StackPanel>
+              <StackPanel Grid.Column="2">
+                <TextBlock Classes="label" Text="{l:T 'Taille'}" />
+                <NumericUpDown Value="{Binding FontSize}" Minimum="9" Maximum="28" Increment="1" FormatString="0" />
+              </StackPanel>
+            </Grid>
+            <TextBlock Classes="label" Text="{l:T 'Hauteur des lignes des panneaux'}" />
+            <ComboBox ItemsSource="{x:Static vm:OptionsViewModel.RowHeights}" SelectedItem="{Binding RowHeight}" MinWidth="260" />
+            <TextBlock Classes="label" Text="{l:T 'Colonnes affichées (le nom l\'est toujours)'}" />
+            <WrapPanel>
+              <CheckBox Content="Extension" IsChecked="{Binding ShowExtensionColumn}" Margin="0,0,16,0" />
+              <CheckBox Content="{l:T 'Taille'}" IsChecked="{Binding ShowSizeColumn}" Margin="0,0,16,0" />
+              <CheckBox Content="Date" IsChecked="{Binding ShowDateColumn}" Margin="0,0,16,0" />
+              <CheckBox Content="{l:T 'Droits (755)'}" IsChecked="{Binding ShowModeColumn}" Margin="0,0,16,0" />
+              <CheckBox Content="{l:T 'Propriétaire'}" IsChecked="{Binding ShowOwnerColumn}" Margin="0,0,16,0" />
+              <CheckBox Content="{l:T 'Groupe'}" IsChecked="{Binding ShowGroupColumn}" Margin="0,0,16,0" />
+            </WrapPanel>
+            <WrapPanel Margin="0,6,0,0">
+              <CheckBox Content="{l:T 'Durée'}" IsChecked="{Binding ShowDurationColumn}" Margin="0,0,16,0" />
+              <CheckBox Content="{l:T 'Résolution'}" IsChecked="{Binding ShowResolutionColumn}" Margin="0,0,16,0" />
+              <CheckBox Content="{l:T 'Codec vidéo / HDR'}" IsChecked="{Binding ShowVideoCodecColumn}" Margin="0,0,16,0" />
+              <CheckBox Content="{l:T 'Langues audio'}" IsChecked="{Binding ShowAudioLanguagesColumn}" Margin="0,0,16,0" />
+            </WrapPanel>
+            <CheckBox Content="{l:T 'Taille des dossiers (calcul automatique en arrière-plan, PC et serveurs)'}" IsChecked="{Binding ShowFolderSizes}" Margin="0,6,0,0" />
+            <CheckBox Content="{l:T 'Vraies icônes de Windows (celles de l\'Explorateur) au lieu des icônes colorées'}" IsChecked="{Binding UseShellIcons}" Margin="0,6,0,0" />
+            <TextBlock Classes="subtle" TextWrapping="Wrap" Margin="0,2,0,0"
+                       Text="{l:T 'Ordre des colonnes : glisser un titre (Nom, Ext, Taille…) à la souris ; clic droit sur les titres pour revenir à l\'ordre par défaut.'}" />
+            <TextBlock Classes="label" Text="{l:T 'Beaucoup d\'onglets'}" />
+            <ComboBox ItemsSource="{x:Static vm:OptionsViewModel.TabRowModes}" SelectedItem="{Binding TabRows}" MinWidth="360" />
+            <TextBlock Classes="label" Text="Navigation" />
+            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,2,0,0">
+              <TextBlock Text="{l:T 'Dossiers retenus dans l\'historique'}" VerticalAlignment="Center" MinWidth="300" />
+              <NumericUpDown Value="{Binding RecentFoldersCount}" Minimum="5" Maximum="200" Increment="5" FormatString="0" Width="140" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,6,0,0">
+              <TextBlock Text="{l:T 'Vue à plat : s\'arrêter après (fichiers)'}" VerticalAlignment="Center" MinWidth="300" />
+              <NumericUpDown Value="{Binding FlatViewLimit}" Minimum="1000" Maximum="2000000" Increment="50000" FormatString="0" Width="140" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,6,0,0">
+              <TextBlock Text="{l:T 'Taille des miniatures'}" VerticalAlignment="Center" MinWidth="300" />
+              <ComboBox ItemsSource="{x:Static vm:OptionsViewModel.ThumbnailSizes}" SelectedItem="{Binding ThumbnailSize}" Width="140" />
+            </StackPanel>
+            <CheckBox Content="{l:T 'Miniatures des images sur les serveurs (les images sont téléchargées)'}" IsChecked="{Binding ThumbnailsOnServers}" Margin="0,6,0,0" />
+            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,6,0,0" IsEnabled="{Binding ThumbnailsOnServers}">
+              <TextBlock Text="{l:T 'Poids maximum d\'une image sur un serveur (Mo)'}" VerticalAlignment="Center" MinWidth="300" />
+              <NumericUpDown Value="{Binding ThumbnailMaxServerMb}" Minimum="1" Maximum="200" Increment="5" FormatString="0" Width="140" />
+            </StackPanel>
+            <TextBlock Classes="label" Text="{l:T 'Outils médias (facultatifs, non fournis avec TwinPanel)'}" />
+            <TextBlock Classes="subtle" TextWrapping="Wrap" Text="{l:T 'mkvpropedit (MKVToolNix) : langues et noms des pistes des MKV. exiftool : écriture de l\'EXIF des photos. Vide : recherche automatique.'}" />
+            <Grid ColumnDefinitions="130,*,Auto" Margin="0,6,0,0">
+              <TextBlock Text="mkvpropedit" VerticalAlignment="Center" />
+              <TextBox Grid.Column="1" Text="{Binding MkvPropEditPath}" PlaceholderText="C:\Program Files\MKVToolNix\mkvpropedit.exe" />
+              <Button Grid.Column="2" Content="{l:T 'Parcourir…'}" Margin="6,0,0,0" Command="{Binding BrowseMkvPropEditCommand}" />
+            </Grid>
+            <TextBlock Classes="subtle" Text="{Binding MkvPropEditFound}" TextWrapping="Wrap" Margin="130,2,0,0" />
+            <HyperlinkButton Margin="130,0,0,0" Padding="0" IsVisible="{Binding MkvPropEditMissing}" Content="{Binding MkvToolNixUrl}"
+                             Command="{Binding OpenLinkCommand}" CommandParameter="{Binding MkvToolNixUrl}" />
+            <Grid ColumnDefinitions="130,*,Auto" Margin="0,6,0,0">
+              <TextBlock Text="exiftool" VerticalAlignment="Center" />
+              <TextBox Grid.Column="1" Text="{Binding ExifToolPath}" PlaceholderText="C:\Program Files\ExifTool\exiftool.exe" />
+              <Button Grid.Column="2" Content="{l:T 'Parcourir…'}" Margin="6,0,0,0" Command="{Binding BrowseExifToolCommand}" />
+            </Grid>
+            <TextBlock Classes="subtle" Text="{Binding ExifToolFound}" TextWrapping="Wrap" Margin="130,2,0,0" />
+            <HyperlinkButton Margin="130,0,0,0" Padding="0" IsVisible="{Binding ExifToolMissing}" Content="{Binding ExifToolUrl}"
+                             Command="{Binding OpenLinkCommand}" CommandParameter="{Binding ExifToolUrl}" />
+            <TextBlock Classes="subtle" TextWrapping="Wrap" Margin="0,4,0,0"
+                       Text="{l:T 'Aussi par un clic droit sur les titres des colonnes. Droits et groupe : serveurs SFTP / SCP / FTP et Linux ; sous Windows, seul le propriétaire est affiché.'}" />
+            <TextBlock Classes="label" Text="{l:T 'Propriétaire et groupe : afficher'}" />
+            <ComboBox ItemsSource="{x:Static vm:OptionsViewModel.OwnerDisplays}" SelectedItem="{Binding OwnerDisplay}" MinWidth="260" />
+            <TextBlock Classes="label" Text="{l:T 'Format des dates'}" />
+            <AutoCompleteBox Text="{Binding DateFormat}" ItemsSource="{x:Static vm:OptionsViewModel.DateFormats}" MinimumPrefixLength="0" FilterMode="None" />
+            <TextBlock Classes="subtle" Text="{Binding DatePreview}" Margin="0,4,0,0" />
+            <TextBlock Classes="label" Text="{l:T 'Format des tailles'}" />
+            <ComboBox ItemsSource="{x:Static vm:OptionsViewModel.SizeDisplays}" SelectedItem="{Binding SizeDisplay}" MinWidth="260" />
+            <CheckBox Content="{l:T 'Barre des lecteurs au-dessus des panneaux (disques et connexions)'}" IsChecked="{Binding ShowDriveBar}" Margin="0,14,0,0" />
+            <CheckBox Content="{l:T 'Afficher les fichiers cachés'}" IsChecked="{Binding ShowHidden}" Margin="0,8,0,0" />
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <!-- ============ Couleurs ============ -->
+      <TabItem Header="{l:T 'Couleurs'}">
+        <ScrollViewer>
+          <StackPanel Margin="16,0" MaxWidth="700" HorizontalAlignment="Left">
+            <TextBlock Classes="h" Text="{l:T 'Couleurs des fichiers'}" />
+            <CheckBox Content="{l:T 'Colorer aussi le nom des fichiers (sinon seulement l\'icône)'}" IsChecked="{Binding ColorNames}" />
+            <TextBlock Classes="label" Text="{l:T 'Par type (clic sur la couleur : palette, roue chromatique ou code #RRGGBB)'}" />
+            <ItemsControl ItemsSource="{Binding CategoryColors}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:CategoryColorRow">
+                  <Grid ColumnDefinitions="160,30,Auto,8,Auto" Margin="0,2">
+                    <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
+                    <Border Grid.Column="1" Classes="swatch" Background="{Binding Brush}" ToolTip.Tip="{l:T 'Couleur affichée'}" />
+                    <views:ColorPickButton Grid.Column="2" Hex="{Binding Hex}" EmptyText="{l:T '(défaut)'}" />
+                    <Button Grid.Column="4" Content="{l:T 'Défaut'}" Command="{Binding ResetCommand}" />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Classes="label" Text="{l:T 'Règles par masque (prioritaires sur les types), ex. *.log;*.tmp en gris'}" />
+            <ListBox ItemsSource="{Binding ColorRules}" SelectedItem="{Binding SelectedColorRule}" MaxHeight="220">
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:ColorRuleRow">
+                  <Grid ColumnDefinitions="*,8,Auto">
+                    <TextBox Text="{Binding Mask}" PlaceholderText="*.log;*.tmp" />
+                    <views:ColorPickButton Grid.Column="2" Hex="{Binding Hex}" EmptyText="{l:T '(aucune)'}" />
+                  </Grid>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,6,0,0">
+              <Button Content="{l:T 'Ajouter une règle'}" Command="{Binding AddColorRuleCommand}" />
+              <Button Content="{l:T 'Supprimer la règle'}" Command="{Binding RemoveColorRuleCommand}" />
+            </StackPanel>
+
+            <TextBlock Classes="h" Text="{l:T 'Icônes de la barre des lecteurs'}" Margin="0,22,0,8" />
+            <CheckBox Content="{l:T 'Choisir les couleurs des icônes des disques et des connexions (sinon : couleurs d\'origine)'}" IsChecked="{Binding CustomDriveColors}" />
+            <StackPanel IsEnabled="{Binding CustomDriveColors}">
+              <TextBlock Classes="label" Text="{l:T 'Par type de lecteur (vide : couleur d\'origine)'}" />
+              <ItemsControl ItemsSource="{Binding DriveTypeColors}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:DriveColorRow">
+                    <Grid ColumnDefinitions="200,Auto,8,Auto" Margin="0,2">
+                      <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
+                      <views:ColorPickButton Grid.Column="1" Hex="{Binding Hex}" EmptyText="{l:T '(d\'origine)'}" />
+                      <Button Grid.Column="3" Content="{l:T 'D\'origine'}" Command="{Binding ResetCommand}" />
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <TextBlock Classes="label" Text="{l:T 'Pour un disque précis (prioritaire sur son type)'}" />
+              <ItemsControl ItemsSource="{Binding DriveColors}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:DriveColorRow">
+                    <Grid ColumnDefinitions="200,Auto,8,Auto" Margin="0,2">
+                      <TextBlock Text="{Binding Label}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                      <views:ColorPickButton Grid.Column="1" Hex="{Binding Hex}" EmptyText="{l:T '(celle du type)'}" />
+                      <Button Grid.Column="3" Content="{l:T 'Retirer'}" Command="{Binding ResetCommand}" />
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <!-- ============ Comportement ============ -->
+      <TabItem Header="{l:T 'Comportement'}">
+        <StackPanel Margin="16,0" Spacing="10" MaxWidth="640" HorizontalAlignment="Left">
+          <TextBlock Classes="h" Text="{l:T 'Comportement'}" />
+          <CheckBox Content="{l:T 'F8 envoie à la corbeille de Windows (sinon suppression définitive)'}" IsChecked="{Binding UseRecycleBin}" />
+          <CheckBox Content="{l:T 'Demander confirmation avant d\'envoyer à la corbeille'}" IsChecked="{Binding ConfirmDelete}" />
+          <TextBlock Classes="subtle" TextWrapping="Wrap" Text="{l:T 'Une suppression définitive (sans corbeille, ou sur un serveur) est toujours confirmée.'}" />
+          <CheckBox Content="{l:T 'Entrée sur une archive l\'ouvre comme un dossier (sinon : application associée)'}" IsChecked="{Binding OpenArchivesWithEnter}" />
+          <CheckBox Content="{l:T 'Demander confirmation avant de quitter si des copies sont en cours'}" IsChecked="{Binding ConfirmExitWithJobs}" />
+          <CheckBox Content="{l:T 'Fichier d\'un serveur ouvert puis enregistré : le renvoyer sur le serveur sans demander'}" IsChecked="{Binding AutoReUpload}" />
+          <CheckBox Content="{l:T 'Cliquer sur le nom du fichier déjà sélectionné permet de le renommer'}" IsChecked="{Binding ClickToRename}" />
+          <CheckBox Content="{l:T 'Afficher une astuce au démarrage'}" IsChecked="{Binding ShowTips}" />
+          <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,6,0,0">
+            <TextBlock Text="{l:T 'Rafraîchir le dossier affiché sur un serveur toutes les (secondes, 0 : jamais)'}" VerticalAlignment="Center" />
+            <NumericUpDown Value="{Binding RemoteRefreshSeconds}" Minimum="0" Maximum="3600" Increment="5" FormatString="0" Width="120" />
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,6,0,0">
+            <TextBlock Text="{l:T 'Tentatives après une coupure pendant un transfert (0 : aucune)'}" VerticalAlignment="Center" />
+            <NumericUpDown Value="{Binding TransferRetries}" Minimum="0" Maximum="10" Increment="1" FormatString="0" Width="120" />
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,6,0,0">
+            <TextBlock Text="{l:T 'Transferts en même temps (les suivants attendent leur tour)'}" VerticalAlignment="Center" />
+            <NumericUpDown Value="{Binding MaxTransfers}" Minimum="1" Maximum="8" Increment="1" FormatString="0" Width="120" />
+          </StackPanel>
+          <TextBlock Classes="subtle" TextWrapping="Wrap" Text="{l:T 'Décoché : TwinPanel demande à chaque enregistrement (F4, Entrée, double-clic). Le fichier est modifié dans une copie temporaire du PC, puis renvoyé sur le serveur.'}" />
+        </StackPanel>
+      </TabItem>
+
+      <!-- ============ Démarrage ============ -->
+      <TabItem Header="{l:T 'Démarrage'}">
+        <StackPanel Margin="16,0" MaxWidth="640" HorizontalAlignment="Left">
+          <TextBlock Classes="h" Text="{l:T 'Au démarrage'}" />
+          <!-- Case à cocher et non boutons ronds : un groupe de boutons ronds nommé est partagé par toutes les fenêtres
+               dans Avalonia ; à la 2e ouverture, l'ancienne et la nouvelle fenêtre se décochaient sans fin (blocage). -->
+          <CheckBox Content="{l:T 'Rouvrir les onglets de la dernière fois'}" IsChecked="{Binding RestoreTabs}" />
+          <StackPanel IsEnabled="{Binding RestoreTabs}" Margin="28,6,0,0">
+            <TextBlock Classes="label" Text="{l:T 'Onglets qui étaient ouverts sur un serveur (SFTP, FTP, WebDAV…)'}" />
+            <ComboBox ItemsSource="{x:Static vm:OptionsViewModel.RemoteTabChoices}" SelectedItem="{Binding RemoteTabs}" MinWidth="340" />
+            <TextBlock Classes="subtle" TextWrapping="Wrap" Margin="0,4,0,0"
+                       Text="{l:T 'La reconnexion demande le mot de passe s\'il n\'est pas enregistré dans le coffre. Les connexions rapides non enregistrées ne sont pas rouvertes.'}" />
+          </StackPanel>
+          <TextBlock Classes="subtle" Text="{l:T 'Sinon, ouvrir toujours ces dossiers :'}" Margin="0,8,0,0" />
+          <StackPanel IsEnabled="{Binding !RestoreTabs}" Margin="28,0,0,0">
+            <TextBlock Classes="label" Text="{l:T 'Panneau gauche'}" />
+            <Grid ColumnDefinitions="*,6,Auto">
+              <TextBox Text="{Binding LeftPath}" PlaceholderText="{l:T '(dossier personnel)'}" />
+              <Button Grid.Column="2" Content="{l:T 'Parcourir…'}" Command="{Binding BrowseStartupCommand}" CommandParameter="Left" />
+            </Grid>
+            <TextBlock Classes="label" Text="{l:T 'Panneau droit'}" />
+            <Grid ColumnDefinitions="*,6,Auto">
+              <TextBox Text="{Binding RightPath}" PlaceholderText="{l:T '(dossier personnel)'}" />
+              <Button Grid.Column="2" Content="{l:T 'Parcourir…'}" Command="{Binding BrowseStartupCommand}" CommandParameter="Right" />
+            </Grid>
+          </StackPanel>
+        </StackPanel>
+      </TabItem>
+
+      <!-- ============ Raccourcis ============ -->
+      <TabItem Header="{l:T 'Raccourcis'}">
+        <DockPanel Margin="16,0">
+          <TextBlock DockPanel.Dock="Top" Classes="h" Text="{l:T 'Raccourcis clavier'}" />
+          <TextBlock DockPanel.Dock="Top" Classes="subtle" TextWrapping="Wrap" Margin="0,0,0,8"
+                     Text="{l:T 'Clique dans la case d\'un raccourci puis appuie sur la combinaison voulue (ex. Ctrl+Maj+O). Suppr ou Retour arrière : aucun raccourci.'}" />
+          <Grid DockPanel.Dock="Top" ColumnDefinitions="*,8,Auto" Margin="0,0,0,8">
+            <TextBox Text="{Binding ShortcutFilter}" PlaceholderText="{l:T 'Rechercher une commande ou une touche'}" />
+            <Button Grid.Column="2" Content="{l:T 'Tout remettre par défaut'}" Command="{Binding ResetAllShortcutsCommand}" />
+          </Grid>
+          <Expander DockPanel.Dock="Bottom" Header="{l:T 'Touches fixes (non modifiables)'}" Margin="0,8,0,0">
+            <ItemsControl ItemsSource="{Binding FixedKeys}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="x:String"><TextBlock Text="{Binding}" Classes="subtle" /></DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </Expander>
+          <TextBlock DockPanel.Dock="Bottom" Text="{Binding ConflictSummary}" Foreground="#E5534B" TextWrapping="Wrap" Margin="0,6,0,0"
+                     IsVisible="{Binding ConflictSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+          <Border Background="{DynamicResource PanelBackground}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1" CornerRadius="8" ClipToBounds="True">
+            <ListBox ItemsSource="{Binding VisibleShortcuts}" Background="Transparent">
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:ShortcutRow">
+                  <Grid ColumnDefinitions="110,*,200,Auto,Auto">
+                    <TextBlock Text="{Binding Category}" Classes="subtle" VerticalAlignment="Center" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                      <TextBlock Text="{Binding Label}" FontWeight="SemiBold" />
+                      <TextBlock Text="{Binding Conflict}" Foreground="#E5534B" FontSize="11"
+                                 IsVisible="{Binding Conflict, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                    </StackPanel>
+                    <TextBox Grid.Column="2" Tag="shortcut" Text="{Binding DisplayGestures, Mode=OneWay}" IsReadOnly="True"
+                             ToolTip.Tip="{Binding DefaultText, StringFormat={l:T 'Par défaut : {0}'}}" Margin="4,0" />
+                    <Button Grid.Column="3" Content="{l:T 'Défaut'}" Command="{Binding ResetDefaultCommand}" IsVisible="{Binding IsChanged}" Margin="2,0" />
+                    <Button Grid.Column="4" Content="{l:T 'Aucun'}" Command="{Binding ClearCommand}" Margin="2,0" />
+                  </Grid>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+          </Border>
+        </DockPanel>
+      </TabItem>
+
+      <!-- ============ Barre de boutons ============ -->
+      <TabItem Header="{l:T 'Barre de boutons'}">
+        <DockPanel Margin="16,0">
+          <TextBlock DockPanel.Dock="Top" Classes="h" Text="{l:T 'Barre de boutons'}" />
+          <TextBlock DockPanel.Dock="Top" Classes="subtle" TextWrapping="Wrap" Margin="0,0,0,8"
+                     Text="{l:T 'Tes propres boutons, sous la barre d\'outils : programmes (avec les fichiers sélectionnés), dossiers, ou commandes de TwinPanel.'}" />
+          <views:CustomCommandEditor DataContext="{Binding ButtonBar}" />
+        </DockPanel>
+      </TabItem>
+
+      <!-- ============ Menu Démarrer ============ -->
+      <TabItem Header="{l:T 'Menu Démarrer'}">
+        <DockPanel Margin="16,0">
+          <TextBlock DockPanel.Dock="Top" Classes="h" Text="{l:T 'Menu Démarrer'}" />
+          <TextBlock DockPanel.Dock="Top" Classes="subtle" TextWrapping="Wrap" Margin="0,0,0,8"
+                     Text="{l:T 'Ton menu de programmes, dossiers et commandes favoris (bouton « Démarrer » de la barre d\'outils). Le champ « Sous-menu » range les lignes en groupes.'}" />
+          <views:CustomCommandEditor DataContext="{Binding StartMenu}" />
+        </DockPanel>
+      </TabItem>
+
+      <!-- ============ Éditeurs ============ -->
+      <TabItem Header="{l:T 'Éditeurs'}">
+        <DockPanel Margin="16,0">
+          <TextBlock DockPanel.Dock="Top" Classes="h" Text="{l:T 'Éditeur selon l\'extension (F4)'}" />
+          <TextBlock DockPanel.Dock="Top" TextWrapping="Wrap" Margin="0,0,0,8">
+            <Run Text="{l:T 'Pour les autres fichiers : '}" /><Run Text="{Binding GeneralEditor}" FontWeight="SemiBold" />
+            <Run Text="{l:T ' (Outils → Éditeur et visionneuse). La première règle qui correspond gagne.'}" />
+          </TextBlock>
+          <StackPanel DockPanel.Dock="Bottom" Margin="0,8,0,0" IsVisible="{Binding SelectedEditorRule, Converter={x:Static ObjectConverters.IsNotNull}}">
+            <Grid ColumnDefinitions="*,12,*" DataContext="{Binding SelectedEditorRule}" x:DataType="vm:EditorRuleRow">
+              <StackPanel>
+                <TextBlock Classes="label" Text="{l:T 'Extensions (séparées par ;)'}" />
+                <TextBox Text="{Binding Extensions}" PlaceholderText="py;js;ts" />
+              </StackPanel>
+              <StackPanel Grid.Column="2">
+                <TextBlock Classes="label" Text="{l:T 'Nom'}" />
+                <TextBox Text="{Binding Name}" />
+              </StackPanel>
+            </Grid>
+            <TextBlock Classes="label" Text="{l:T 'Programme'}" />
+            <Grid ColumnDefinitions="*,6,Auto,6,Auto">
+              <TextBox Text="{Binding SelectedEditorRule.Path}" PlaceholderText="{l:T 'C:\\…\\codium.exe'}" />
+              <Button Grid.Column="2" Content="{l:T 'Parcourir…'}" Command="{Binding BrowseEditorRuleCommand}" />
+              <Button Grid.Column="4" Content="{l:T 'Éditeur intégré'}" Command="{Binding UseInternalEditorForRuleCommand}" />
+            </Grid>
+            <TextBlock Classes="label" Text="{l:T 'Paramètres (%1 fichier, %L ligne)'}" />
+            <TextBox Text="{Binding SelectedEditorRule.Arguments}" />
+          </StackPanel>
+          <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+            <Button Content="{l:T 'Ajouter une règle'}" Classes="accent" Command="{Binding AddEditorRuleCommand}" />
+            <Button Content="{l:T 'Supprimer la règle'}" Command="{Binding RemoveEditorRuleCommand}" />
+          </StackPanel>
+          <Border Background="{DynamicResource PanelBackground}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1" CornerRadius="8" ClipToBounds="True">
+            <ListBox ItemsSource="{Binding EditorRules}" SelectedItem="{Binding SelectedEditorRule}" Background="Transparent">
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:EditorRuleRow">
+                  <StackPanel Orientation="Horizontal" Spacing="12">
+                    <TextBlock Text="{Binding Extensions}" FontWeight="SemiBold" MinWidth="140" />
+                    <TextBlock Text="{Binding Name}" Classes="subtle" />
+                  </StackPanel>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+          </Border>
+        </DockPanel>
+      </TabItem>
+
+      <!-- ============ Terminal ============ -->
+      <TabItem Header="Terminal">
+        <StackPanel Margin="16,0" MaxWidth="640" HorizontalAlignment="Left">
+          <TextBlock Classes="h" Text="{l:T 'Ouvrir un terminal ici (Ctrl+Maj+T)'}" />
+          <TextBlock TextWrapping="Wrap" Text="{l:T 'Ouvre un terminal dans le dossier du panneau actif. Sur un serveur SFTP / SCP, ouvre une session ssh vers lui (authentification par OpenSSH et ses propres clés).'}" />
+          <TextBlock Classes="label" Text="Terminal" />
+          <ComboBox ItemsSource="{x:Static vm:OptionsViewModel.TerminalKinds}" SelectedItem="{Binding TerminalKind}" HorizontalAlignment="Stretch" />
+          <TextBlock Classes="subtle" Text="{Binding ResolvedTerminal}" Margin="0,4,0,0" />
+          <StackPanel IsVisible="{Binding IsCustomTerminal}">
+            <TextBlock Classes="label" Text="{l:T 'Programme'}" />
+            <Grid ColumnDefinitions="*,6,Auto">
+              <TextBox Text="{Binding TerminalPath}" />
+              <Button Grid.Column="2" Content="{l:T 'Parcourir…'}" Command="{Binding BrowseTerminalCommand}" />
+            </Grid>
+            <TextBlock Classes="label" Text="{l:T 'Paramètres (%P = dossier)'}" />
+            <TextBox Text="{Binding TerminalArguments}" />
+          </StackPanel>
+        </StackPanel>
+      </TabItem>
+
+      <!-- ============ Sauvegarde ============ -->
+      <TabItem Header="{l:T 'Sauvegarde'}">
+        <StackPanel Margin="16,0" MaxWidth="640" HorizontalAlignment="Left" Spacing="10">
+          <TextBlock Classes="h" Text="{l:T 'Sauvegarder / restaurer les réglages'}" />
+          <TextBlock TextWrapping="Wrap" Text="{l:T 'Un seul fichier avec tous les réglages : apparence, raccourcis, boutons, menu, éditeurs, favoris… Pour un autre PC ou après une réinstallation.'}" />
+          <CheckBox Content="{l:T 'Inclure la liste des connexions (jamais les mots de passe ni les clés privées)'}" IsChecked="{Binding BackupIncludesConnections}" />
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Content="{l:T 'Sauvegarder…'}" Classes="accent" Command="{Binding ExportBackupCommand}" />
+            <Button Content="{l:T 'Restaurer…'}" Command="{Binding ImportBackupCommand}" />
+          </StackPanel>
+          <TextBlock Classes="subtle" TextWrapping="Wrap" Text="{l:T 'Restaurer remplace les réglages affichés ici ; ils ne sont appliqués qu\'avec « OK ». Les connexions de la sauvegarde absentes d\'ici peuvent être ajoutées (sans mots de passe).'}" />
+        </StackPanel>
+      </TabItem>
+    </TabControl>
+  </DockPanel>
+</Window>

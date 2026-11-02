@@ -1,0 +1,13 @@
+<!-- TwinPanel — © 2026 Georges Christophe (chrypox). Tous droits réservés.
+     Licence TwinPanel 1.0 (gratuit, non commercial, sans modification) : voir le fichier LICENSE. -->
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:TwinPanel.App.ViewModels"
+        xmlns:views="using:TwinPanel.App.Views"
+        x:Class="TwinPanel.App.Views.ViewerWindow"
+        x:DataType="vm:ViewerViewModel"
+        Title="{Binding Title}" Width="1100" Height="760" MinWidth="500" MinHeight="300"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource AppBackground}">
+  <views:ViewerControl x:Name="Viewer" Margin="12" />
+</Window>

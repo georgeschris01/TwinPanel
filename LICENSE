@@ -1,0 +1,92 @@
+﻿======================================================================
+CONTRAT DE LICENCE DU LOGICIEL : TwinPanel (« Licence TwinPanel 1.0 »)
+AUTEUR ET PROPRIÉTAIRE : Georges Christophe (chrypox)
+Copyright (c) 2026 Georges Christophe. Tous droits réservés.
+Contact : admin@chrypox.be
+======================================================================
+
+Ce logiciel est un projet personnel partagé pour être utile à la communauté.
+En accédant au code source, en le téléchargeant ou en utilisant le logiciel,
+vous acceptez de vous conformer strictement aux conditions suivantes :
+
+1. GRATUITÉ ET NON-COMMERCIALISATION : Ce logiciel est strictement gratuit.
+   Il ne peut être vendu, loué, monétisé ou intégré dans une offre
+   commerciale sous aucune forme, directe ou indirecte.
+   Toute personne, association, administration ou entreprise peut
+   l'utiliser gratuitement, y compris pour son travail et en interne,
+   à condition de ne pas le revendre, le louer, le facturer ni l'intégrer
+   dans un produit ou un service payant.
+
+2. PARTAGE DU LOGICIEL : Le logiciel peut être partagé gratuitement, dans
+   sa version d'origine publiée par l'auteur, complet et non modifié,
+   accompagné du présent contrat, sans retirer ni masquer le nom de
+   l'auteur et les mentions de licence.
+
+3. MODIFICATIONS : L'auteur conserve l'exclusivité du droit de modification
+   du logiciel officiel. Chacun peut modifier le code pour son propre usage
+   (personnel ou interne), mais il est interdit de distribuer, publier ou
+   partager une version modifiée, en tout ou en partie, et de diffuser
+   des œuvres dérivées.
+
+4. COPIE ET RÉUTILISATION DU CODE : Le code source est rendu public pour
+   consultation, transparence et apprentissage, et pour les modifications
+   personnelles prévues à l'article 3. Il est strictement interdit de
+   copier, d'extraire ou de réutiliser tout ou partie de ce code dans un
+   autre projet logiciel.
+
+5. PLUGINS : Il est permis de créer et de partager des plugins (modules
+   complémentaires) qui fonctionnent avec TwinPanel par les moyens prévus
+   à cet effet, à condition que :
+   a) ils soient gratuits : aucune vente, location, abonnement ni
+      contrepartie obligatoire ;
+   b) ils ne contiennent pas de code de TwinPanel, en dehors des
+      interfaces et exemples publiés par l'auteur pour les plugins ;
+   c) ils ne se présentent pas comme une partie officielle de TwinPanel.
+   Le créateur d'un plugin reste propriétaire de son plugin.
+
+6. PROPOSER UNE CORRECTION (BUG OU AMÉLIORATION) : Le code source étant
+   protégé contre les modifications directes, vous ne pouvez pas modifier
+   les fichiers du projet. Si vous avez trouvé une erreur et savez comment
+   la corriger :
+   1. Ouvrez une « Issue » (ticket) : expliquez le problème constaté.
+   2. Proposez votre correction : dans la description du ticket, partagez
+      votre bout de code corrigé ou expliquez la modification à faire.
+   3. Validation et intégration : l'auteur analyse la proposition et, si
+      elle est validée, l'intègre lui-même dans le code source officiel.
+   En proposant une correction, vous acceptez qu'elle soit intégrée au
+   projet sous le présent contrat et ses restrictions. Vous serez crédité
+   dans la liste des contributeurs.
+
+7. COMPOSANTS D'AUTRES DÉVELOPPEURS : Le présent contrat s'applique au code
+   de TwinPanel uniquement. Les bibliothèques d'autres développeurs livrées
+   avec le logiciel restent sous leur propre licence ; leur liste figure
+   dans « À propos » → « Bibliothèques utilisées » et dans le fichier
+   THIRD-PARTY-NOTICES.md.
+
+8. RESPECT DES DROITS D'AUTRUI : L'auteur veille à ce que TwinPanel
+   respecte les droits des autres développeurs. Si vous estimez que tout
+   ou partie du logiciel reprend du code, une image ou un autre élément
+   protégé sans respecter sa licence ou vos droits, contactez l'auteur
+   à l'adresse admin@chrypox.be, en précisant l'élément concerné et
+   la licence ou le droit en cause. L'auteur s'engage à examiner chaque
+   demande de bonne foi et, si elle est fondée, à corriger la situation
+   dans les meilleurs délais : ajout de la mention due, remplacement ou
+   retrait de l'élément.
+
+9. ABSENCE DE GARANTIE : Le logiciel est fourni « tel quel », sans garantie
+   d'aucune sorte. Dans les limites permises par la loi, l'auteur ne peut
+   être tenu responsable des dommages ou pertes de données liés à son
+   utilisation.
+
+10. FIN DES DROITS : En cas de non-respect du présent contrat, les droits
+    accordés prennent fin automatiquement.
+
+11. DROIT APPLICABLE : Le présent contrat est soumis au droit belge.
+
+----------------------------------------------------------------------
+SIGNALÉTIQUE :
+----------------------------------------------------------------------
+Le symbole « Licence TwinPanel » (gratuit · non commercial · sans
+modification) résume le présent contrat. Ce contrat n'est pas une
+licence Creative Commons et n'est ni lié à Creative Commons ni approuvé
+par elle. Seul le présent texte fait foi.

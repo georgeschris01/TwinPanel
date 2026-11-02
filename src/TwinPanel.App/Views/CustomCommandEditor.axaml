@@ -1,0 +1,76 @@
+<!-- TwinPanel — © 2026 Georges Christophe (chrypox). Tous droits réservés.
+     Licence TwinPanel 1.0 (gratuit, non commercial, sans modification) : voir le fichier LICENSE. -->
+<UserControl xmlns="https://github.com/avaloniaui"
+        xmlns:l="using:TwinPanel.App.Views"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:TwinPanel.App.ViewModels"
+             x:Class="TwinPanel.App.Views.CustomCommandEditor"
+             x:DataType="vm:CustomCommandListViewModel">
+  <Grid ColumnDefinitions="*,16,*">
+    <DockPanel>
+      <WrapPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
+        <Button Content="{l:T 'Ajouter'}" Classes="accent" Command="{Binding AddCommand}" Margin="0,0,6,6" />
+        <Button Content="{l:T 'Séparateur'}" Command="{Binding AddSeparatorCommand}" Margin="0,0,6,6" />
+        <Button Content="{l:T 'Monter'}" Command="{Binding MoveUpCommand}" Margin="0,0,6,6" />
+        <Button Content="{l:T 'Descendre'}" Command="{Binding MoveDownCommand}" Margin="0,0,6,6" />
+        <Button Content="{l:T 'Supprimer'}" Command="{Binding RemoveCommand}" Margin="0,0,6,6" />
+      </WrapPanel>
+      <Border Background="{DynamicResource PanelBackground}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1" CornerRadius="8" ClipToBounds="True">
+        <ListBox ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" Background="Transparent">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:CustomCommandRow">
+              <TextBlock Text="{Binding Display}" TextTrimming="CharacterEllipsis" />
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </Border>
+    </DockPanel>
+
+    <ScrollViewer Grid.Column="2" IsVisible="{Binding HasSelection}">
+      <StackPanel DataContext="{Binding Selected}" x:DataType="vm:CustomCommandRow" Spacing="2" Margin="0,0,12,0">
+        <TextBlock Classes="subtle" Text="Type" />
+        <ComboBox ItemsSource="{x:Static vm:CustomCommandRow.Kinds}" SelectedItem="{Binding Kind}" HorizontalAlignment="Stretch" />
+        <StackPanel IsVisible="{Binding !IsSeparator}" Spacing="2">
+          <TextBlock Classes="subtle" Text="{l:T 'Texte affiché (vide : icône seule pour un bouton)'}" Margin="0,8,0,0" />
+          <TextBox Text="{Binding Label}" />
+          <StackPanel IsVisible="{Binding IsCommand}" Spacing="2">
+            <TextBlock Classes="subtle" Text="{l:T 'Commande'}" Margin="0,8,0,0" />
+            <ComboBox ItemsSource="{x:Static vm:CustomCommandRow.CommandChoices}" SelectedItem="{Binding Command}" HorizontalAlignment="Stretch" />
+          </StackPanel>
+          <StackPanel IsVisible="{Binding HasTarget}" Spacing="2">
+            <TextBlock Classes="subtle" Margin="0,8,0,0" Text="{l:T 'Programme, document ou dossier (%P, %T… possibles)'}" />
+            <Grid ColumnDefinitions="*,6,Auto">
+              <TextBox Text="{Binding Target}" PlaceholderText="{l:T 'C:\\Program Files\\…\\programme.exe'}" />
+              <Button Grid.Column="2" Content="{l:T 'Parcourir…'}" Command="{Binding $parent[UserControl].DataContext.BrowseTargetCommand}" />
+            </Grid>
+          </StackPanel>
+          <StackPanel IsVisible="{Binding IsProgram}" Spacing="2">
+            <TextBlock Classes="subtle" Margin="0,8,0,0" Text="{l:T 'Paramètres'}" />
+            <TextBox Text="{Binding Arguments}" PlaceholderText="&quot;%F&quot;" />
+            <TextBlock Classes="subtle" Margin="0,8,0,0" Text="{l:T 'Démarrer dans (vide : dossier actif)'}" />
+            <Grid ColumnDefinitions="*,6,Auto">
+              <TextBox Text="{Binding StartIn}" PlaceholderText="%P" />
+              <Button Grid.Column="2" Content="{l:T 'Parcourir…'}" Command="{Binding $parent[UserControl].DataContext.BrowseStartInCommand}" />
+            </Grid>
+          </StackPanel>
+          <TextBlock Classes="subtle" Margin="0,8,0,0" Text="{l:T 'Icône'}" />
+          <ComboBox ItemsSource="{x:Static vm:CustomCommandRow.Icons}" SelectedItem="{Binding Icon}" HorizontalAlignment="Stretch">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="x:String">
+                <TextBlock Text="{Binding Converter={x:Static vm:IconNameConverter.Instance}}" />
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+          <StackPanel IsVisible="{Binding $parent[UserControl].DataContext.HasGroups}" Spacing="2">
+            <TextBlock Classes="subtle" Margin="0,8,0,0" Text="{l:T 'Sous-menu (vide : premier niveau)'}" />
+            <TextBox Text="{Binding Group}" PlaceholderText="{l:T 'Outils, Sites web…'}" />
+          </StackPanel>
+          <TextBlock Classes="subtle" Margin="0,8,0,0" Text="{l:T 'Info-bulle (facultatif)'}" />
+          <TextBox Text="{Binding Tooltip}" />
+        </StackPanel>
+        <TextBlock Classes="subtle" TextWrapping="Wrap" Margin="0,12,0,0"
+                   Text="{l:T 'Paramètres : %P dossier actif, %N nom de l\'élément, %F son chemin complet, %T dossier de l\'autre panneau, %S éléments marqués (entre guillemets). Mets &quot;%F&quot; entre guillemets si le chemin peut contenir des espaces.'}" />
+      </StackPanel>
+    </ScrollViewer>
+  </Grid>
+</UserControl>

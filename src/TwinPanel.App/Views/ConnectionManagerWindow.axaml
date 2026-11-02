@@ -1,0 +1,461 @@
+<!-- TwinPanel — © 2026 Georges Christophe (chrypox). Tous droits réservés.
+     Licence TwinPanel 1.0 (gratuit, non commercial, sans modification) : voir le fichier LICENSE. -->
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:l="using:TwinPanel.App.Views"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:TwinPanel.App.ViewModels"
+        xmlns:remote="using:TwinPanel.Core.Remote"
+        x:Class="TwinPanel.App.Views.ConnectionManagerWindow"
+        x:DataType="vm:ConnectionManagerViewModel"
+        Title="{l:T 'Connexions'}" Width="1120" Height="740" MinWidth="860" MinHeight="560"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Background="{DynamicResource AppBackground}">
+  <Window.Styles>
+    <Style Selector="TextBlock.label">
+      <Setter Property="Foreground" Value="{DynamicResource SubtleText}" />
+      <Setter Property="Margin" Value="0,8,0,3" />
+    </Style>
+    <Style Selector="TextBlock.section">
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="FontSize" Value="15" />
+      <Setter Property="Margin" Value="0,4,0,2" />
+    </Style>
+    <Style Selector="Border.card">
+      <Setter Property="Background" Value="{DynamicResource PanelBackground}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource PanelBorder}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+    </Style>
+    <Style Selector="Border.warning">
+      <Setter Property="Background" Value="#22E5534B" />
+      <Setter Property="BorderBrush" Value="#E5534B" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Padding" Value="10" />
+      <Setter Property="Margin" Value="0,10,0,0" />
+    </Style>
+  </Window.Styles>
+
+  <TabControl Margin="12,6,12,12">
+    <!-- ================= Connexions ================= -->
+    <TabItem Header="{l:T 'Connexions'}">
+      <Grid ColumnDefinitions="320,14,*" Margin="0,8,0,0">
+        <!-- Liste -->
+        <DockPanel>
+          <TextBox DockPanel.Dock="Top" Text="{Binding Search}" PlaceholderText="{l:T 'Rechercher (nom, hôte, groupe, étiquette)'}" />
+          <WrapPanel DockPanel.Dock="Top" Margin="0,8,0,8">
+            <Button Content="{l:T 'Nouvelle'}" Classes="accent" Command="{Binding NewProfileCommand}" Margin="0,0,6,6" />
+            <Button Content="{l:T 'Dupliquer'}" Command="{Binding DuplicateProfileCommand}" Margin="0,0,6,6" />
+            <Button Content="{l:T 'Supprimer'}" Command="{Binding DeleteProfileCommand}" Margin="0,0,6,6" />
+            <Button x:Name="ImportButton" Content="{l:T 'Importer ▾'}" Margin="0,0,6,6">
+              <Button.Flyout>
+                <!-- Un élément fixe : un menu vide ne s'ouvre pas. La liste complète est mise à chaque ouverture. -->
+                <MenuFlyout Placement="BottomEdgeAlignedLeft">
+                  <MenuItem Header="{l:T 'Fichier exporté par TwinPanel (.json)…'}" Command="{Binding ImportCommand}" />
+                </MenuFlyout>
+              </Button.Flyout>
+            </Button>
+            <Button Content="{l:T 'Exporter'}" Command="{Binding ExportCommand}" Margin="0,0,6,6"
+                    ToolTip.Tip="{l:T 'Exporte la liste des connexions SANS mots de passe ni clés privées'}" />
+          </WrapPanel>
+          <Border Classes="card" ClipToBounds="True">
+            <ListBox x:Name="ProfileList" ItemsSource="{Binding Rows}" SelectedItem="{Binding SelectedRow}" Background="Transparent">
+              <ListBox.DataTemplates>
+                <DataTemplate DataType="vm:GroupRow">
+                  <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,6,0,0" IsHitTestVisible="False">
+                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Foreground="{DynamicResource SubtleText}" />
+                    <TextBlock Text="{Binding Count}" Foreground="{DynamicResource SubtleText}" />
+                  </StackPanel>
+                </DataTemplate>
+                <DataTemplate DataType="vm:ProfileRow">
+                  <Grid ColumnDefinitions="4,10,*,Auto" Background="Transparent">
+                    <Border Background="{Binding ColorBrush}" CornerRadius="2" />
+                    <StackPanel Grid.Column="2">
+                      <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                      <TextBlock Text="{Binding Summary}" Classes="subtle" FontSize="12" TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="3" VerticalAlignment="Center" Spacing="2">
+                      <Border Background="{DynamicResource ChipBackground}" CornerRadius="4" Padding="5,1" HorizontalAlignment="Right">
+                        <TextBlock Text="{Binding Protocol}" FontSize="10" />
+                      </Border>
+                      <TextBlock Text="{l:T '● connecté'}" FontSize="10" Foreground="#57AB5A" IsVisible="{Binding IsConnected}" HorizontalAlignment="Right" />
+                      <TextBlock Text="{l:T 'non chiffré'}" FontSize="10" Foreground="#E5534B" IsVisible="{Binding IsUnencrypted}" HorizontalAlignment="Right" />
+                    </StackPanel>
+                  </Grid>
+                </DataTemplate>
+              </ListBox.DataTemplates>
+            </ListBox>
+          </Border>
+        </DockPanel>
+
+        <!-- Fiche -->
+        <DockPanel Grid.Column="2">
+          <Grid DockPanel.Dock="Bottom" ColumnDefinitions="*,Auto" Margin="0,10,0,0">
+            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+              <ProgressBar IsIndeterminate="True" Width="60" IsVisible="{Binding IsBusy}" />
+              <SelectableTextBlock Text="{Binding Message}" TextWrapping="Wrap" MaxWidth="560" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom">
+              <Button Content="{l:T 'Tester'}" Command="{Binding TestCommand}" IsEnabled="{Binding HasProfile}"
+                      ToolTip.Tip="{l:T 'Se connecte, lit le dossier de départ et se déconnecte (sans enregistrer)'}" />
+              <Button Content="{l:T 'Enregistrer'}" Command="{Binding SaveCommand}" IsEnabled="{Binding HasProfile}" HotKey="Ctrl+S" />
+              <Button Content="{l:T 'Connecter'}" Classes="accent" Command="{Binding ConnectCommand}" IsEnabled="{Binding HasProfile}" />
+              <Button x:Name="CloseButton" Content="{l:T 'Fermer'}" />
+            </StackPanel>
+          </Grid>
+
+          <TextBlock Text="{l:T 'Choisis une connexion à gauche, ou « Nouvelle ».'}" Classes="subtle" IsVisible="{Binding !HasProfile}"
+                     HorizontalAlignment="Center" VerticalAlignment="Center" />
+
+          <TabControl IsVisible="{Binding HasProfile}" DataContext="{Binding Editor}" x:DataType="vm:ProfileEditor">
+            <!-- Général -->
+            <TabItem Header="{l:T 'Général'}">
+              <ScrollViewer>
+                <StackPanel Margin="0,4,16,8" MaxWidth="640" HorizontalAlignment="Left">
+                  <Grid ColumnDefinitions="*,12,*">
+                    <StackPanel>
+                      <TextBlock Classes="label" Text="{l:T 'Nom'}" />
+                      <TextBox x:Name="NameBox" Text="{Binding Name}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                      <TextBlock Classes="label" Text="{l:T 'Groupe (ex. Maison, Clients/Durand)'}" />
+                      <AutoCompleteBox Text="{Binding Group}" ItemsSource="{Binding GroupChoices}" FilterMode="StartsWithOrdinal" MinimumPrefixLength="0" />
+                    </StackPanel>
+                  </Grid>
+                  <TextBlock Classes="label" Text="{l:T 'Nom du bouton dans la barre des lecteurs (vide : le nom ci-dessus)'}" />
+                  <TextBox Text="{Binding ButtonLabel}" PlaceholderText="{Binding Name}" MaxWidth="320" HorizontalAlignment="Left" MinWidth="200" />
+                  <TextBlock Classes="label" Text="{l:T 'Protocole'}" />
+                  <ComboBox ItemsSource="{x:Static vm:ProfileEditor.Protocols}" SelectedItem="{Binding Protocol}" HorizontalAlignment="Stretch" />
+                  <Grid ColumnDefinitions="*,12,120">
+                    <StackPanel>
+                      <TextBlock Classes="label" Text="{l:T 'Hôte (nom ou adresse IP)'}" />
+                      <TextBox Text="{Binding Host}" PlaceholderText="{l:T '192.168.0.10 ou serveur.exemple.be'}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                      <TextBlock Classes="label" Text="Port" />
+                      <NumericUpDown Value="{Binding Port}" Minimum="1" Maximum="65535" Increment="1" FormatString="0" />
+                    </StackPanel>
+                  </Grid>
+                  <StackPanel IsVisible="{Binding IsWebDav}">
+                    <TextBlock Classes="label" Text="{l:T 'Adresse du service WebDAV sur le serveur ({user} = identifiant)'}" />
+                    <Grid ColumnDefinitions="*,8,Auto">
+                      <TextBox Text="{Binding WebDavRoot}" PlaceholderText="/remote.php/dav/files/{user}" />
+                      <Button Grid.Column="2" Content="Nextcloud" Command="{Binding NextcloudPresetCommand}" />
+                    </Grid>
+                  </StackPanel>
+                  <TextBlock Classes="label" Text="{l:T 'Dossier distant à l\'ouverture (vide : dossier personnel)'}" />
+                  <TextBox Text="{Binding RemoteDirectory}" PlaceholderText="/home/utilisateur" />
+                  <TextBlock Classes="label" Text="{l:T 'Dossier local à ouvrir dans l\'autre panneau (facultatif)'}" />
+                  <TextBox Text="{Binding LocalDirectory}" PlaceholderText="{l:T 'D:\\Sites\\mon-site'}" />
+                  <Border Classes="warning" IsVisible="{Binding IsUnencrypted}">
+                    <StackPanel Spacing="6">
+                      <TextBlock TextWrapping="Wrap" Text="{l:T 'Ce protocole n\'est PAS chiffré : identifiant, mot de passe et fichiers circulent en clair sur le réseau. À n\'utiliser que sur un réseau de confiance, ou si le serveur ne propose rien d\'autre (préfère SFTP, FTPS ou WebDAV en HTTPS).'}" />
+                      <CheckBox Content="{l:T 'J\'ai compris, ne plus avertir pour cette connexion'}" IsChecked="{Binding AcceptUnencrypted}" />
+                    </StackPanel>
+                  </Border>
+                </StackPanel>
+              </ScrollViewer>
+            </TabItem>
+
+            <!-- Authentification -->
+            <TabItem Header="{l:T 'Authentification'}">
+              <ScrollViewer>
+                <StackPanel Margin="0,4,16,8" MaxWidth="640" HorizontalAlignment="Left">
+                  <TextBlock Classes="label" Text="{l:T 'Identité du trousseau (identifiant + mot de passe / clé partagés entre plusieurs connexions)'}" TextWrapping="Wrap" />
+                  <ComboBox ItemsSource="{Binding IdentityChoices}" SelectedItem="{Binding Identity}" HorizontalAlignment="Stretch" />
+                  <TextBlock Classes="label" Text="{l:T 'Méthode'}" />
+                  <ComboBox ItemsSource="{x:Static vm:ProfileEditor.AuthModes}" SelectedItem="{Binding Auth}" HorizontalAlignment="Stretch" />
+                  <StackPanel IsVisible="{Binding ShowUser}">
+                    <TextBlock Classes="label" Text="{l:T 'Identifiant'}" />
+                    <TextBox Text="{Binding UserName}" />
+                  </StackPanel>
+                  <StackPanel IsVisible="{Binding ShowPassword}">
+                    <TextBlock Classes="label" Text="{l:T 'Mot de passe'}" />
+                    <TextBox Text="{Binding Password}" PasswordChar="•" PlaceholderText="{Binding PasswordHint}" RevealPassword="{Binding #ShowPwd.IsChecked}" />
+                    <StackPanel Orientation="Horizontal" Spacing="16" Margin="0,4,0,0">
+                      <CheckBox Content="{l:T 'Enregistrer dans le coffre (chiffré)'}" IsChecked="{Binding SavePassword}" />
+                      <CheckBox x:Name="ShowPwd" Content="{l:T 'Afficher'}" />
+                    </StackPanel>
+                    <TextBlock Classes="subtle" TextWrapping="Wrap" Margin="0,4,0,0"
+                               Text="{l:T 'Non enregistré : il sera demandé à la connexion (avec la possibilité de l\'enregistrer à ce moment-là).'}" />
+                  </StackPanel>
+                  <StackPanel IsVisible="{Binding ShowKey}">
+                    <TextBlock Classes="label" Text="{l:T 'Clé SSH du trousseau'}" />
+                    <ComboBox ItemsSource="{Binding KeyChoices}" SelectedItem="{Binding Key}" HorizontalAlignment="Stretch" />
+                    <TextBlock Classes="subtle" TextWrapping="Wrap" Margin="0,4,0,0" IsVisible="{Binding NoKeys}"
+                               Text="{l:T 'Le trousseau est encore vide : importe ta clé (id_ed25519, id_rsa, .ppk…) ou crée-en une nouvelle.'}" />
+                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,6,0,0"
+                                DataContext="{Binding $parent[Window].DataContext}" x:DataType="vm:ConnectionManagerViewModel">
+                      <Button Content="{l:T 'Importer une clé…'}" Command="{Binding ImportKeyForProfileCommand}" />
+                      <Button Content="{l:T 'Créer une clé Ed25519…'}" Command="{Binding GenerateKeyForProfileCommand}" />
+                    </StackPanel>
+                  </StackPanel>
+                  <TextBlock Classes="subtle" TextWrapping="Wrap" Margin="0,12,0,0" IsVisible="{Binding UsesIdentity}"
+                             Text="{l:T 'L\'identifiant, le mot de passe et la clé viennent de l\'identité choisie (onglet Trousseau).'}" />
+                </StackPanel>
+              </ScrollViewer>
+            </TabItem>
+
+            <!-- Sécurité -->
+            <TabItem Header="{l:T 'Sécurité'}">
+              <ScrollViewer>
+                <StackPanel Margin="0,4,16,8" MaxWidth="640" HorizontalAlignment="Left">
+                  <StackPanel IsVisible="{Binding IsSsh}">
+                    <TextBlock Classes="section" Text="{l:T 'Clé du serveur'}" />
+                    <TextBlock TextWrapping="Wrap" Text="{l:T 'À la première connexion, l\'empreinte de la clé du serveur est affichée et doit être acceptée. Si elle change ensuite, la connexion est bloquée avec une alerte (protection contre l\'usurpation). Les serveurs déjà connus d\'OpenSSH (~/.ssh/known_hosts) sont reconnus automatiquement. Liste complète : onglet « Serveurs connus ».'}" />
+                  </StackPanel>
+                  <StackPanel IsVisible="{Binding IsTls}">
+                    <TextBlock Classes="section" Text="{l:T 'Chiffrement TLS'}" />
+                    <TextBlock TextWrapping="Wrap" Text="{l:T 'Un certificat reconnu par Windows est accepté directement. Sinon (certificat auto-signé…), ses détails sont affichés et tu choisis : refuser, accepter une fois, ou lui faire toujours confiance.'}" />
+                    <TextBlock Classes="label" Text="{l:T 'Version minimale'}" />
+                    <ComboBox ItemsSource="{x:Static vm:ProfileEditor.TlsLevels}" SelectedItem="{Binding TlsMinimum}" HorizontalAlignment="Stretch" />
+                    <TextBlock Classes="label" Text="{l:T 'Certificat client (.pfx / .p12), si le serveur en demande un'}" />
+                    <Grid ColumnDefinitions="*,8,Auto">
+                      <TextBox Text="{Binding ClientCertificatePath}" PlaceholderText="{l:T '(aucun)'}" />
+                      <Button x:Name="BrowseCertButton" Grid.Column="2" Content="{l:T 'Parcourir…'}" />
+                    </Grid>
+                    <TextBlock Classes="label" Text="{l:T 'Mot de passe du certificat client'}" />
+                    <TextBox Text="{Binding CertificatePassword}" PasswordChar="•" />
+                    <CheckBox Content="{l:T 'Enregistrer dans le coffre (chiffré)'}" IsChecked="{Binding SaveCertificatePassword}" Margin="0,4,0,0" />
+                  </StackPanel>
+                  <Border Classes="warning" IsVisible="{Binding IsUnencrypted}">
+                    <TextBlock TextWrapping="Wrap" Text="{l:T 'Connexion non chiffrée : aucune protection possible ici. Préfère SFTP, FTPS ou WebDAV en HTTPS.'}" />
+                  </Border>
+                </StackPanel>
+              </ScrollViewer>
+            </TabItem>
+
+            <!-- Avancé -->
+            <TabItem Header="{l:T 'Avancé'}">
+              <ScrollViewer>
+                <StackPanel Margin="0,4,16,8" MaxWidth="640" HorizontalAlignment="Left">
+                  <StackPanel IsVisible="{Binding IsSsh}">
+                    <TextBlock Classes="label" Text="{l:T 'Serveur de rebond (passer par une autre connexion SSH, « ProxyJump »)'}" />
+                    <ComboBox ItemsSource="{Binding JumpChoices}" SelectedItem="{Binding JumpHost}" HorizontalAlignment="Stretch" />
+                  </StackPanel>
+                  <TextBlock Classes="label" Text="Proxy" />
+                  <ComboBox ItemsSource="{x:Static vm:ProfileEditor.ProxyKinds}" SelectedItem="{Binding Proxy}" HorizontalAlignment="Stretch" />
+                  <StackPanel IsVisible="{Binding ShowProxy}">
+                    <Grid ColumnDefinitions="*,12,120">
+                      <StackPanel>
+                        <TextBlock Classes="label" Text="{l:T 'Adresse du proxy'}" />
+                        <TextBox Text="{Binding ProxyHost}" />
+                      </StackPanel>
+                      <StackPanel Grid.Column="2">
+                        <TextBlock Classes="label" Text="Port" />
+                        <NumericUpDown Value="{Binding ProxyPort}" Minimum="1" Maximum="65535" FormatString="0" />
+                      </StackPanel>
+                    </Grid>
+                    <Grid ColumnDefinitions="*,12,*">
+                      <StackPanel>
+                        <TextBlock Classes="label" Text="{l:T 'Identifiant du proxy (facultatif)'}" />
+                        <TextBox Text="{Binding ProxyUser}" />
+                      </StackPanel>
+                      <StackPanel Grid.Column="2">
+                        <TextBlock Classes="label" Text="{l:T 'Mot de passe du proxy'}" />
+                        <TextBox Text="{Binding ProxyPassword}" PasswordChar="•" />
+                      </StackPanel>
+                    </Grid>
+                    <CheckBox Content="{l:T 'Enregistrer le mot de passe du proxy (chiffré)'}" IsChecked="{Binding SaveProxyPassword}" Margin="0,4,0,0" />
+                  </StackPanel>
+                  <StackPanel IsVisible="{Binding IsFtp}">
+                    <TextBlock Classes="label" Text="{l:T 'Mode de transfert FTP'}" />
+                    <ComboBox ItemsSource="{x:Static vm:ProfileEditor.DataModes}" SelectedItem="{Binding DataMode}" HorizontalAlignment="Stretch" />
+                    <TextBlock Classes="label" Text="{l:T 'Encodage des noms de fichiers'}" />
+                    <ComboBox ItemsSource="{x:Static vm:ProfileEditor.Encodings}" SelectedItem="{Binding FtpEncoding}" HorizontalAlignment="Stretch" />
+                  </StackPanel>
+                  <Grid ColumnDefinitions="*,12,*">
+                    <StackPanel>
+                      <TextBlock Classes="label" Text="{l:T 'Délai d\'attente (secondes)'}" />
+                      <NumericUpDown Value="{Binding TimeoutSeconds}" Minimum="5" Maximum="600" FormatString="0" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                      <TextBlock Classes="label" Text="{l:T 'Maintien de connexion (s, 0 = non)'}" />
+                      <NumericUpDown Value="{Binding KeepAliveSeconds}" Minimum="0" Maximum="3600" FormatString="0" />
+                    </StackPanel>
+                  </Grid>
+                </StackPanel>
+              </ScrollViewer>
+            </TabItem>
+
+            <!-- Notes -->
+            <TabItem Header="Notes">
+              <StackPanel Margin="0,4,16,8" MaxWidth="640" HorizontalAlignment="Left">
+                <TextBlock Classes="label" Text="{l:T 'Étiquettes (séparées par des virgules ; utilisées par la recherche)'}" />
+                <TextBox Text="{Binding Tags}" PlaceholderText="{l:T 'prod, nas, perso'}" />
+                <TextBlock Classes="label" Text="{l:T 'Couleur'}" />
+                <ComboBox ItemsSource="{x:Static vm:ProfileEditor.Colors}" SelectedItem="{Binding Color}" MinWidth="180">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:ColorChoice">
+                      <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Border Width="16" Height="16" CornerRadius="8" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1"
+                                Background="{Binding Brush}" />
+                        <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
+                      </StackPanel>
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+                <TextBlock Classes="label" Text="Notes" />
+                <TextBox Text="{Binding Notes}" AcceptsReturn="True" TextWrapping="Wrap" Height="220" />
+              </StackPanel>
+            </TabItem>
+          </TabControl>
+        </DockPanel>
+      </Grid>
+    </TabItem>
+
+    <!-- ================= Trousseau ================= -->
+    <TabItem Header="{l:T 'Trousseau'}">
+      <Grid ColumnDefinitions="*,16,*" Margin="0,8,0,0">
+        <DockPanel>
+          <TextBlock DockPanel.Dock="Top" Classes="section" Text="{l:T 'Clés SSH'}" />
+          <TextBlock DockPanel.Dock="Top" Classes="subtle" TextWrapping="Wrap" Margin="0,0,0,8"
+                     Text="{l:T 'Une clé = deux parties. La partie PRIVÉE reste sur ce PC, dans le coffre chiffré (ne jamais la donner). La partie PUBLIQUE (ci-dessous) se met sur chaque serveur, dans ~/.ssh/authorized_keys : le bouton « Installer sur un serveur… » le fait pour toi.'}" />
+          <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+            <Button Content="{l:T 'Importer un fichier…'}" Command="{Binding ImportKeyCommand}" Margin="0,0,6,6" />
+            <Button Content="{l:T 'Créer une clé Ed25519'}" Classes="accent" Command="{Binding GenerateKeyCommand}" Margin="0,0,6,6" />
+          </WrapPanel>
+          <WrapPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
+            <Button Content="{l:T 'Installer sur un serveur…'}" Classes="accent" Command="{Binding InstallPublicKeyCommand}" Margin="0,0,6,6"
+                    ToolTip.Tip="{l:T 'Ajoute la clé publique dans ~/.ssh/authorized_keys sur un serveur, par une connexion qui marche déjà (mot de passe)'}" />
+            <Button Content="{l:T 'Copier la clé publique'}" Command="{Binding CopyPublicKeyCommand}" Margin="0,0,6,6" />
+            <Button Content="{l:T 'Enregistrer la clé publique…'}" Command="{Binding ExportPublicKeyCommand}" Margin="0,0,6,6" />
+            <Button Content="{l:T 'Phrase de passe enregistrée / demandée'}" Command="{Binding ToggleKeyPassphraseCommand}" Margin="0,0,6,6" />
+            <Button Content="{l:T 'Renommer'}" Command="{Binding RenameKeyCommand}" Margin="0,0,6,6" />
+            <Button Content="{l:T 'Exporter la clé privée…'}" Command="{Binding ExportPrivateKeyCommand}" Margin="0,0,6,6" />
+            <Button Content="{l:T 'Supprimer'}" Command="{Binding DeleteKeyCommand}" Margin="0,0,6,6" />
+          </WrapPanel>
+          <StackPanel DockPanel.Dock="Bottom" Margin="0,8,0,0" IsVisible="{Binding SelectedKey, Converter={x:Static ObjectConverters.IsNotNull}}">
+            <TextBlock Classes="label" Text="{l:T 'Partie publique (à mettre sur le serveur) :'}" />
+            <TextBox Text="{Binding SelectedKey.Key.PublicKey, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap" MaxHeight="90"
+                     FontFamily="Consolas,Menlo,monospace" FontSize="11" />
+          </StackPanel>
+          <Border Classes="card" ClipToBounds="True">
+            <ListBox ItemsSource="{Binding Keys}" SelectedItem="{Binding SelectedKey}" Background="Transparent">
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:KeyRow">
+                  <StackPanel>
+                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding Details}" Classes="subtle" FontSize="12" TextTrimming="CharacterEllipsis" />
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                      <TextBlock Text="{Binding Usage}" Classes="subtle" FontSize="12" />
+                      <TextBlock Text="{Binding Protection}" Classes="subtle" FontSize="12" />
+                    </StackPanel>
+                  </StackPanel>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+          </Border>
+        </DockPanel>
+
+        <DockPanel Grid.Column="2">
+          <TextBlock DockPanel.Dock="Top" Classes="section" Text="{l:T 'Identités'}" />
+          <TextBlock DockPanel.Dock="Top" Classes="subtle" TextWrapping="Wrap" Margin="0,0,0,8"
+                     Text="{l:T 'Un identifiant avec son mot de passe et/ou sa clé, réutilisable par plusieurs connexions : on le change à un seul endroit.'}" />
+          <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+            <Button Content="{l:T 'Nouvelle identité'}" Command="{Binding NewIdentityCommand}" Margin="0,0,6,6" />
+            <Button Content="{l:T 'Supprimer'}" Command="{Binding DeleteIdentityCommand}" Margin="0,0,6,6" />
+          </WrapPanel>
+          <StackPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
+            <Grid ColumnDefinitions="*,12,*">
+              <StackPanel>
+                <TextBlock Classes="label" Text="{l:T 'Nom'}" />
+                <TextBox Text="{Binding IdentityName}" />
+              </StackPanel>
+              <StackPanel Grid.Column="2">
+                <TextBlock Classes="label" Text="{l:T 'Identifiant'}" />
+                <TextBox Text="{Binding IdentityUser}" />
+              </StackPanel>
+            </Grid>
+            <TextBlock Classes="label" Text="{l:T 'Mot de passe'}" />
+            <TextBox Text="{Binding IdentityPassword}" PasswordChar="•" PlaceholderText="{Binding IdentityPasswordHint}" />
+            <CheckBox Content="{l:T 'Enregistrer dans le coffre (chiffré)'}" IsChecked="{Binding IdentitySavePassword}" Margin="0,4,0,0" />
+            <TextBlock Classes="label" Text="{l:T 'Clé SSH'}" />
+            <ComboBox ItemsSource="{Binding KeyChoices}" SelectedItem="{Binding IdentityKey}" HorizontalAlignment="Stretch" />
+            <Button Content="{l:T 'Enregistrer l\'identité'}" Classes="accent" Command="{Binding SaveIdentityCommand}" Margin="0,10,0,0" />
+          </StackPanel>
+          <Border Classes="card" ClipToBounds="True">
+            <ListBox ItemsSource="{Binding Identities}" SelectedItem="{Binding SelectedIdentity}" Background="Transparent">
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="remote:KeychainIdentity">
+                  <StackPanel>
+                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding UserName}" Classes="subtle" FontSize="12" />
+                  </StackPanel>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+          </Border>
+        </DockPanel>
+      </Grid>
+    </TabItem>
+
+    <!-- ================= Serveurs connus ================= -->
+    <TabItem Header="{l:T 'Serveurs connus'}">
+      <Grid ColumnDefinitions="*,16,*" Margin="0,8,0,0">
+        <DockPanel>
+          <TextBlock DockPanel.Dock="Top" Classes="section" Text="{l:T 'Clés de serveurs SSH acceptées'}" />
+          <Button DockPanel.Dock="Bottom" Content="{l:T 'Oublier'}" Command="{Binding ForgetKnownSshCommand}" Margin="0,8,0,0" />
+          <Border Classes="card" ClipToBounds="True">
+            <ListBox ItemsSource="{Binding KnownSsh}" SelectedItem="{Binding SelectedKnownSsh}" Background="Transparent">
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="remote:KnownSshHost">
+                  <StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                      <TextBlock Text="{Binding Host}" FontWeight="SemiBold" />
+                      <TextBlock Text=":" />
+                      <TextBlock Text="{Binding Port}" />
+                    </StackPanel>
+                    <TextBlock Text="{Binding KeyType}" Classes="subtle" FontSize="12" />
+                    <TextBlock Text="{Binding Fingerprint}" Classes="subtle" FontSize="12" FontFamily="Consolas,Menlo,monospace" />
+                  </StackPanel>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+          </Border>
+        </DockPanel>
+        <DockPanel Grid.Column="2">
+          <TextBlock DockPanel.Dock="Top" Classes="section" Text="{l:T 'Certificats acceptés à la main (FTPS, WebDAV)'}" />
+          <Button DockPanel.Dock="Bottom" Content="{l:T 'Oublier'}" Command="{Binding ForgetCertificateCommand}" Margin="0,8,0,0" />
+          <Border Classes="card" ClipToBounds="True">
+            <ListBox ItemsSource="{Binding TrustedCertificates}" SelectedItem="{Binding SelectedCertificate}" Background="Transparent">
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="remote:TrustedCertificate">
+                  <StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                      <TextBlock Text="{Binding Host}" FontWeight="SemiBold" />
+                      <TextBlock Text=":" />
+                      <TextBlock Text="{Binding Port}" />
+                    </StackPanel>
+                    <TextBlock Text="{Binding Subject}" Classes="subtle" FontSize="12" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding Sha256}" Classes="subtle" FontSize="11" FontFamily="Consolas,Menlo,monospace" TextTrimming="CharacterEllipsis" />
+                  </StackPanel>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+          </Border>
+        </DockPanel>
+      </Grid>
+    </TabItem>
+
+    <!-- ================= Coffre ================= -->
+    <TabItem Header="{l:T 'Coffre'}">
+      <StackPanel Margin="0,12,0,0" MaxWidth="700" HorizontalAlignment="Left" Spacing="10">
+        <TextBlock Classes="section" Text="{l:T 'Coffre des mots de passe'}" />
+        <TextBlock Text="{Binding VaultStatus}" TextWrapping="Wrap" />
+        <TextBlock Classes="subtle" TextWrapping="Wrap"
+                   Text="{l:T 'Les mots de passe, phrases de passe et clés privées sont rangés à part de la liste des connexions (secrets.dat), jamais en clair. L\'export de la liste ne contient aucun secret.'}" />
+        <WrapPanel>
+          <Button Content="{l:T 'Définir / changer le mot de passe maître…'}" Classes="accent" Command="{Binding SetMasterPasswordCommand}" Margin="0,0,8,8" />
+          <Button Content="{l:T 'Retirer le mot de passe maître'}" Command="{Binding RemoveMasterPasswordCommand}" IsEnabled="{Binding HasMaster}" Margin="0,0,8,8" />
+          <Button Content="{l:T 'Verrouiller maintenant'}" Command="{Binding LockVaultCommand}" IsEnabled="{Binding HasMaster}" Margin="0,0,8,8" />
+        </WrapPanel>
+        <StackPanel Orientation="Horizontal" Spacing="8" IsEnabled="{Binding HasMaster}">
+          <TextBlock Text="{l:T 'Verrouiller automatiquement après'}" VerticalAlignment="Center" />
+          <NumericUpDown Value="{Binding AutoLockMinutes}" Minimum="0" Maximum="1440" FormatString="0" Width="130" />
+          <TextBlock Text="{l:T 'minutes sans utilisation (0 = jamais)'}" VerticalAlignment="Center" />
+        </StackPanel>
+      </StackPanel>
+    </TabItem>
+  </TabControl>
+</Window>

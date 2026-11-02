@@ -1,0 +1,235 @@
+<!-- TwinPanel — © 2026 Georges Christophe (chrypox). Tous droits réservés.
+     Licence TwinPanel 1.0 (gratuit, non commercial, sans modification) : voir le fichier LICENSE. -->
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:l="using:TwinPanel.App.Views"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:TwinPanel.App.ViewModels"
+        xmlns:views="using:TwinPanel.App.Views"
+        x:Class="TwinPanel.App.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="TwinPanel"
+        MinWidth="800" MinHeight="500"
+        Background="{DynamicResource AppBackground}">
+
+  <Window.Resources>
+    <!-- Une opération : en bas de la fenêtre et dans le panneau de tous les transferts. -->
+    <DataTemplate x:Key="JobLine">
+          <Border Background="{DynamicResource PanelBackground}" BorderBrush="{DynamicResource PanelBorder}"
+                  BorderThickness="1" CornerRadius="8" Padding="12,8" Margin="0,0,0,4">
+            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">
+              <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+              <ProgressBar Grid.Row="1" Margin="0,6,0,4" Minimum="0" Maximum="100" Value="{Binding Percent}" Height="6" MinHeight="6" />
+              <TextBlock Grid.Row="2" Classes="subtle" Text="{Binding Detail}" TextTrimming="CharacterEllipsis" />
+              <StackPanel Grid.Column="1" Grid.RowSpan="3" Orientation="Horizontal" Spacing="6" Margin="12,0,0,0" VerticalAlignment="Center">
+                <Button Content="{Binding PauseLabel}" Command="{Binding TogglePauseCommand}" IsVisible="{Binding CanPause}" />
+                <Button Content="{l:T 'Annuler'}" Command="{Binding CancelCommand}" IsVisible="{Binding IsActive}" />
+                <Button Content="{l:T 'Reprendre'}" IsVisible="{Binding CanResume}" ToolTip.Tip="{l:T 'Reprendre là où le transfert s\'est arrêté. « Fermer » retire ce qui a déjà été transféré du fichier en cours.'}"
+                        Command="{Binding $parent[ItemsControl].DataContext.ResumeJobCommand}" CommandParameter="{Binding}" />
+                <Button Content="{l:T 'Fermer'}" IsVisible="{Binding IsFinished}"
+                        Command="{Binding $parent[ItemsControl].DataContext.DismissJobCommand}" CommandParameter="{Binding}" />
+              </StackPanel>
+            </Grid>
+          </Border>
+        </DataTemplate>
+  </Window.Resources>
+
+  <!-- Raccourcis clavier : créés dans MainWindow.axaml.cs à partir du catalogue des commandes (modifiables dans Options → Raccourcis). -->
+
+  <DockPanel>
+    <!-- Barre d'outils -->
+    <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*,Auto" Margin="10,8,10,0">
+      <StackPanel Orientation="Horizontal" Spacing="2">
+        <!-- Logo : un clic ouvre « À propos ». -->
+        <Button Classes="icon" ToolTip.Tip="{l:T 'TwinPanel — à propos'}" Command="{Binding ShowAboutCommand}" Padding="2" Margin="0,0,6,0">
+          <Image Source="/Assets/twinpanel-64.png" Width="24" Height="24" RenderOptions.BitmapInterpolationMode="HighQuality" />
+        </Button>
+        <!-- Le clic droit est porté par un conteneur : il doit marcher aussi quand Précédent est grisé. -->
+        <Panel x:Name="BackHost" Background="Transparent" ToolTip.Tip="{l:T 'Précédent (Alt+←) — clic droit : dossiers récents (Alt+↓)'}">
+          <Panel.ContextFlyout>
+            <!-- Un élément fixe : un menu vide ne s'ouvre pas. Le reste est ajouté à chaque ouverture. -->
+            <MenuFlyout Placement="BottomEdgeAlignedLeft">
+              <MenuItem Header="{l:T '(aucun dossier récent)'}" IsEnabled="False" />
+            </MenuFlyout>
+          </Panel.ContextFlyout>
+          <Button Classes="icon" Command="{Binding GoBackCommand}"
+                  IsEnabled="{Binding ActivePanel.Current.CanGoBack}">
+            <PathIcon Data="{StaticResource IconBack}" />
+          </Button>
+        </Panel>
+        <Button Classes="icon" ToolTip.Tip="{l:T 'Suivant (Alt+→)'}" Command="{Binding GoForwardCommand}"
+                IsEnabled="{Binding ActivePanel.Current.CanGoForward}">
+          <PathIcon Data="{StaticResource IconForward}" />
+        </Button>
+        <Button Classes="icon" ToolTip.Tip="{l:T 'Dossier parent (Retour arrière)'}" Command="{Binding GoUpCommand}">
+          <PathIcon Data="{StaticResource IconUp}" />
+        </Button>
+        <Button Classes="icon" ToolTip.Tip="{l:T 'Dossier personnel'}" Command="{Binding GoHomeCommand}">
+          <PathIcon Data="{StaticResource IconHome}" />
+        </Button>
+        <Button Classes="icon" ToolTip.Tip="{l:T 'Rafraîchir (Ctrl+R)'}" Command="{Binding RefreshAllCommand}">
+          <PathIcon Data="{StaticResource IconRefresh}" />
+        </Button>
+        <Rectangle Width="1" Height="20" Margin="6,0" Fill="{DynamicResource PanelBorder}" />
+        <Button x:Name="FavoritesButton" Classes="icon" ToolTip.Tip="{l:T 'Favoris (Ctrl+D)'}">
+          <PathIcon Data="{StaticResource IconStar}" Foreground="#F2B84B" />
+          <Button.Flyout>
+            <MenuFlyout Placement="BottomEdgeAlignedLeft">
+              <MenuItem Header="{l:T 'Ajouter le dossier actuel'}" Command="{Binding AddFavoriteCommand}" />
+            </MenuFlyout>
+          </Button.Flyout>
+        </Button>
+        <Button Classes="icon" ToolTip.Tip="{l:T 'Échanger les panneaux (Ctrl+U)'}" Command="{Binding SwapPanelsCommand}">
+          <PathIcon Data="{StaticResource IconSwap}" />
+        </Button>
+        <Button x:Name="StartMenuButton" Classes="icon" ToolTip.Tip="{l:T 'Mon menu Démarrer (programmes et dossiers favoris)'}">
+          <PathIcon Data="{StaticResource IconStart}" />
+          <Button.Flyout>
+            <MenuFlyout Placement="BottomEdgeAlignedLeft">
+              <MenuItem Header="{l:T 'Modifier ce menu…'}" Command="{Binding OpenOptionsCommand}" CommandParameter="StartMenu" />
+            </MenuFlyout>
+          </Button.Flyout>
+        </Button>
+        <Button x:Name="ConnectionsButton" Classes="icon" ToolTip.Tip="{l:T 'Connexions : SFTP, FTP, WebDAV… (Ctrl+F)'}">
+          <PathIcon Data="{StaticResource IconServer}" />
+          <Button.Flyout>
+            <!-- Un élément fixe : un menu vide ne s'ouvre pas. Le reste est ajouté à chaque ouverture. -->
+            <MenuFlyout Placement="BottomEdgeAlignedLeft">
+              <MenuItem Header="{l:T 'Gestionnaire de connexions…'}" InputGesture="Ctrl+F" Command="{Binding OpenConnectionManagerCommand}" />
+            </MenuFlyout>
+          </Button.Flyout>
+        </Button>
+        <Button Classes="icon" ToolTip.Tip="{l:T 'Rechercher (Alt+F7)'}" Command="{Binding SearchCommand}">
+          <PathIcon Data="{StaticResource IconSearch}" />
+        </Button>
+        <Button x:Name="MainMenuButton" Classes="icon" ToolTip.Tip="{l:T 'Menu (toutes les commandes)'}">
+          <PathIcon Data="{StaticResource IconMenu}" />
+          <Button.Flyout>
+            <!-- Rempli à chaque ouverture (raccourcis à jour) ; un premier élément fixe : un menu vide ne s'ouvre pas. -->
+            <MenuFlyout Placement="BottomEdgeAlignedLeft">
+              <MenuItem Header="{l:T 'Fichiers'}" />
+            </MenuFlyout>
+          </Button.Flyout>
+        </Button>
+      </StackPanel>
+
+      <TextBlock Grid.Column="1" Classes="subtle" HorizontalAlignment="Center" VerticalAlignment="Center"
+                 Text="{Binding StatusMessage}" TextTrimming="CharacterEllipsis" Margin="12,0" />
+
+      <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2">
+        <ToggleButton Classes="icon" ToolTip.Tip="{l:T 'Afficher les fichiers cachés (Ctrl+H)'}" IsChecked="{Binding ShowHidden}">
+          <PathIcon Data="{StaticResource IconEye}" />
+        </ToggleButton>
+        <Button Classes="flat" Command="{Binding CycleThemeCommand}"
+                ToolTip.Tip="{l:T 'Thème : système, clair ou sombre'}">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <PathIcon Data="{StaticResource IconTheme}" Width="16" Height="16" />
+            <TextBlock Text="{Binding ThemeLabel}" VerticalAlignment="Center" FontSize="12" />
+          </StackPanel>
+        </Button>
+      </StackPanel>
+    </Grid>
+
+    <!-- Barre de boutons personnelle (Options → Barre de boutons) -->
+    <ItemsControl DockPanel.Dock="Top" Margin="10,6,10,0" ItemsSource="{Binding ButtonBarItems}" IsVisible="{Binding HasButtonBar}">
+      <ItemsControl.ItemsPanel>
+        <ItemsPanelTemplate>
+          <WrapPanel Orientation="Horizontal" />
+        </ItemsPanelTemplate>
+      </ItemsControl.ItemsPanel>
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="vm:CustomButtonViewModel">
+          <Panel>
+            <Rectangle Width="1" Height="20" Margin="6,0" Fill="{DynamicResource PanelBorder}" IsVisible="{Binding IsSeparator}" />
+            <Button Classes="flat" IsVisible="{Binding IsButton}" ToolTip.Tip="{Binding Tooltip}" Margin="0,0,2,0"
+                    Command="{Binding $parent[Window].DataContext.RunCustomCommandCommand}" CommandParameter="{Binding Command}">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <PathIcon Data="{Binding Icon}" Width="15" Height="15" />
+                <TextBlock Text="{Binding Label}" VerticalAlignment="Center" FontSize="12" IsVisible="{Binding HasLabel}" />
+              </StackPanel>
+            </Button>
+          </Panel>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+
+    <!-- Astuce du démarrage : discrète, ne bloque rien. -->
+    <Border DockPanel.Dock="Bottom" Margin="10,0,10,6" Padding="12,4,4,4" CornerRadius="8" IsVisible="{Binding IsTipVisible}"
+            Background="{DynamicResource PanelBackground}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1">
+      <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
+        <TextBlock Classes="subtle" Text="{l:T 'Astuce'}" VerticalAlignment="Center" Margin="0,0,10,0" />
+        <TextBlock Grid.Column="1" Text="{Binding TipText}" VerticalAlignment="Center" TextWrapping="Wrap" />
+        <Button Grid.Column="2" Margin="10,0,0,0" Padding="10,2" Content="{l:T 'Suivante'}" Command="{Binding NextTipCommand}" />
+        <Button Grid.Column="3" Margin="6,0,0,0" Padding="10,2" Content="{l:T 'Ne plus afficher'}" Command="{Binding HideTipsCommand}" />
+        <Button Grid.Column="4" Margin="6,0,0,0" Padding="8,2" Content="✕" ToolTip.Tip="{l:T 'Fermer'}" Command="{Binding CloseTipCommand}" />
+      </Grid>
+    </Border>
+
+    <!-- Touches de fonction -->
+    <UniformGrid DockPanel.Dock="Bottom" Rows="1" Margin="8,0,8,8">
+      <Button Classes="fkey" Command="{Binding ViewCommand}">
+        <StackPanel Orientation="Horizontal"><Border Classes="keycap"><TextBlock Text="F3" /></Border><TextBlock Text="{l:T 'Voir'}" VerticalAlignment="Center" /></StackPanel>
+      </Button>
+      <Button Classes="fkey" Command="{Binding EditCommand}">
+        <StackPanel Orientation="Horizontal"><Border Classes="keycap"><TextBlock Text="F4" /></Border><TextBlock Text="{l:T 'Éditer'}" VerticalAlignment="Center" /></StackPanel>
+      </Button>
+      <Button Classes="fkey" Command="{Binding CopyCommand}">
+        <StackPanel Orientation="Horizontal"><Border Classes="keycap"><TextBlock Text="F5" /></Border><TextBlock Text="{l:T 'Copier'}" VerticalAlignment="Center" /></StackPanel>
+      </Button>
+      <Button Classes="fkey" Command="{Binding MoveCommand}">
+        <StackPanel Orientation="Horizontal"><Border Classes="keycap"><TextBlock Text="F6" /></Border><TextBlock Text="{l:T 'Déplacer'}" VerticalAlignment="Center" /></StackPanel>
+      </Button>
+      <Button Classes="fkey" Command="{Binding RenameCommand}">
+        <StackPanel Orientation="Horizontal"><Border Classes="keycap"><TextBlock Text="{l:T 'Maj+F6'}" /></Border><TextBlock Text="{l:T 'Renommer'}" VerticalAlignment="Center" /></StackPanel>
+      </Button>
+      <Button Classes="fkey" Command="{Binding MakeDirectoryCommand}">
+        <StackPanel Orientation="Horizontal"><Border Classes="keycap"><TextBlock Text="F7" /></Border><TextBlock Text="{l:T 'Nouveau dossier'}" VerticalAlignment="Center" /></StackPanel>
+      </Button>
+      <Button Classes="fkey" Command="{Binding DeleteCommand}">
+        <StackPanel Orientation="Horizontal"><Border Classes="keycap"><TextBlock Text="F8" /></Border><TextBlock Text="{l:T 'Supprimer'}" VerticalAlignment="Center" /></StackPanel>
+      </Button>
+      <Button Classes="fkey" x:Name="QuitButton">
+        <StackPanel Orientation="Horizontal"><Border Classes="keycap"><TextBlock Text="Alt+F4" /></Border><TextBlock Text="{l:T 'Quitter'}" VerticalAlignment="Center" /></StackPanel>
+      </Button>
+    </UniformGrid>
+
+    <!-- Ligne de commande -->
+    <Border DockPanel.Dock="Bottom" Margin="10,0,10,6" Background="{DynamicResource PanelBackground}"
+            BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1" CornerRadius="8" Padding="10,0,4,0">
+      <Grid ColumnDefinitions="Auto,*">
+        <TextBlock Classes="subtle" VerticalAlignment="Center" MaxWidth="420" TextTrimming="PrefixCharacterEllipsis"
+                   Text="{Binding ActivePanel.Current.CurrentPath, StringFormat='{}{0}&gt;'}" />
+        <TextBox x:Name="CommandBox" Grid.Column="1" Text="{Binding CommandLine}" BorderThickness="0"
+                 Background="Transparent" PlaceholderText="{l:T 'Commande (Entrée : exécuter, Maj+Entrée : garder la console ouverte)'}" />
+      </Grid>
+    </Border>
+
+    <!-- Opérations en cours : trois lignes au plus, toutes les autres dans le petit panneau. -->
+    <StackPanel DockPanel.Dock="Bottom" Margin="10,0,10,6">
+      <ItemsControl ItemsSource="{Binding Operations.Shown}" ItemTemplate="{StaticResource JobLine}" />
+      <Button x:Name="OtherJobsButton" HorizontalAlignment="Left" Padding="10,3" Content="{Binding Operations.OthersLabel}"
+              IsVisible="{Binding Operations.HasOthers}" Command="{Binding Operations.ToggleAllCommand}" />
+      <Popup PlacementTarget="{Binding #OtherJobsButton}" Placement="TopEdgeAlignedLeft" IsLightDismissEnabled="True"
+             IsOpen="{Binding Operations.ShowAll, Mode=TwoWay}">
+        <Border Width="640" MaxHeight="440" Padding="10" CornerRadius="8" BorderThickness="1"
+                Background="{DynamicResource AppBackground}" BorderBrush="{DynamicResource PanelBorder}">
+          <DockPanel>
+            <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="2,0,0,8">
+              <TextBlock Text="{Binding Operations.AllTitle}" FontWeight="SemiBold" VerticalAlignment="Center" />
+              <Button Grid.Column="1" Content="✕" Padding="8,2" ToolTip.Tip="{l:T 'Fermer'}" Command="{Binding Operations.ToggleAllCommand}" />
+            </Grid>
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+              <ItemsControl Margin="0,0,12,0" ItemsSource="{Binding Operations.Jobs}" ItemTemplate="{StaticResource JobLine}" />
+            </ScrollViewer>
+          </DockPanel>
+        </Border>
+      </Popup>
+    </StackPanel>
+
+    <!-- Les deux panneaux -->
+    <Grid ColumnDefinitions="*,8,*" Margin="10,8,10,8">
+      <views:PanelView x:Name="LeftPanel" Grid.Column="0" DataContext="{Binding Left}" />
+      <GridSplitter Grid.Column="1" ResizeDirection="Columns" Background="Transparent" />
+      <views:PanelView x:Name="RightPanel" Grid.Column="2" DataContext="{Binding Right}" />
+    </Grid>
+  </DockPanel>
+</Window>

@@ -1,0 +1,41 @@
+<!-- TwinPanel — © 2026 Georges Christophe (chrypox). Tous droits réservés.
+     Licence TwinPanel 1.0 (gratuit, non commercial, sans modification) : voir le fichier LICENSE. -->
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:l="using:TwinPanel.App.Views"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:TwinPanel.App.ViewModels"
+        x:Class="TwinPanel.App.Views.EditorWindow"
+        x:DataType="vm:EditorViewModel"
+        Title="{Binding Title}" Width="1000" Height="720" MinWidth="500" MinHeight="300"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource AppBackground}">
+  <DockPanel>
+    <!-- Barre d'outils -->
+    <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,Auto,*,Auto" Margin="10,8,10,4">
+      <Button x:Name="SaveButton" Content="{l:T 'Enregistrer (Ctrl+S)'}" Classes="accent" Margin="0,0,8,0" />
+      <CheckBox Grid.Column="1" Content="{l:T 'Retour à la ligne'}" IsChecked="{Binding Wrap}" VerticalAlignment="Center" />
+      <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6">
+        <TextBox x:Name="FindBox" Width="200" PlaceholderText="{l:T 'Rechercher (Ctrl+F)'}" Text="{Binding FindText}" />
+        <Button x:Name="FindNextButton" Content="{l:T 'Suivant (F3)'}" />
+        <TextBox x:Name="ReplaceBox" Width="160" PlaceholderText="{l:T 'Remplacer par'}" Text="{Binding ReplaceText}" IsVisible="{Binding ShowReplace}" />
+        <Button x:Name="ReplaceAllButton" Content="{l:T 'Tout remplacer'}" IsVisible="{Binding ShowReplace}" />
+      </StackPanel>
+    </Grid>
+
+    <!-- Barre d'état -->
+    <Grid DockPanel.Dock="Bottom" ColumnDefinitions="Auto,*,Auto" Margin="12,4,12,8">
+      <TextBlock Classes="subtle" Text="{Binding Position}" />
+      <TextBlock Grid.Column="1" Classes="subtle" Text="{Binding Status}" Margin="16,0" TextTrimming="CharacterEllipsis" />
+      <TextBlock Grid.Column="2" Classes="subtle" Text="{Binding FormatInfo}" />
+    </Grid>
+
+    <Border Margin="10,0" Background="{DynamicResource PanelBackground}" BorderBrush="{DynamicResource PanelBorder}"
+            BorderThickness="1" CornerRadius="8" ClipToBounds="True">
+      <TextBox x:Name="Editor" Text="{Binding Text}" AcceptsReturn="True" AcceptsTab="True"
+               FontFamily="Cascadia Mono,Consolas,Menlo,monospace" FontSize="13"
+               BorderThickness="0" Background="Transparent" Padding="10"
+               ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto"
+               IsEnabled="{Binding IsLoaded}" />
+    </Border>
+  </DockPanel>
+</Window>

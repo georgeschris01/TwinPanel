@@ -1,0 +1,83 @@
+<!-- TwinPanel — © 2026 Georges Christophe (chrypox). Tous droits réservés.
+     Licence TwinPanel 1.0 (gratuit, non commercial, sans modification) : voir le fichier LICENSE. -->
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:l="using:TwinPanel.App.Views"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:TwinPanel.App.ViewModels"
+        x:Class="TwinPanel.App.Views.SyncWindow"
+        x:DataType="vm:SyncViewModel"
+        Title="{l:T 'Synchroniser les dossiers'}" Width="1100" Height="720" MinWidth="760" MinHeight="480"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Background="{DynamicResource AppBackground}">
+  <DockPanel Margin="16">
+    <Grid DockPanel.Dock="Bottom" ColumnDefinitions="*,Auto,Auto" Margin="0,12,0,0">
+      <TextBlock Classes="subtle" VerticalAlignment="Center" Text="{Binding Status}" TextTrimming="CharacterEllipsis" />
+      <Button Grid.Column="1" x:Name="SyncButton" Content="{l:T 'Synchroniser'}" Classes="accent" Margin="0,0,8,0" IsEnabled="{Binding HasActions}" />
+      <Button Grid.Column="2" x:Name="CloseButton" Content="{l:T 'Fermer'}" IsCancel="True" />
+    </Grid>
+
+    <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*,Auto,Auto" Margin="0,0,0,10">
+      <TextBlock Classes="subtle" Text="{l:T 'Profil :'}" VerticalAlignment="Center" Margin="0,0,6,0" />
+      <ComboBox Grid.Column="1" ItemsSource="{Binding Profiles}" SelectedItem="{Binding SelectedProfile}"
+                PlaceholderText="{l:T 'Aucun profil choisi'}" HorizontalAlignment="Stretch" Margin="0,0,8,0" />
+      <Button Grid.Column="2" Content="{l:T 'Enregistrer…'}" Command="{Binding SaveProfileCommand}" Margin="0,0,8,0" />
+      <Button Grid.Column="3" Content="{l:T 'Supprimer'}" Command="{Binding DeleteProfileCommand}" />
+    </Grid>
+
+    <Grid DockPanel.Dock="Top" ColumnDefinitions="*,16,*">
+      <StackPanel Spacing="4">
+        <TextBlock Classes="subtle" Text="{l:T 'Dossier de gauche'}" />
+        <TextBox Text="{Binding LeftPath}" />
+      </StackPanel>
+      <StackPanel Grid.Column="2" Spacing="4">
+        <TextBlock Classes="subtle" Text="{l:T 'Dossier de droite'}" />
+        <TextBox Text="{Binding RightPath}" />
+      </StackPanel>
+    </Grid>
+
+    <WrapPanel DockPanel.Dock="Top" Margin="0,10,0,0">
+      <TextBlock Classes="subtle" Text="{l:T 'Masque :'}" VerticalAlignment="Center" Margin="0,0,6,0" />
+      <TextBox Text="{Binding NameMask}" Width="140" Margin="0,0,16,0" />
+      <CheckBox Content="{l:T 'Sous-dossiers'}" IsChecked="{Binding Recursive}" Margin="0,0,16,0" />
+      <CheckBox Content="{l:T 'Comparer le contenu'}" IsChecked="{Binding CompareContent}" Margin="0,0,16,0" />
+      <CheckBox Content="{l:T 'Ignorer la date'}" IsChecked="{Binding IgnoreDate}" Margin="0,0,16,0" />
+      <TextBlock Classes="subtle" Text="{l:T 'Sens :'}" VerticalAlignment="Center" Margin="0,0,6,0" />
+      <ComboBox ItemsSource="{x:Static vm:SyncViewModel.Directions}" SelectedItem="{Binding Direction}" MinWidth="200" Margin="0,0,16,0" />
+      <Button Content="{l:T 'Comparer'}" Classes="accent" IsDefault="True" Command="{Binding CompareCommand}" />
+    </WrapPanel>
+
+    <WrapPanel DockPanel.Dock="Top" Margin="0,8,0,0">
+      <TextBlock Classes="subtle" Text="{l:T 'Afficher :'}" VerticalAlignment="Center" Margin="0,0,8,0" />
+      <ToggleButton Content="{l:T 'Identiques'}" IsChecked="{Binding ShowEqual}" Margin="0,0,6,0" />
+      <ToggleButton Content="{l:T 'Différents'}" IsChecked="{Binding ShowDifferent}" Margin="0,0,6,0" />
+      <ToggleButton Content="{l:T 'Seulement à gauche'}" IsChecked="{Binding ShowLeftOnly}" Margin="0,0,6,0" />
+      <ToggleButton Content="{l:T 'Seulement à droite'}" IsChecked="{Binding ShowRightOnly}" Margin="0,0,16,0" />
+      <TextBlock Classes="subtle" VerticalAlignment="Center" Text="{l:T 'Clique sur une flèche pour changer l\'action (→ ← ·).'}" />
+    </WrapPanel>
+
+    <ProgressBar DockPanel.Dock="Top" IsIndeterminate="True" Height="2" MinHeight="2" Margin="0,8,0,0" IsVisible="{Binding IsBusy}" />
+
+    <Border Margin="0,8,0,0" Background="{DynamicResource PanelBackground}" BorderBrush="{DynamicResource PanelBorder}"
+            BorderThickness="1" CornerRadius="8" ClipToBounds="True">
+      <DataGrid ItemsSource="{Binding Rows}" IsReadOnly="True" GridLinesVisibility="None" HeadersVisibility="Column"
+                CanUserSortColumns="False" RowHeight="28" Background="Transparent" SelectionMode="Single">
+        <DataGrid.Columns>
+          <DataGridTextColumn Header="{l:T 'Élément'}" Binding="{Binding RelativePath}" Width="3*" />
+          <DataGridTextColumn Header="{l:T 'Taille'}" Binding="{Binding LeftSize}" Width="90" />
+          <DataGridTextColumn Header="Date" Binding="{Binding LeftDate}" Width="130" />
+          <DataGridTemplateColumn Header="Action" Width="70">
+            <DataGridTemplateColumn.CellTemplate>
+              <DataTemplate>
+                <Button Content="{Binding ActionSymbol}" Command="{Binding CycleActionCommand}" HorizontalAlignment="Center"
+                        Padding="10,0" FontSize="16" FontWeight="Bold" Background="Transparent" BorderThickness="0" />
+              </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+          </DataGridTemplateColumn>
+          <DataGridTextColumn Header="{l:T 'Taille'}" Binding="{Binding RightSize}" Width="90" />
+          <DataGridTextColumn Header="Date" Binding="{Binding RightDate}" Width="130" />
+          <DataGridTextColumn Header="{l:T 'État'}" Binding="{Binding StateText}" Width="160" />
+        </DataGrid.Columns>
+      </DataGrid>
+    </Border>
+  </DockPanel>
+</Window>

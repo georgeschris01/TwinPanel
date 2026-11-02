@@ -1,0 +1,397 @@
+<!-- TwinPanel — © 2026 Georges Christophe (chrypox). Tous droits réservés.
+     Licence TwinPanel 1.0 (gratuit, non commercial, sans modification) : voir le fichier LICENSE. -->
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:l="using:TwinPanel.App.Views"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:TwinPanel.App.ViewModels"
+        x:Class="TwinPanel.App.Views.PropertiesWindow"
+        x:DataType="vm:PropertiesViewModel"
+        Title="{Binding Title}" Width="760" Height="640" MinWidth="560" MinHeight="460"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Background="{DynamicResource AppBackground}">
+  <Window.Styles>
+    <Style Selector="TextBlock.label">
+      <Setter Property="Foreground" Value="{DynamicResource SubtleText}" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Margin" Value="0,4,16,4" />
+    </Style>
+    <Style Selector="TextBlock.value">
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+      <Setter Property="Margin" Value="0,4" />
+    </Style>
+    <Style Selector="TextBlock.section">
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Margin" Value="0,14,0,6" />
+    </Style>
+    <Style Selector="Border.card">
+      <Setter Property="Background" Value="{DynamicResource PanelBackground}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource PanelBorder}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="12" />
+    </Style>
+  </Window.Styles>
+
+  <DockPanel Margin="16">
+    <!-- En-tête -->
+    <StackPanel DockPanel.Dock="Top" Margin="0,0,0,10">
+      <TextBlock Text="{Binding Header}" FontSize="18" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+      <TextBlock Classes="subtle" Text="{Binding Location}" TextTrimming="CharacterEllipsis" />
+    </StackPanel>
+
+    <!-- Bas : état, progression, boutons -->
+    <Grid DockPanel.Dock="Bottom" ColumnDefinitions="*,Auto,Auto,Auto,Auto" Margin="0,12,0,0">
+      <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+        <TextBlock Classes="subtle" Text="{Binding Status}" TextTrimming="CharacterEllipsis" />
+        <ProgressBar IsIndeterminate="True" Height="2" MinHeight="2" Margin="0,4,0,0" IsVisible="{Binding IsBusy}" />
+      </StackPanel>
+      <Button Grid.Column="1" Content="{l:T 'Arrêter'}" Command="{Binding CancelWorkCommand}" IsVisible="{Binding IsBusy}" Margin="0,0,8,0" />
+      <Button Grid.Column="2" Content="{l:T 'Appliquer'}" Command="{Binding ApplyCommand}" IsEnabled="{Binding IsLoaded}" Margin="0,0,8,0" />
+      <Button Grid.Column="3" x:Name="OkButton" Content="OK" Classes="accent" IsDefault="True" IsEnabled="{Binding IsLoaded}" MinWidth="80" Margin="0,0,8,0" />
+      <Button Grid.Column="4" x:Name="CloseButton" Content="{l:T 'Fermer'}" IsCancel="True" MinWidth="80" />
+    </Grid>
+
+    <TabControl>
+      <!-- ================= Général ================= -->
+      <TabItem Header="{l:T 'Général'}">
+        <ScrollViewer>
+          <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" Margin="0,8,12,0">
+            <TextBlock Grid.Row="0" Classes="label" Text="Type" />
+            <TextBlock Grid.Row="0" Grid.Column="1" Classes="value" Text="{Binding TypeText}" />
+
+            <TextBlock Grid.Row="1" Classes="label" Text="{l:T 'Emplacement'}" />
+            <TextBlock Grid.Row="1" Grid.Column="1" Classes="value" Text="{Binding Location}" />
+
+            <TextBlock Grid.Row="2" Classes="label" Text="{l:T 'Taille'}" />
+            <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Spacing="10">
+              <TextBlock Classes="value" Text="{Binding SizeText}" />
+              <Button Classes="small" Content="{Binding MeasureLabel}" Command="{Binding MeasureCommand}" IsVisible="{Binding HasFolders}" />
+            </StackPanel>
+
+            <TextBlock Grid.Row="3" Classes="label" Text="{l:T 'Contenu'}" IsVisible="{Binding ContentText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            <TextBlock Grid.Row="3" Grid.Column="1" Classes="value" Text="{Binding ContentText}" IsVisible="{Binding ContentText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+            <TextBlock Grid.Row="4" Classes="label" Text="{l:T 'Lien vers'}" IsVisible="{Binding HasLink}" />
+            <SelectableTextBlock Grid.Row="4" Grid.Column="1" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,4" Text="{Binding LinkText}" IsVisible="{Binding HasLink}" />
+
+            <TextBlock Grid.Row="5" Classes="label" Text="{l:T 'Créé le'}" IsVisible="{Binding CreatedText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            <TextBlock Grid.Row="5" Grid.Column="1" Classes="value" Text="{Binding CreatedText}" IsVisible="{Binding CreatedText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+            <TextBlock Grid.Row="6" Classes="label" Text="{l:T 'Modifié le'}" IsVisible="{Binding ModifiedText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            <TextBlock Grid.Row="6" Grid.Column="1" Classes="value" Text="{Binding ModifiedText}" IsVisible="{Binding ModifiedText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+            <TextBlock Grid.Row="7" Classes="label" Text="{l:T 'Dernier accès'}" IsVisible="{Binding AccessedText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            <TextBlock Grid.Row="7" Grid.Column="1" Classes="value" Text="{Binding AccessedText}" IsVisible="{Binding AccessedText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+            <TextBlock Grid.Row="8" Classes="label" Text="{l:T 'Propriétaire'}" IsVisible="{Binding OwnerText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            <TextBlock Grid.Row="8" Grid.Column="1" Classes="value" Text="{Binding OwnerText}" IsVisible="{Binding OwnerText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+            <TextBlock Grid.Row="9" Classes="label" Text="{l:T 'Groupe'}" IsVisible="{Binding GroupText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            <TextBlock Grid.Row="9" Grid.Column="1" Classes="value" Text="{Binding GroupText}" IsVisible="{Binding GroupText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+          </Grid>
+        </ScrollViewer>
+      </TabItem>
+
+      <!-- ================= Média ================= -->
+      <TabItem Header="{l:T 'Média'}" IsVisible="{Binding HasMediaTab}">
+        <ScrollViewer>
+          <StackPanel Margin="0,8,12,8" Spacing="8">
+            <TextBlock Classes="subtle" TextWrapping="Wrap" Text="{Binding MediaMessage}" IsVisible="{Binding MediaMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+            <!-- Tags (musique, MP4) -->
+            <Border Classes="card" IsVisible="{Binding CanEditTags}">
+              <StackPanel Spacing="6">
+                <TextBlock Classes="section" Margin="0" Text="Tags" />
+                <TextBlock Classes="subtle" Text="{Binding TagTechnical}" IsVisible="{Binding TagTechnical, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                <Grid ColumnDefinitions="*,16,Auto">
+                  <Grid ColumnDefinitions="130,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+                    <TextBlock Grid.Row="0" Classes="label" Text="{l:T 'Titre'}" />
+                    <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding TagTitle}" PlaceholderText="{l:T '(plusieurs)'}" Margin="0,2" />
+                    <TextBlock Grid.Row="1" Classes="label" Text="{l:T 'Artiste'}" />
+                    <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding TagArtist}" PlaceholderText="{l:T '(plusieurs)'}" Margin="0,2" />
+                    <TextBlock Grid.Row="2" Classes="label" Text="{l:T 'Artiste de l\'album'}" IsVisible="{Binding !TagsIsVideo}" />
+                    <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding TagAlbumArtist}" PlaceholderText="{l:T '(plusieurs)'}" Margin="0,2" IsVisible="{Binding !TagsIsVideo}" />
+                    <TextBlock Grid.Row="3" Classes="label" Text="Album" IsVisible="{Binding !TagsIsVideo}" />
+                    <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding TagAlbum}" PlaceholderText="{l:T '(plusieurs)'}" Margin="0,2" IsVisible="{Binding !TagsIsVideo}" />
+                    <TextBlock Grid.Row="4" Classes="label" Text="{l:T 'Année'}" />
+                    <WrapPanel Grid.Row="4" Grid.Column="1" Margin="0,2">
+                      <TextBox Text="{Binding TagYear}" Width="80" PlaceholderText="{l:T '(plusieurs)'}" Margin="0,0,16,0" />
+                      <TextBlock Classes="label" Text="{l:T 'Piste'}" IsVisible="{Binding !TagsIsVideo}" />
+                      <TextBox Text="{Binding TagTrack}" Width="60" PlaceholderText="…" IsVisible="{Binding !TagsIsVideo}" />
+                      <TextBlock Text=" / " VerticalAlignment="Center" IsVisible="{Binding !TagsIsVideo}" />
+                      <TextBox Text="{Binding TagTrackTotal}" Width="60" PlaceholderText="…" Margin="0,0,16,0" IsVisible="{Binding !TagsIsVideo}" />
+                      <TextBlock Classes="label" Text="{l:T 'Disque'}" IsVisible="{Binding !TagsIsVideo}" />
+                      <TextBox Text="{Binding TagDisc}" Width="60" PlaceholderText="…" IsVisible="{Binding !TagsIsVideo}" />
+                    </WrapPanel>
+                    <TextBlock Grid.Row="5" Classes="label" Text="Genre" />
+                    <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding TagGenre}" PlaceholderText="{l:T '(plusieurs)'}" Margin="0,2" />
+                    <TextBlock Grid.Row="6" Classes="label" Text="{l:T 'Compositeur'}" IsVisible="{Binding !TagsIsVideo}" />
+                    <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding TagComposer}" PlaceholderText="{l:T '(plusieurs)'}" Margin="0,2" IsVisible="{Binding !TagsIsVideo}" />
+                    <TextBlock Grid.Row="7" Classes="label" Text="{l:T 'Commentaire'}" />
+                    <TextBox Grid.Row="7" Grid.Column="1" Text="{Binding TagComment}" PlaceholderText="{l:T '(plusieurs)'}" Margin="0,2" />
+                    <TextBlock Grid.Row="8" Classes="label" Text="Description" IsVisible="{Binding TagsIsVideo}" />
+                    <TextBox Grid.Row="8" Grid.Column="1" Text="{Binding TagDescription}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="60" Margin="0,2" IsVisible="{Binding TagsIsVideo}" />
+                  </Grid>
+                  <StackPanel Grid.Column="2" Width="170" Spacing="6">
+                    <Border Width="160" Height="160" Background="{DynamicResource ChipBackground}" CornerRadius="6" ClipToBounds="True">
+                      <Image Source="{Binding Cover}" Stretch="Uniform" />
+                    </Border>
+                    <TextBlock Classes="subtle" Text="{Binding CoverInfo}" TextWrapping="Wrap" />
+                    <WrapPanel>
+                      <Button Classes="small" Content="{l:T 'Changer…'}" Command="{Binding ChangeCoverCommand}" Margin="0,0,6,0" />
+                      <Button Classes="small" Content="{l:T 'Retirer'}" Command="{Binding RemoveCoverCommand}" />
+                    </WrapPanel>
+                  </StackPanel>
+                </Grid>
+                <TextBlock Classes="subtle" TextWrapping="Wrap" Text="{Binding MixedHint}" IsVisible="{Binding MixedHint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+              </StackPanel>
+            </Border>
+
+            <!-- MKV : titre et pistes -->
+            <Border Classes="card" IsVisible="{Binding CanEditMkv}">
+              <StackPanel Spacing="6">
+                <TextBlock Classes="section" Margin="0" Text="{l:T 'Titre et pistes (MKV)'}" />
+                <Grid ColumnDefinitions="130,*">
+                  <TextBlock Classes="label" Text="{l:T 'Titre du film'}" />
+                  <TextBox Grid.Column="1" Text="{Binding MkvTitle}" />
+                </Grid>
+                <ItemsControl ItemsSource="{Binding MkvTracks}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:MkvTrackRow">
+                      <Grid ColumnDefinitions="230,*,8,90,8,Auto,Auto" Margin="0,3">
+                        <TextBlock Text="{Binding Header}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                        <TextBox Grid.Column="1" Text="{Binding Name}" PlaceholderText="{l:T 'Nom de la piste'}" />
+                        <AutoCompleteBox Grid.Column="3" Text="{Binding Language}" ItemsSource="{x:Static vm:PropertiesViewModel.CommonLanguages}"
+                                         MinimumPrefixLength="0" FilterMode="StartsWith" PlaceholderText="{l:T 'langue'}" />
+                        <CheckBox Grid.Column="5" Content="{l:T 'Par défaut'}" IsChecked="{Binding IsDefault}" Margin="0,0,8,0" />
+                        <CheckBox Grid.Column="6" Content="{l:T 'Forcée'}" IsChecked="{Binding IsForced}" IsVisible="{Binding !IsVideo}" />
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock Classes="subtle" TextWrapping="Wrap" Text="{l:T 'Langue : code fr, en, de… (ou fr-BE, en-US). « Par défaut » d\'une piste ne retire pas celui des autres.'}" />
+                <TextBlock Classes="subtle" TextWrapping="Wrap" Text="{Binding MkvToolInfo}" />
+                <HyperlinkButton Padding="0" IsVisible="{Binding MkvToolMissing}" Content="{Binding MkvToolNixUrl}"
+                                 Command="{Binding OpenLinkCommand}" CommandParameter="{Binding MkvToolNixUrl}" />
+              </StackPanel>
+            </Border>
+
+            <!-- Photo : EXIF -->
+            <Border Classes="card" IsVisible="{Binding CanEditExif}">
+              <StackPanel Spacing="6">
+                <TextBlock Classes="section" Margin="0" Text="{l:T 'Photo (EXIF)'}" />
+                <Grid ColumnDefinitions="130,*" RowDefinitions="Auto,Auto,Auto,Auto">
+                  <TextBlock Grid.Row="0" Classes="label" Text="{l:T 'Prise de vue'}" />
+                  <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding ExifTaken}" PlaceholderText="2024-05-31 14:30:00" Margin="0,2" />
+                  <TextBlock Grid.Row="1" Classes="label" Text="{l:T 'Auteur'}" />
+                  <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding ExifArtist}" Margin="0,2" />
+                  <TextBlock Grid.Row="2" Classes="label" Text="Copyright" />
+                  <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding ExifCopyright}" Margin="0,2" />
+                  <TextBlock Grid.Row="3" Classes="label" Text="Description" />
+                  <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding ExifDescription}" Margin="0,2" />
+                </Grid>
+                <CheckBox Content="{l:T 'Retirer la position GPS'}" IsChecked="{Binding ExifRemoveGps}" IsVisible="{Binding ExifHasGps}" />
+                <TextBlock Classes="subtle" TextWrapping="Wrap" Text="{Binding ExifToolInfo}" />
+                <HyperlinkButton Padding="0" IsVisible="{Binding ExifToolMissing}" Content="{Binding ExifToolUrl}"
+                                 Command="{Binding OpenLinkCommand}" CommandParameter="{Binding ExifToolUrl}" />
+              </StackPanel>
+            </Border>
+
+            <!-- Caractéristiques -->
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Classes="section" Margin="0,6,0,0" Text="{l:T 'Caractéristiques'}" />
+              <Button Grid.Column="1" x:Name="CopyReportButton" Classes="small" Content="{l:T 'Copier le rapport complet'}"
+                      IsVisible="{Binding FullMediaReport, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            </Grid>
+            <ItemsControl ItemsSource="{Binding MediaSections}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:MediaSection">
+                  <Border Classes="card" Margin="0,0,0,8">
+                    <StackPanel>
+                      <TextBlock Text="{Binding Header}" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,0,0,4" />
+                      <ItemsControl ItemsSource="{Binding Fields}">
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate>
+                            <Grid ColumnDefinitions="200,*">
+                              <TextBlock Classes="label" Text="{Binding Label}" Margin="0,1,16,1" />
+                              <SelectableTextBlock Grid.Column="1" Text="{Binding Value}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                            </Grid>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <!-- ================= Droits Unix ================= -->
+      <TabItem Header="{l:T 'Droits'}" IsVisible="{Binding HasUnixRights}">
+        <ScrollViewer>
+          <StackPanel Margin="0,8,12,8">
+            <Border Classes="card" IsVisible="{Binding CanChmod}">
+              <StackPanel>
+                <Grid ColumnDefinitions="140,100,100,100" RowDefinitions="Auto,Auto,Auto,Auto" IsEnabled="{Binding GridEnabled}">
+                  <TextBlock Grid.Column="1" Classes="subtle" Text="{l:T 'Lecture'}" HorizontalAlignment="Center" />
+                  <TextBlock Grid.Column="2" Classes="subtle" Text="{l:T 'Écriture'}" HorizontalAlignment="Center" />
+                  <TextBlock Grid.Column="3" Classes="subtle" Text="{l:T 'Exécution'}" HorizontalAlignment="Center" />
+
+                  <TextBlock Grid.Row="1" Classes="label" Text="{l:T 'Propriétaire'}" />
+                  <CheckBox Grid.Row="1" Grid.Column="1" HorizontalAlignment="Center" IsChecked="{Binding UR.Value}" IsThreeState="{Binding UR.IsMixed}" />
+                  <CheckBox Grid.Row="1" Grid.Column="2" HorizontalAlignment="Center" IsChecked="{Binding UW.Value}" IsThreeState="{Binding UW.IsMixed}" />
+                  <CheckBox Grid.Row="1" Grid.Column="3" HorizontalAlignment="Center" IsChecked="{Binding UX.Value}" IsThreeState="{Binding UX.IsMixed}" />
+
+                  <TextBlock Grid.Row="2" Classes="label" Text="{l:T 'Groupe'}" />
+                  <CheckBox Grid.Row="2" Grid.Column="1" HorizontalAlignment="Center" IsChecked="{Binding GR.Value}" IsThreeState="{Binding GR.IsMixed}" />
+                  <CheckBox Grid.Row="2" Grid.Column="2" HorizontalAlignment="Center" IsChecked="{Binding GW.Value}" IsThreeState="{Binding GW.IsMixed}" />
+                  <CheckBox Grid.Row="2" Grid.Column="3" HorizontalAlignment="Center" IsChecked="{Binding GX.Value}" IsThreeState="{Binding GX.IsMixed}" />
+
+                  <TextBlock Grid.Row="3" Classes="label" Text="{l:T 'Autres'}" />
+                  <CheckBox Grid.Row="3" Grid.Column="1" HorizontalAlignment="Center" IsChecked="{Binding OR.Value}" IsThreeState="{Binding OR.IsMixed}" />
+                  <CheckBox Grid.Row="3" Grid.Column="2" HorizontalAlignment="Center" IsChecked="{Binding OW.Value}" IsThreeState="{Binding OW.IsMixed}" />
+                  <CheckBox Grid.Row="3" Grid.Column="3" HorizontalAlignment="Center" IsChecked="{Binding OX.Value}" IsThreeState="{Binding OX.IsMixed}" />
+                </Grid>
+
+                <StackPanel Margin="0,10,0,0" IsEnabled="{Binding GridEnabled}">
+                  <CheckBox Content="{Binding SUid.Label}" IsChecked="{Binding SUid.Value}" IsThreeState="{Binding SUid.IsMixed}" />
+                  <CheckBox Content="{Binding SGid.Label}" IsChecked="{Binding SGid.Value}" IsThreeState="{Binding SGid.IsMixed}" />
+                  <CheckBox Content="{Binding SSticky.Label}" IsChecked="{Binding SSticky.Value}" IsThreeState="{Binding SSticky.IsMixed}" />
+                </StackPanel>
+
+                <WrapPanel Margin="0,10,0,0" IsEnabled="{Binding GridEnabled}">
+                  <TextBlock Classes="label" Text="{l:T 'En chiffres'}" />
+                  <TextBox Text="{Binding Octal}" Width="80" PlaceholderText="{l:T 'mélangé'}" Margin="0,0,12,0" />
+                  <TextBlock Classes="value" FontFamily="Consolas,Menlo,monospace" Text="{Binding Symbolic}" Margin="0,0,16,0" />
+                  <Button Classes="chip" Content="644" Command="{Binding SetPresetCommand}" CommandParameter="644" Margin="0,0,4,0" />
+                  <Button Classes="chip" Content="755" Command="{Binding SetPresetCommand}" CommandParameter="755" Margin="0,0,4,0" />
+                  <Button Classes="chip" Content="600" Command="{Binding SetPresetCommand}" CommandParameter="600" Margin="0,0,4,0" />
+                  <Button Classes="chip" Content="700" Command="{Binding SetPresetCommand}" CommandParameter="700" Margin="0,0,4,0" />
+                  <Button Classes="chip" Content="775" Command="{Binding SetPresetCommand}" CommandParameter="775" Margin="0,0,4,0" />
+                </WrapPanel>
+              </StackPanel>
+            </Border>
+
+            <TextBlock Classes="section" Text="{l:T 'Propriétaire et groupe'}" IsVisible="{Binding CanChown}" />
+            <Border Classes="card" IsVisible="{Binding CanChown}">
+              <StackPanel Spacing="6">
+                <Grid ColumnDefinitions="140,*,8,150">
+                  <TextBlock Classes="label" Text="{l:T 'Propriétaire'}" />
+                  <ComboBox Grid.Column="1" ItemsSource="{Binding UserList}" SelectedItem="{Binding SelectedUser}" HorizontalAlignment="Stretch"
+                            PlaceholderText="{l:T '(plusieurs) — choisir pour changer'}" MaxDropDownHeight="360" IsVisible="{Binding HasAccountList}" />
+                  <TextBox Grid.Column="3" Text="{Binding OwnerInput}" PlaceholderText="{l:T 'Autre : nom ou uid'}" />
+                </Grid>
+                <Grid ColumnDefinitions="140,*,8,150">
+                  <TextBlock Classes="label" Text="{l:T 'Groupe'}" />
+                  <ComboBox Grid.Column="1" ItemsSource="{Binding GroupList}" SelectedItem="{Binding SelectedGroup}" HorizontalAlignment="Stretch"
+                            PlaceholderText="{l:T '(plusieurs) — choisir pour changer'}" MaxDropDownHeight="360" IsVisible="{Binding HasAccountList}" />
+                  <TextBox Grid.Column="3" Text="{Binding GroupInput}" PlaceholderText="{l:T 'Autre : nom ou gid'}" />
+                </Grid>
+                <TextBlock Classes="subtle" TextWrapping="Wrap" Text="{Binding AccountsHint}" IsVisible="{Binding AccountsHint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                <TextBlock Classes="subtle" TextWrapping="Wrap"
+                           Text="{l:T 'Seul root (ou sudo) peut donner un fichier à un autre utilisateur. Le propriétaire peut seulement choisir l\'un de ses propres groupes.'}" />
+              </StackPanel>
+            </Border>
+
+            <TextBlock Classes="section" Text="{l:T 'Contenu des dossiers'}" IsVisible="{Binding HasFolders}" />
+            <Border Classes="card" IsVisible="{Binding HasFolders}">
+              <StackPanel Spacing="8">
+                <CheckBox Content="{l:T 'Appliquer aussi à tout le contenu (sous-dossiers compris)'}" IsChecked="{Binding Recursive}" />
+                <ComboBox ItemsSource="{Binding ContentRules}" SelectedItem="{Binding ContentRule}" HorizontalAlignment="Stretch" IsVisible="{Binding Recursive}" IsEnabled="{Binding CanChmod}" />
+                <WrapPanel IsVisible="{Binding SeparateModes}">
+                  <TextBlock Classes="label" Text="{l:T 'Fichiers'}" />
+                  <TextBox Text="{Binding FileOctal}" Width="80" Margin="0,0,24,0" />
+                  <TextBlock Classes="label" Text="{l:T 'Dossiers'}" />
+                  <TextBox Text="{Binding DirOctal}" Width="80" />
+                </WrapPanel>
+                <TextBlock Classes="subtle" TextWrapping="Wrap"
+                           Text="{l:T '« Seulement les cases changées » : les autres droits de chaque élément restent tels quels. Les liens symboliques ne sont pas suivis.'}" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <!-- ================= Attributs Windows ================= -->
+      <TabItem Header="{l:T 'Attributs'}" IsVisible="{Binding IsWindowsLocal}">
+        <ScrollViewer>
+          <StackPanel Margin="0,8,12,8" Spacing="6">
+            <Border Classes="card">
+              <ItemsControl ItemsSource="{Binding AttributeFlags}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:TriStateFlag">
+                    <CheckBox Content="{Binding Label}" IsChecked="{Binding Value}" IsThreeState="{Binding IsMixed}" Margin="0,2" />
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </Border>
+            <TextBlock Classes="subtle" Text="{Binding AttributesInfo}" TextWrapping="Wrap" />
+            <CheckBox Content="{l:T 'Appliquer aussi à tout le contenu des dossiers'}" IsChecked="{Binding AttributesRecursive}" IsVisible="{Binding HasFolders}" />
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <!-- ================= Sécurité NTFS ================= -->
+      <TabItem Header="{l:T 'Sécurité'}" IsVisible="{Binding IsWindowsLocal}">
+        <Panel Margin="0,8,0,0">
+          <TextBlock Classes="subtle" TextWrapping="Wrap" Text="{l:T 'Sélectionne un seul élément pour voir et changer sa sécurité.'}" IsVisible="{Binding !IsSingle}" />
+          <TextBlock Classes="subtle" TextWrapping="Wrap" Text="{Binding SecurityMessage}" IsVisible="{Binding !SecurityAvailable}" />
+          <DockPanel IsVisible="{Binding SecurityAvailable}">
+            <!-- Propriétaire et héritage -->
+            <StackPanel DockPanel.Dock="Top" Spacing="6">
+              <Grid ColumnDefinitions="Auto,*,Auto">
+                <TextBlock Classes="label" Text="{l:T 'Propriétaire'}" />
+                <TextBlock Grid.Column="1" Classes="value" Text="{Binding NtfsOwner}" />
+                <Button Grid.Column="2" Classes="small" Content="{Binding InheritanceLabel}" Command="{Binding ToggleInheritanceCommand}" />
+              </Grid>
+              <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                <TextBlock Classes="label" Text="{l:T 'Nouveau propriétaire'}" />
+                <AutoCompleteBox Grid.Column="1" Text="{Binding NewOwnerInput}" ItemsSource="{Binding AccountChoices}" FilterMode="Contains" MinimumPrefixLength="0" PlaceholderText="{l:T 'Administrateurs, PC\\Utilisateur…'}" />
+                <CheckBox Grid.Column="2" Content="{l:T 'aussi le contenu'}" IsChecked="{Binding OwnerRecursive}" IsVisible="{Binding IsFolder}" Margin="8,0" />
+                <Button Grid.Column="3" Content="{l:T 'Changer'}" Command="{Binding ChangeNtfsOwnerCommand}" />
+              </Grid>
+            </StackPanel>
+
+            <!-- Éditeur d'une autorisation -->
+            <Border DockPanel.Dock="Bottom" Classes="card" Margin="0,8,0,0">
+              <StackPanel Spacing="6">
+                <Grid ColumnDefinitions="*,8,130">
+                  <AutoCompleteBox Text="{Binding AccountInput}" ItemsSource="{Binding AccountChoices}" FilterMode="Contains" MinimumPrefixLength="0" PlaceholderText="{l:T 'Compte : Utilisateurs, Tout le monde, PC\\Utilisateur…'}" />
+                  <ComboBox Grid.Column="2" ItemsSource="{x:Static vm:PropertiesViewModel.AclTypes}" SelectedItem="{Binding AclType}" HorizontalAlignment="Stretch" />
+                </Grid>
+                <Grid ColumnDefinitions="*,8,*">
+                  <ComboBox ItemsSource="{x:Static vm:PropertiesViewModel.AclPresets}" SelectedItem="{Binding AclPreset}" HorizontalAlignment="Stretch" />
+                  <ComboBox Grid.Column="2" ItemsSource="{x:Static vm:PropertiesViewModel.AclScopes}" SelectedItem="{Binding AclScope}" HorizontalAlignment="Stretch" IsVisible="{Binding IsFolder}" />
+                </Grid>
+                <WrapPanel>
+                  <Button Content="{l:T 'Ajouter'}" Classes="accent" Command="{Binding AddAclCommand}" Margin="0,0,6,0" />
+                  <Button Content="{l:T 'Remplacer la sélection'}" Command="{Binding ReplaceAclCommand}" IsEnabled="{Binding CanEditSelected}" Margin="0,0,6,0" />
+                  <Button Content="{l:T 'Retirer la sélection'}" Command="{Binding RemoveAclCommand}" IsEnabled="{Binding CanEditSelected}" Margin="0,0,12,0" />
+                  <TextBlock Classes="subtle" VerticalAlignment="Center" TextWrapping="Wrap"
+                             Text="{l:T 'Appliqué tout de suite. Une autorisation « hérité » se change sur le dossier parent.'}" />
+                </WrapPanel>
+              </StackPanel>
+            </Border>
+
+            <Border Margin="0,8,0,0" Background="{DynamicResource PanelBackground}" BorderBrush="{DynamicResource PanelBorder}"
+                    BorderThickness="1" CornerRadius="8" ClipToBounds="True">
+              <DataGrid ItemsSource="{Binding AclEntries}" SelectedItem="{Binding SelectedAcl}" IsReadOnly="True" GridLinesVisibility="None"
+                        HeadersVisibility="Column" CanUserSortColumns="True" RowHeight="28" Background="Transparent" SelectionMode="Single">
+                <DataGrid.Columns>
+                  <DataGridTextColumn Header="{l:T 'Compte'}" Binding="{Binding Account}" Width="2*" />
+                  <DataGridTextColumn Header="Type" Binding="{Binding TypeLabel}" Width="90" />
+                  <DataGridTextColumn Header="{l:T 'Autorisation'}" Binding="{Binding RightsLabel}" Width="1.5*" />
+                  <DataGridTextColumn Header="{l:T 'S\'applique à'}" Binding="{Binding AppliesToLabel}" Width="2*" />
+                  <DataGridTextColumn Header="" Binding="{Binding InheritedLabel}" Width="70" />
+                </DataGrid.Columns>
+              </DataGrid>
+            </Border>
+          </DockPanel>
+        </Panel>
+      </TabItem>
+    </TabControl>
+  </DockPanel>
+</Window>

@@ -1,0 +1,95 @@
+======================================================================
+COURTESY TRANSLATION. This English text is provided for convenience only.
+It has no legal value: the French text (file LICENSE) is the only one
+that prevails.
+======================================================================
+
+======================================================================
+SOFTWARE LICENSE AGREEMENT: TwinPanel ("TwinPanel License 1.0")
+AUTHOR AND OWNER: Georges Christophe (chrypox)
+Copyright (c) 2026 Georges Christophe. All rights reserved.
+Contact: admin@chrypox.be
+======================================================================
+
+This software is a personal project shared to be useful to the community.
+By accessing the source code, downloading it or using the software, you
+agree to comply strictly with the following terms:
+
+1. FREE OF CHARGE, NO COMMERCIAL USE: This software is strictly free of
+   charge. It may not be sold, rented out, monetized or included in a
+   commercial offering in any form, direct or indirect.
+   Any person, association, public body or company may use it free of
+   charge, including for their work and internally, provided they do not
+   resell it, rent it out, charge for it or include it in a paid product
+   or service.
+
+2. SHARING THE SOFTWARE: The software may be shared free of charge, in its
+   original version published by the author, complete and unmodified,
+   together with this agreement, without removing or hiding the author's
+   name and the license notices.
+
+3. MODIFICATIONS: The author retains the exclusive right to modify the
+   official software. Anyone may modify the code for their own use
+   (personal or internal), but it is forbidden to distribute, publish or
+   share a modified version, in whole or in part, and to distribute
+   derivative works.
+
+4. COPYING AND REUSING THE CODE: The source code is made public for
+   consultation, transparency and learning, and for the personal
+   modifications provided for in article 3. It is strictly forbidden to
+   copy, extract or reuse all or part of this code in another software
+   project.
+
+5. PLUGINS: It is permitted to create and share plugins (add-on modules)
+   that work with TwinPanel through the means provided for this purpose,
+   provided that:
+   a) they are free of charge: no sale, rental, subscription or mandatory
+      consideration;
+   b) they do not contain TwinPanel code, apart from the interfaces and
+      examples published by the author for plugins;
+   c) they do not present themselves as an official part of TwinPanel.
+   The creator of a plugin remains the owner of their plugin.
+
+6. PROPOSING A CORRECTION (BUG OR IMPROVEMENT): As the source code is
+   protected against direct modification, you cannot modify the project
+   files. If you have found an error and know how to correct it:
+   1. Open an "Issue" (ticket): explain the problem you found.
+   2. Propose your correction: in the description of the ticket, share
+      your corrected piece of code or explain the change to make.
+   3. Validation and integration: the author reviews the proposal and, if
+      it is accepted, integrates it personally into the official source
+      code.
+   By proposing a correction, you agree that it may be integrated into the
+   project under this agreement and its restrictions. You will be credited
+   in the list of contributors.
+
+7. COMPONENTS FROM OTHER DEVELOPERS: This agreement applies to the
+   TwinPanel code only. Libraries from other developers shipped with the
+   software remain under their own license; they are listed in "About" →
+   "Libraries used" and in the file THIRD-PARTY-NOTICES.md.
+
+8. RESPECT FOR THE RIGHTS OF OTHERS: The author ensures that TwinPanel
+   respects the rights of other developers. If you believe that all or
+   part of the software reuses code, an image or another protected element
+   without respecting its license or your rights, contact the author at
+   admin@chrypox.be, stating the element concerned and the license or
+   right in question. The author undertakes to examine each request in
+   good faith and, if it is justified, to correct the situation as soon as
+   possible: adding the required notice, replacing or removing the element.
+
+9. NO WARRANTY: The software is provided "as is", without warranty of any
+   kind. To the extent permitted by law, the author cannot be held liable
+   for damage or data loss related to its use.
+
+10. TERMINATION: In the event of non-compliance with this agreement, the
+    rights granted end automatically.
+
+11. APPLICABLE LAW: This agreement is governed by Belgian law.
+
+----------------------------------------------------------------------
+SIGNS:
+----------------------------------------------------------------------
+The "TwinPanel License" symbol (free · non-commercial · no modification)
+summarizes this agreement. This agreement is not a Creative Commons
+license and is neither linked to nor approved by Creative Commons. Only
+the French text prevails.

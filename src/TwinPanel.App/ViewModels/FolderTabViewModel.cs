@@ -1,0 +1,878 @@
+// TwinPanel — © 2026 Georges Christophe (chrypox). Tous droits réservés.
+// Licence TwinPanel 1.0 (gratuit, non commercial, sans modification) : voir le fichier LICENSE.
+using System.Collections.ObjectModel;
+using Avalonia.Threading;
+using CommunityToolkit.Mvvm.ComponentModel;
+using TwinPanel.Core;
+using TwinPanel.Core.Navigation;
+using TwinPanel.Core.Operations;
+using TwinPanel.Core.Search;
+using TwinPanel.Core.Selection;
+using TwinPanel.Core.Sources;
+
+namespace TwinPanel.App.ViewModels;
+
+/// <summary>Un onglet : un dossier affiché, son historique, son tri, ses fichiers marqués et sa surveillance.</summary>
+public partial class FolderTabViewModel : ObservableObject, IDisposable
+{
+    private readonly FileSourceRegistry _sources;
+    private readonly NavigationHistory _history = new();
+    private readonly DispatcherTimer _refreshDebounce;
+    private FileSystemWatcher? _watcher;
+    private CancellationTokenSource? _loadCts;
+    private CancellationTokenSource _sizeCts = new();
+    private IReadOnlyList<FileEntry> _rawEntries = [];
+    private int _loadVersion;
+
+    public FolderTabViewModel(FileSourceRegistry sources, SortColumn sortColumn, bool sortDescending)
+    {
+        _sources = sources;
+        _sortColumn = sortColumn;
+        _sortDescending = sortDescending;
+        // Regroupe les rafales d'événements du disque en un seul rafraîchissement.
+        _refreshDebounce = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) };
+        _refreshDebounce.Tick += async (_, _) =>
+        {
+            if (PauseAutoRefresh) return; // le renommage en cours relancera le minuteur
+            _refreshDebounce.Stop();
+            await RefreshAsync();
+        };
+    }
+
+    public event EventHandler<string>? ErrorOccurred;
+
+    /// <summary>Ouverture d'un fichier distant (Entrée) : branché par la fenêtre principale (téléchargement puis ouverture).</summary>
+    public static Func<FileEntry, Task>? RemoteFileOpener { get; set; }
+
+    /// <summary>Fichier d'une archive ouvert depuis une copie temporaire (copie, archive) : surveillé pour ne pas perdre une modification.</summary>
+    public static Action<string, string, string>? ArchiveCopyOpened { get; set; }
+
+    /// <summary>Demande le mot de passe d'une archive ; vrai s'il est bon.</summary>
+    public static Func<string, Task<bool>>? ArchivePasswordAsker { get; set; }
+
+    /// <summary>Un onglet vient d'afficher un autre dossier : branché par la fenêtre principale (dossiers récents).</summary>
+    public static Action<string>? FolderVisited { get; set; }
+
+    /// <summary>Options → Comportement : Entrée sur une archive l'ouvre comme un dossier.</summary>
+    public static bool OpenArchivesWithEnter { get; set; } = true;
+
+    /// <summary>Une colonne média (durée, résolution…) est visible : on lit les vidéos / musiques du dossier en arrière-plan.</summary>
+    public static bool LoadMediaColumns { get; set; }
+
+    private CancellationTokenSource _mediaCts = new();
+
+    /// <summary>Remplit les colonnes médias des vidéos et musiques du PC (MediaInfo, résultats gardés en mémoire).</summary>
+    private void StartMediaColumns()
+    {
+        _mediaCts.Cancel();
+        _mediaCts = new CancellationTokenSource();
+        if (!LoadMediaColumns || IsRemote || IsInsideArchive) return;
+        var items = Items.Where(i => !i.IsDirectory && i.Category is FileCategory.Video or FileCategory.Audio && !i.HasMedia).ToList();
+        if (items.Count == 0) return;
+        // Déjà connus : tout de suite ; les autres : lus un par un hors de l'interface.
+        var todo = new List<FileItemViewModel>();
+        foreach (var it in items)
+        {
+            if (TwinPanel.Core.Media.MediaCache.TryPeek(it.FullPath, it.Entry.Size, it.Entry.LastWriteTime, out var known)) it.SetMedia(known);
+            else todo.Add(it);
+        }
+        if (todo.Count == 0) return;
+        var ct = _mediaCts.Token;
+        _ = Task.Run(() =>
+        {
+            if (!TwinPanel.Core.Media.MediaInfoLib.IsAvailable) return;
+            foreach (var it in todo)
+            {
+                if (ct.IsCancellationRequested) return;
+                var r = TwinPanel.Core.Media.MediaCache.Get(it.FullPath, it.Entry.Size, it.Entry.LastWriteTime);
+                Dispatcher.UIThread.Post(() => it.SetMedia(r));
+            }
+        }, ct);
+    }
+
+    /// <summary>Options → Affichage : vraies icônes de Windows au lieu des icônes colorées de TwinPanel.</summary>
+    public static bool UseShellIcons { get; set; }
+
+    /// <summary>Met les icônes de Windows sur les lignes (connues : tout de suite ; les autres : lues sur un fil à part).</summary>
+    private void StartShellIcons()
+    {
+        if (!UseShellIcons || !Services.ShellIcons.IsSupported) return;
+        bool local = !IsRemote && !IsInsideArchive;
+        foreach (var it in Items)
+        {
+            if (it.IsParentLink || it.ShellIcon is not null) continue;
+            var (key, path, byType) = Services.ShellIcons.Describe(it.FullPath, it.Name, it.IsDirectory, local);
+            if (Services.ShellIcons.TryGetCached(key, large: true, out var known)) { it.ShellIcon = known; continue; }
+            var item = it;
+            // Une ligne déjà remplacée reçoit son icône pour rien : sans gravité (et sans recherche coûteuse dans la liste).
+            Services.ShellIcons.Request(key, path, it.IsDirectory, byType, large: true, icon => item.ShellIcon = icon);
+        }
+    }
+
+    /// <summary>Options → Affichage : taille des dossiers calculée automatiquement (au lieu de « &lt;DIR&gt; »).</summary>
+    public static bool ComputeFolderSizes { get; set; }
+
+    /// <summary>
+    /// Taille des dossiers d'un serveur : branché par la fenêtre principale (connexion à part, la navigation reste libre).
+    /// Reçoit les dossiers à mesurer et rend chaque résultat dès qu'il est connu.
+    /// </summary>
+    public static Func<IReadOnlyList<FileEntry>, Action<FileEntry, long>, CancellationToken, Task>? RemoteFolderSizer { get; set; }
+
+    private CancellationTokenSource _folderCts = new();
+    // Tailles déjà calculées dans le dossier affiché (clé : chemin ; reprises si la date du dossier n'a pas changé).
+    private readonly Dictionary<string, (DateTime Date, long Bytes)> _folderSizes = new(StringComparer.OrdinalIgnoreCase);
+    private string _folderSizesPath = string.Empty;
+
+    /// <summary>Calcule en arrière-plan, un par un, la taille des dossiers affichés (annulé dès qu'on change de dossier).</summary>
+    private void StartFolderSizes()
+    {
+        _folderCts.Cancel();
+        _folderCts = new CancellationTokenSource();
+        if (!string.Equals(_folderSizesPath, CurrentPath, StringComparison.OrdinalIgnoreCase))
+        {
+            _folderSizes.Clear();
+            _folderSizesPath = CurrentPath;
+        }
+        if (!ComputeFolderSizes || IsInsideArchive) return;
+        var todo = new List<FileItemViewModel>();
+        foreach (var it in Items)
+        {
+            if (!it.IsDirectory || it.IsParentLink || it.ComputedSize is not null) continue;
+            // Lien / jonction : non suivi (évite les boucles et les doubles comptes).
+            if ((it.Entry.Attributes & FileAttributes.ReparsePoint) != 0) continue;
+            if (_folderSizes.TryGetValue(it.FullPath, out var known) && known.Date == it.Entry.LastWriteTime) it.ComputedSize = known.Bytes;
+            else todo.Add(it);
+        }
+        if (todo.Count == 0) { UpdateSelectionInfo(); return; }
+        var ct = _folderCts.Token;
+        _ = IsRemote ? RemoteFolderSizesAsync(todo, ct) : LocalFolderSizesAsync(todo, ct);
+    }
+
+    private void StoreFolderSize(FileItemViewModel item, long bytes)
+    {
+        item.ComputedSize = bytes;
+        _folderSizes[item.FullPath] = (item.Entry.LastWriteTime, bytes);
+    }
+
+    private async Task LocalFolderSizesAsync(List<FileItemViewModel> todo, CancellationToken ct)
+    {
+        foreach (var it in todo)
+        {
+            if (ct.IsCancellationRequested) return;
+            it.IsComputingSize = true;
+            try
+            {
+                var r = await FolderSize.CalculateAsync(it.FullPath, ct);
+                if (!ct.IsCancellationRequested) StoreFolderSize(it, r.Bytes);
+            }
+            catch (OperationCanceledException) { return; }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException) { /* dossier illisible : reste <DIR> */ }
+            finally { it.IsComputingSize = false; }
+        }
+        UpdateSelectionInfo();
+    }
+
+    private async Task RemoteFolderSizesAsync(List<FileItemViewModel> todo, CancellationToken ct)
+    {
+        if (RemoteFolderSizer is null) return;
+        var byPath = todo.ToDictionary(t => t.FullPath, StringComparer.Ordinal);
+        foreach (var t in todo) t.IsComputingSize = true; // « … » : en attente
+        try
+        {
+            await RemoteFolderSizer(todo.Select(t => t.Entry).ToList(), (entry, bytes) => Dispatcher.UIThread.Post(() =>
+            {
+                if (ct.IsCancellationRequested || !byPath.TryGetValue(entry.FullPath, out var it)) return;
+                StoreFolderSize(it, bytes);
+                it.IsComputingSize = false;
+            }), ct);
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { /* connexion perdue : les dossiers restent <DIR> */ }
+        finally
+        {
+            // Les résultats arrivent par Post : on remet l'état après eux.
+            Dispatcher.UIThread.Post(() =>
+            {
+                foreach (var t in todo) t.IsComputingSize = false;
+                UpdateSelectionInfo();
+            });
+        }
+    }
+
+    /// <summary>Vrai : l'onglet montre des miniatures au lieu de la liste (Ctrl+Maj+F1). Chaque onglet a son mode.</summary>
+    [ObservableProperty] private bool _isThumbnails;
+
+    // ---- Vue à plat (Ctrl+B) -------------------------------------------------------------------
+
+    /// <summary>Fichiers d'un serveur et de ses sous-dossiers : branché par la fenêtre principale (connexion à part).</summary>
+    public static Func<string, bool, CancellationToken, IAsyncEnumerable<FileEntry>>? RemoteFlatLister { get; set; }
+
+    /// <summary>Nombre de fichiers au-delà duquel la lecture s'arrête.</summary>
+    public static int FlatLimit { get; set; } = FlatListing.DefaultLimit;
+
+    /// <summary>Vrai : la liste montre tous les fichiers des sous-dossiers. Le dossier de l'onglet ne change pas.</summary>
+    [ObservableProperty] private bool _isFlat;
+    [ObservableProperty] private bool _isScanning;
+
+    private CancellationTokenSource? _flatCts;
+    private int _flatVersion;
+    private string _flatNote = string.Empty;
+
+    public void ToggleFlat()
+    {
+        if (CurrentPath.Length == 0) return;
+        if (IsInsideArchive)
+        {
+            ErrorOccurred?.Invoke(this, L.T("La vue à plat n'est pas disponible à l'intérieur d'une archive."));
+            return;
+        }
+        if (!IsFlat)
+        {
+            IsFlat = true;
+            _ = ScanFlatAsync(CurrentItem?.FullPath);
+            return;
+        }
+        CancelFlatScan();
+        LeaveFlat();
+        _ = LoadAsync(CurrentPath, CurrentItem?.Name, recordHistory: false);
+    }
+
+    /// <summary>Échap ou bouton « Arrêter » : on garde ce qui a déjà été trouvé.</summary>
+    public void StopFlatScan()
+    {
+        if (IsScanning) _flatCts?.Cancel();
+    }
+
+    /// <summary>Annule la lecture sans en attendre la fin (une navigation prend la main).</summary>
+    private void CancelFlatScan()
+    {
+        _flatVersion++;
+        _flatCts?.Cancel();
+        IsScanning = false;
+    }
+
+    private void LeaveFlat()
+    {
+        IsFlat = false;
+        _flatNote = string.Empty;
+        if (SortColumn == SortColumn.Folder) SortColumn = SortColumn.Name;
+    }
+
+    /// <summary>Après un renommage : le fichier garde son dossier, avec son nouveau nom. Sinon, le fichier sous le curseur.</summary>
+    private string? FlatCursor(string? selectName)
+    {
+        var path = CurrentItem?.FullPath;
+        return path is null || selectName is null ? path : path[..(path.LastIndexOfAny(['/', '\\']) + 1)] + selectName;
+    }
+
+    private IAsyncEnumerable<FileEntry> ListFlat(string root, bool showHidden, CancellationToken ct)
+    {
+        if (!IsRemote) return FileSearch.SearchAsync(FlatListing.Criteria(root, showHidden), null, ct);
+        return RemoteFlatLister?.Invoke(root, showHidden, ct) ?? throw new IOException(L.T("Les connexions ne sont pas prêtes."));
+    }
+
+    /// <summary>
+    /// Lit les sous-dossiers hors de l'interface ; la liste se remplit par paquets, dans l'ordre d'arrivée, puis se trie à la fin.
+    /// Une lecture relancée (Ctrl+R, après une opération) garde les marques et le curseur.
+    /// </summary>
+    private async Task ScanFlatAsync(string? keepPath)
+    {
+        _flatCts?.Cancel();
+        var cts = _flatCts = new CancellationTokenSource();
+        var ct = cts.Token;
+        var version = ++_flatVersion;
+        var marked = new HashSet<string>(MarkedItems.Select(i => i.FullPath), StringComparer.OrdinalIgnoreCase);
+        var root = CurrentPath;
+        bool showHidden = ShowHidden;
+        int limit = FlatLimit;
+        var found = new List<FileEntry>();
+        long bytes = 0;
+
+        void Flush(List<FileEntry> batch)
+        {
+            if (version != _flatVersion) return;
+            foreach (var e in batch)
+            {
+                found.Add(e);
+                bytes += e.Size;
+                var item = MakeItem(e);
+                item.IsMarked = marked.Contains(e.FullPath);
+                Items.Add(item);
+            }
+            CurrentItem ??= Items.FirstOrDefault();
+            Summary = L.F("Lecture des sous-dossiers… {0:N0} fichier(s) — {1}", found.Count, FileEntry.FormatSize(bytes));
+        }
+
+        _rawEntries = found;
+        _flatNote = string.Empty;
+        Items.Clear();
+        CurrentItem = null;
+        IsScanning = true;
+        Summary = L.T("Lecture des sous-dossiers…");
+        UpdateSelectionInfo();
+
+        bool limited = false;
+        string note = string.Empty;
+        string? error = null;
+        try
+        {
+            await Task.Run(async () =>
+            {
+                var batch = new List<FileEntry>();
+                var clock = System.Diagnostics.Stopwatch.StartNew();
+                await foreach (var e in ListFlat(root, showHidden, ct))
+                {
+                    batch.Add(e);
+                    if (found.Count + batch.Count >= limit) { limited = true; break; }
+                    if (batch.Count < 1000 && clock.ElapsedMilliseconds < 250) continue;
+                    var ready = batch;
+                    batch = [];
+                    await Dispatcher.UIThread.InvokeAsync(() => Flush(ready));
+                    clock.Restart();
+                }
+                await Dispatcher.UIThread.InvokeAsync(() => Flush(batch));
+            }, ct);
+        }
+        catch (OperationCanceledException) { note = L.T(" — lecture arrêtée"); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+        {
+            note = L.T(" — lecture interrompue");
+            error = ex.Message;
+        }
+        // Libère aussi la lecture du disque, restée en attente si la limite a été atteinte.
+        cts.Cancel();
+        if (version != _flatVersion) return; // une lecture plus récente a pris la main : rien de celle-ci ne doit la toucher
+
+        _flatNote = limited ? L.F(" — limite de {0:N0} fichiers atteinte", limit) : note;
+        IsScanning = false;
+        ApplySort(keepPath, fullReset: true);
+        if (error is not null) ErrorOccurred?.Invoke(this, error);
+    }
+
+    /// <summary>Réaffiche la liste (formats, couleurs ou police changés dans les Options).</summary>
+    public void Rebuild() => ApplySort(CursorKey, fullReset: true);
+
+    /// <summary>Repère de la ligne sous le curseur : en vue à plat, deux fichiers peuvent porter le même nom.</summary>
+    private string? CursorKey => IsFlat ? CurrentItem?.FullPath : CurrentItem?.Name;
+
+    private bool IsCursorKey(FileItemViewModel item, string key) =>
+        string.Equals(IsFlat ? item.FullPath : item.Name, key, StringComparison.OrdinalIgnoreCase);
+
+    private FileItemViewModel MakeItem(FileEntry e) =>
+        new(e) { FolderText = IsFlat ? FlatListing.RelativeFolder(CurrentPath, e.FullPath) : string.Empty };
+
+    public ObservableCollection<FileItemViewModel> Items { get; } = [];
+    public ObservableCollection<BreadcrumbSegment> Segments { get; } = [];
+
+    [ObservableProperty] private string _currentPath = string.Empty;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DisplayTitle))]
+    private string _title = string.Empty;
+
+    // ---- Verrou et nom personnel (clic droit sur l'onglet) ----
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsLocked), nameof(DisplayTitle), nameof(LockTooltip))]
+    private TwinPanel.Core.Settings.TabLock _lockMode;
+
+    /// <summary>Nom choisi par l'utilisateur (vide : nom du dossier).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DisplayTitle))]
+    private string _customName = string.Empty;
+
+    /// <summary>Dossier de l'onglet verrouillé.</summary>
+    public string LockedPath { get; private set; } = string.Empty;
+    public bool IsLocked => LockMode != TwinPanel.Core.Settings.TabLock.None;
+    public string DisplayTitle => CustomName.Length > 0 ? CustomName : Title;
+    public string LockTooltip => LockMode switch
+    {
+        TwinPanel.Core.Settings.TabLock.Locked => L.F("Onglet verrouillé sur {0} (aller ailleurs ouvre un nouvel onglet)", LockedPath),
+        TwinPanel.Core.Settings.TabLock.LockedAllowChange => L.F("Onglet verrouillé sur {0} (revient à ce dossier quand on le reprend)", LockedPath),
+        _ => string.Empty,
+    };
+
+    /// <summary>Un onglet verrouillé a voulu aller ailleurs : le panneau ouvre ce dossier dans un nouvel onglet.</summary>
+    public event EventHandler<string>? LockedNavigation;
+
+    public void SetLock(TwinPanel.Core.Settings.TabLock mode, string? path = null)
+    {
+        LockedPath = mode == TwinPanel.Core.Settings.TabLock.None ? string.Empty : path ?? CurrentPath;
+        LockMode = mode;
+        OnPropertyChanged(nameof(LockTooltip));
+    }
+
+    /// <summary>withView : retient aussi le mode d'affichage (jeux d'onglets ; au démarrage, les onglets rouvrent en liste normale).</summary>
+    public TwinPanel.Core.Settings.SavedTab ToSaved(bool withView = false) =>
+        new(IsLocked ? LockedPath : CurrentPath, LockMode, CustomName, withView && IsFlat, withView && IsThumbnails);
+    [ObservableProperty] private FileItemViewModel? _currentItem;
+    [ObservableProperty] private bool _isLoading;
+    [ObservableProperty] private bool _showHidden;
+    [ObservableProperty] private string _summary = string.Empty;
+    [ObservableProperty] private string _selectionInfo = string.Empty;
+    [ObservableProperty] private SortColumn _sortColumn;
+    [ObservableProperty] private bool _sortDescending;
+    [ObservableProperty] private bool _canGoBack;
+    [ObservableProperty] private bool _canGoForward;
+
+    public IEnumerable<FileItemViewModel> MarkedItems => Items.Where(i => i.IsMarked);
+
+    /// <summary>Vrai si l'onglet affiche l'intérieur d'une archive (lecture seule).</summary>
+    public bool IsInsideArchive => !IsRemote && TwinPanel.Core.Archives.ArchivePath.TrySplit(CurrentPath, out _, out _);
+
+    /// <summary>Vrai si l'onglet affiche un dossier sur un serveur (sftp://, ftp://…).</summary>
+    public bool IsRemote => TwinPanel.Core.Remote.PanelRemotePath.TryParse(CurrentPath, out _);
+
+    /// <summary>Éléments sur lesquels agir : les marqués, sinon l'élément sous le curseur ; jamais "..".</summary>
+    public IReadOnlyList<FileEntry> TargetEntries
+    {
+        get
+        {
+            var marked = MarkedItems.Select(i => i.Entry).ToList();
+            if (marked.Count == 0 && CurrentItem is { IsParentLink: false } cur) marked.Add(cur.Entry);
+            return marked;
+        }
+    }
+
+    // ---- Navigation -----------------------------------------------------------
+
+    /// <summary>Affiche un dossier. En cas d'erreur, reste où l'on est et retourne false.</summary>
+    public Task<bool> NavigateAsync(string path, string? selectName = null) => LoadAsync(path, selectName, recordHistory: true);
+
+    /// <summary>Pas de relecture automatique pendant qu'un nom se tape dans la liste.</summary>
+    public bool PauseAutoRefresh { get; set; }
+
+    /// <summary>Juste avant et juste après une relecture : la vue garde sa position de défilement.</summary>
+    public event Action? ListUpdating;
+    public event Action? ListUpdated;
+
+    private DateTime _nextPoll = DateTime.MinValue;
+    private bool _polling;
+
+    /// <summary>Relit ce dossier de serveur si c'est l'heure. Un grand dossier espace ses lectures, pour ne pas occuper la connexion.</summary>
+    public async Task PollRemoteAsync(TimeSpan interval, bool force)
+    {
+        if (_polling || !IsRemote || IsFlat || IsLoading || PauseAutoRefresh || (!force && DateTime.UtcNow < _nextPoll)) return;
+        _polling = true;
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        try { await LoadAsync(CurrentPath, CurrentItem?.Name, recordHistory: false, quiet: true); }
+        finally
+        {
+            _polling = false;
+            _nextPoll = DateTime.UtcNow + TimeSpan.FromTicks(Math.Max(interval.Ticks, clock.Elapsed.Ticks * PollSlowdown));
+        }
+    }
+
+    private const int PollSlowdown = 10;
+
+    public async Task RefreshAsync()
+    {
+        if (CurrentPath.Length == 0) return;
+        if (IsFlat) { _ = ScanFlatAsync(CurrentItem?.FullPath); return; }
+        if (await LoadAsync(CurrentPath, CurrentItem?.Name, recordHistory: false, quiet: true)) return;
+        if (IsRemote) return; // serveur : le message d'erreur a déjà été donné à la navigation
+
+        // Le dossier a disparu : on remonte jusqu'au premier parent existant.
+        var dir = new DirectoryInfo(CurrentPath).Parent;
+        while (dir is not null && !dir.Exists) dir = dir.Parent;
+        if (dir is not null) await NavigateAsync(dir.FullName);
+    }
+
+    public async Task GoUpAsync()
+    {
+        if (CurrentPath.Length == 0) return;
+        if (_sources.Resolve(CurrentPath).GetParent(CurrentPath) is { } parent)
+            await NavigateAsync(parent, selectName: Path.GetFileName(CurrentPath));
+    }
+
+    public async Task GoBackAsync()
+    {
+        if (_history.Back() is { } p && !await LoadAsync(p, null, recordHistory: false)) _history.Undo(wasBack: true);
+        UpdateHistoryFlags();
+    }
+
+    public async Task GoForwardAsync()
+    {
+        if (_history.Forward() is { } p && !await LoadAsync(p, null, recordHistory: false)) _history.Undo(wasBack: false);
+        UpdateHistoryFlags();
+    }
+
+    /// <summary>Entrée / double-clic : ouvre le dossier ou lance le fichier.</summary>
+    public async Task OpenCurrentAsync()
+    {
+        switch (CurrentItem)
+        {
+            case null: return;
+            case { IsParentLink: true }: await GoUpAsync(); break;
+            case { IsDirectory: true } d: await NavigateAsync(d.FullPath); break;
+            case { } f when IsRemote:
+                if (RemoteFileOpener is not null) await RemoteFileOpener(f.Entry);
+                break;
+            case { } f when OpenArchivesWithEnter && TwinPanel.Core.Archives.ArchivePath.IsArchiveFile(f.Name) && !IsInsideArchive:
+                await NavigateAsync(f.FullPath); // Entrée sur une archive : on l'ouvre comme un dossier
+                break;
+            case { } f:
+                try
+                {
+                    var path = f.FullPath;
+                    if (TwinPanel.Core.Archives.ArchivePath.TrySplit(path, out var archive, out var inner))
+                    {
+                        path = await TwinPanel.Core.Archives.ArchiveService.ExtractToTempAsync(archive, inner);
+                        ArchiveCopyOpened?.Invoke(path, archive, inner);
+                    }
+                    Services.ShellService.Open(path);
+                }
+                catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException
+                                           or IOException or UnauthorizedAccessException or FileOperationException)
+                { ErrorOccurred?.Invoke(this, ex.Message); }
+                break;
+        }
+    }
+
+    public void MoveCursor(int delta)
+    {
+        if (Items.Count == 0) return;
+        int i = CurrentItem is null ? 0 : Items.IndexOf(CurrentItem);
+        CurrentItem = Items[Math.Clamp(i + delta, 0, Items.Count - 1)];
+    }
+
+    // ---- Marquage -----------------------------------------------------------------
+
+    public void SetMark(FileItemViewModel item, bool marked)
+    {
+        if (item.IsParentLink) return;
+        item.IsMarked = marked;
+        UpdateSelectionInfo();
+    }
+
+    public void ToggleMark(FileItemViewModel item) => SetMark(item, !item.IsMarked);
+
+    /// <summary>Marque (ou démarque) tous les éléments entre deux lignes incluses.</summary>
+    public void MarkRange(FileItemViewModel from, FileItemViewModel to, bool marked)
+    {
+        int a = Items.IndexOf(from), b = Items.IndexOf(to);
+        if (a < 0 || b < 0) return;
+        for (int i = Math.Min(a, b); i <= Math.Max(a, b); i++)
+            if (!Items[i].IsParentLink) Items[i].IsMarked = marked;
+        UpdateSelectionInfo();
+    }
+
+    /// <summary>Num+ / Num- : marque ou démarque selon un masque (« *.jpg;*.png | *.tmp »). Les dossiers seulement si includeFolders.</summary>
+    public int MarkByMask(string mask, bool marked, bool includeFolders)
+    {
+        var matcher = new MaskMatcher(mask);
+        int n = 0;
+        foreach (var i in Items)
+        {
+            if (i.IsParentLink || (i.IsDirectory && !includeFolders) || !matcher.IsMatch(i.Name)) continue;
+            i.IsMarked = marked;
+            n++;
+        }
+        UpdateSelectionInfo();
+        return n;
+    }
+
+    public void MarkAll(bool marked)
+    {
+        foreach (var i in Items) if (!i.IsParentLink) i.IsMarked = marked;
+        UpdateSelectionInfo();
+    }
+
+    /// <summary>Num* : inverse le marquage des fichiers (pas des dossiers, comme TC).</summary>
+    public void InvertMarks()
+    {
+        foreach (var i in Items) if (!i.IsParentLink && !i.IsDirectory) i.IsMarked = !i.IsMarked;
+        UpdateSelectionInfo();
+    }
+
+    /// <summary>Alt+Num+ : marque tous les fichiers ayant la même extension que l'élément courant.</summary>
+    public void MarkSameExtension()
+    {
+        if (CurrentItem is not { IsDirectory: false } cur) return;
+        foreach (var i in Items)
+            if (!i.IsDirectory && string.Equals(i.Extension, cur.Extension, StringComparison.OrdinalIgnoreCase)) i.IsMarked = true;
+        UpdateSelectionInfo();
+    }
+
+    /// <summary>Espace sur un dossier : calcule sa taille complète.</summary>
+    public async Task ComputeFolderSizeAsync(FileItemViewModel item)
+    {
+        if (!item.IsDirectory || item.IsParentLink || item.IsComputingSize || IsRemote) return;
+        item.IsComputingSize = true;
+        try
+        {
+            var r = await FolderSize.CalculateAsync(item.FullPath, _sizeCts.Token);
+            item.ComputedSize = r.Bytes;
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { ErrorOccurred?.Invoke(this, ex.Message); }
+        finally
+        {
+            item.IsComputingSize = false;
+            UpdateSelectionInfo();
+        }
+    }
+
+    public void UpdateSelectionInfo()
+    {
+        var marked = MarkedItems.ToList();
+        if (marked.Count == 0) { SelectionInfo = string.Empty; return; }
+        int files = marked.Count(i => !i.IsDirectory), dirs = marked.Count - files;
+        long size = marked.Sum(i => i.EffectiveSize);
+        SelectionInfo = L.F("Marqués : {0} fichier(s), {1} dossier(s) — {2}", files, dirs, FileEntry.FormatSize(size));
+    }
+
+    // ---- Tri / affichage ----------------------------------------------------------
+
+    /// <summary>Même colonne : inverse l'ordre. Autre colonne : tri croissant.</summary>
+    public void SortBy(SortColumn column)
+    {
+        if (SortColumn == column) SortDescending = !SortDescending;
+        else { SortColumn = column; SortDescending = false; }
+        ApplySort(keepName: CursorKey, fullReset: true);
+    }
+
+    partial void OnShowHiddenChanged(bool value) => _ = RefreshAsync();
+
+    /// <summary>Sélectionne le premier élément dont le nom commence par le texte. Retourne false si rien ne correspond.</summary>
+    public bool QuickFind(string prefix)
+    {
+        var match = Items.FirstOrDefault(e => !e.IsParentLink && e.Name.StartsWith(prefix, StringComparison.CurrentCultureIgnoreCase));
+        if (match is null) return false;
+        CurrentItem = match;
+        return true;
+    }
+
+    // ---- Interne ------------------------------------------------------------------------
+
+    private async Task<bool> LoadAsync(string path, string? selectName, bool recordHistory, bool quiet = false)
+    {
+        IFileSource source;
+        string normalized;
+        try
+        {
+            source = _sources.Resolve(path);
+            normalized = source.Normalize(path);
+        }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException or IOException)
+        {
+            if (!quiet) ErrorOccurred?.Invoke(this, ex.Message);
+            return false;
+        }
+
+        // Onglet verrouillé : un autre dossier s'ouvre dans un nouvel onglet ; celui-ci ne bouge pas.
+        if (LockMode == TwinPanel.Core.Settings.TabLock.Locked && CurrentPath.Length > 0
+            && !string.Equals(normalized, CurrentPath, StringComparison.OrdinalIgnoreCase))
+        {
+            LockedNavigation?.Invoke(this, normalized);
+            return recordHistory; // précédent / suivant : faux, pour que l'historique soit remis en place
+        }
+
+        if (IsFlat)
+        {
+            // Même dossier (Ctrl+R, fichier créé ou renommé) : on relit tout. Autre dossier : la vue à plat s'arrête.
+            if (string.Equals(normalized, CurrentPath, StringComparison.OrdinalIgnoreCase))
+            {
+                _ = ScanFlatAsync(FlatCursor(selectName));
+                return true;
+            }
+            CancelFlatScan();
+        }
+
+        _loadCts?.Cancel();
+        var cts = _loadCts = new CancellationTokenSource();
+        var version = ++_loadVersion;
+        IsLoading = !quiet;
+        try
+        {
+            var entries = await source.ListAsync(normalized, ShowHidden, cts.Token);
+            if (version != _loadVersion) return false; // une navigation plus récente a pris la main
+
+            bool samePath = string.Equals(normalized, CurrentPath, StringComparison.OrdinalIgnoreCase);
+            if (!samePath)
+            {
+                // Changement de dossier : on arrête les calculs de taille en cours.
+                _sizeCts.Cancel();
+                _sizeCts = new CancellationTokenSource();
+                if (IsFlat) LeaveFlat();
+            }
+            _rawEntries = entries;
+            CurrentPath = normalized;
+            Title = MakeTitle(normalized);
+            if (!samePath)
+            {
+                RebuildSegments(normalized);
+                Watch(source, normalized);
+                FolderVisited?.Invoke(normalized);
+            }
+            if (recordHistory) _history.Push(normalized);
+            UpdateHistoryFlags();
+            ApplySort(selectName, fullReset: !samePath, keepView: quiet && samePath);
+            return true;
+        }
+        catch (OperationCanceledException) { return false; }
+        catch (TwinPanel.Core.Archives.ArchivePasswordException ex)
+        {
+            if (version != _loadVersion || quiet || ArchivePasswordAsker is null || !await ArchivePasswordAsker(ex.Archive)) return false;
+            return await LoadAsync(path, selectName, recordHistory);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException or ArgumentException)
+        {
+            if (version == _loadVersion && !quiet) ErrorOccurred?.Invoke(this, ex.Message);
+            return false;
+        }
+        finally
+        {
+            if (version == _loadVersion) IsLoading = false;
+        }
+    }
+
+    private void ApplySort(string? keepName, bool fullReset, bool keepView = false)
+    {
+        if (keepView) ListUpdating?.Invoke();
+        var sorted = EntrySorter.Sort(_rawEntries, SortColumn, SortDescending);
+        // Nom sous le curseur AVANT la mise à jour : quand la ligne courante est remplacée (fichier modifié),
+        // la grille déplace sa sélection sur la ligne suivante ; on remet le curseur au bon endroit ensuite.
+        keepName ??= CursorKey;
+
+        if (fullReset)
+        {
+            // Les marques suivent le chemin : un tri ou une relecture ne les perd pas.
+            var marked = new HashSet<string>(MarkedItems.Select(i => i.FullPath), StringComparer.OrdinalIgnoreCase);
+            Items.Clear();
+            foreach (var e in sorted)
+            {
+                var item = MakeItem(e);
+                item.IsMarked = marked.Contains(e.FullPath);
+                Items.Add(item);
+            }
+        }
+        else
+        {
+            SyncItems(sorted);
+        }
+
+        UpdateSummary();
+        UpdateSelectionInfo();
+        StartMediaColumns();
+        StartFolderSizes();
+        StartShellIcons();
+        var keep = keepName is null ? null : Items.FirstOrDefault(e => IsCursorKey(e, keepName));
+        if (fullReset || CurrentItem is null || !Items.Contains(CurrentItem)
+            || (keep is not null && !ReferenceEquals(CurrentItem, keep)))
+            CurrentItem = keep ?? Items.FirstOrDefault();
+        if (keepView) ListUpdated?.Invoke();
+    }
+
+    /// <summary>
+    /// Met à jour la liste sans la vider : les éléments inchangés restent les mêmes objets
+    /// (marquage et taille calculée conservés), un fichier modifié garde son marquage.
+    /// </summary>
+    private void SyncItems(IReadOnlyList<FileEntry> target)
+    {
+        var markedPaths = new HashSet<string>(MarkedItems.Select(i => i.FullPath), StringComparer.OrdinalIgnoreCase);
+        var wanted = new HashSet<FileEntry>(target);
+        for (int i = Items.Count - 1; i >= 0; i--)
+            if (!wanted.Contains(Items[i].Entry)) Items.RemoveAt(i);
+
+        for (int i = 0; i < target.Count; i++)
+        {
+            if (i < Items.Count && Items[i].Entry.Equals(target[i])) continue;
+            var item = MakeItem(target[i]);
+            item.IsMarked = markedPaths.Contains(target[i].FullPath);
+            Items.Insert(i, item);
+        }
+        while (Items.Count > target.Count) Items.RemoveAt(Items.Count - 1);
+    }
+
+    private void Watch(IFileSource source, string path)
+    {
+        DisposeWatcher();
+        if (!source.SupportsWatching) return;
+        try
+        {
+            var w = new FileSystemWatcher(path)
+            {
+                IncludeSubdirectories = false,
+                NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName | NotifyFilters.Size | NotifyFilters.LastWrite,
+            };
+            FileSystemEventHandler onChange = (_, e) =>
+            {
+                // Nos propres fichiers temporaires de copie ne doivent pas faire clignoter la liste.
+                if (e.Name is null || !e.Name.EndsWith(".twinpanel-part", StringComparison.Ordinal)) ScheduleRefresh();
+            };
+            w.Changed += onChange;
+            w.Created += onChange;
+            w.Deleted += onChange;
+            w.Renamed += (_, _) => ScheduleRefresh();
+            w.Error += (_, _) => ScheduleRefresh();
+            w.EnableRaisingEvents = true;
+            _watcher = w;
+        }
+        catch (Exception ex) when (ex is IOException or ArgumentException or UnauthorizedAccessException or PlatformNotSupportedException)
+        {
+            // Certains lecteurs (réseau, CD) ne supportent pas la surveillance : Ctrl+R reste disponible.
+        }
+    }
+
+    private void ScheduleRefresh() => Dispatcher.UIThread.Post(() =>
+    {
+        if (IsFlat) return; // vue à plat : pas de relecture automatique (Ctrl+R, et après chaque opération)
+        _refreshDebounce.Stop();
+        _refreshDebounce.Start();
+    });
+
+    private void RebuildSegments(string path)
+    {
+        Segments.Clear();
+        foreach (var s in Breadcrumb.Split(path)) Segments.Add(s);
+    }
+
+    private void UpdateHistoryFlags()
+    {
+        CanGoBack = _history.CanGoBack;
+        CanGoForward = _history.CanGoForward;
+    }
+
+    private void UpdateSummary()
+    {
+        int files = 0, dirs = 0;
+        long size = 0;
+        foreach (var e in Items)
+        {
+            if (e.IsParentLink) continue;
+            if (e.IsDirectory) dirs++;
+            else { files++; size += e.Entry.Size; }
+        }
+        Summary = IsFlat
+            ? L.F("{0:N0} fichier(s) — {1}{2}", files, FileEntry.FormatSize(size), _flatNote)
+            : L.F("{0} dossier(s), {1} fichier(s) — {2}", dirs, files, FileEntry.FormatSize(size));
+    }
+
+    /// <summary>Titre de l'onglet : nom du dossier ; disque du PC : lettre devant (« C: Documents », « C: » à la racine).</summary>
+    public static string MakeTitle(string path)
+    {
+        var trimmed = path.TrimEnd('\\', '/');
+        var name = Path.GetFileName(trimmed);
+        if (string.IsNullOrEmpty(name)) return trimmed;
+        bool driveLetter = trimmed.Length >= 2 && trimmed[1] == ':' && char.IsAsciiLetter(trimmed[0])
+                           && (trimmed.Length == 2 || trimmed[2] is '\\' or '/');
+        return driveLetter ? $"{char.ToUpperInvariant(trimmed[0])}: {name}" : name;
+    }
+
+    private void DisposeWatcher()
+    {
+        _watcher?.Dispose();
+        _watcher = null;
+    }
+
+    public void Dispose()
+    {
+        _loadCts?.Cancel();
+        CancelFlatScan();
+        _sizeCts.Cancel();
+        _folderCts.Cancel();
+        _refreshDebounce.Stop();
+        DisposeWatcher();
+        GC.SuppressFinalize(this);
+    }
+}

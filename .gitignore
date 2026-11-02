@@ -1,0 +1,18 @@
+# Compilation
+bin/
+obj/
+.vs/
+.vscode/
+*.user
+*.log
+publish/
+installer-output/
+
+# Sauvegardes et essais : restent sur le PC
+backup-*/
+essai/
+
+# Notes de travail : ne sont pas publiées
+JOURNAL.md
+CLAUDE.md
+.claude/

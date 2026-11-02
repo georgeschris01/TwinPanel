@@ -1,0 +1,98 @@
+<!-- TwinPanel — © 2026 Georges Christophe (chrypox). Tous droits réservés.
+     Licence TwinPanel 1.0 (gratuit, non commercial, sans modification) : voir le fichier LICENSE. -->
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:l="using:TwinPanel.App.Views"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:TwinPanel.App.ViewModels"
+        xmlns:conv="using:TwinPanel.App.Converters"
+        x:Class="TwinPanel.App.Views.SearchWindow"
+        x:DataType="vm:SearchViewModel"
+        Title="{l:T 'Rechercher des fichiers'}" Width="1000" Height="720" MinWidth="700" MinHeight="480"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Background="{DynamicResource AppBackground}">
+  <DockPanel Margin="16">
+    <Grid DockPanel.Dock="Bottom" ColumnDefinitions="*,Auto,Auto" Margin="0,12,0,0">
+      <TextBlock Classes="subtle" VerticalAlignment="Center" Text="{Binding Status}" TextTrimming="CharacterEllipsis" />
+      <Button Grid.Column="1" x:Name="GoToButton" Content="{l:T 'Aller au fichier'}" Margin="0,0,8,0" />
+      <Button Grid.Column="2" x:Name="CloseButton" Content="{l:T 'Fermer'}" IsCancel="True" />
+    </Grid>
+
+    <Grid DockPanel.Dock="Top" ColumnDefinitions="*,16,*" RowDefinitions="Auto,Auto,Auto,Auto">
+      <StackPanel Grid.ColumnSpan="3" Spacing="4">
+        <TextBlock Classes="subtle" Text="{l:T 'Rechercher dans (plusieurs dossiers séparés par « ; », serveurs ouverts compris : sftp://…)'}" />
+        <Grid ColumnDefinitions="*,8,Auto">
+          <TextBox x:Name="RootBox" Text="{Binding Root}" />
+          <Button Grid.Column="2" Content="{l:T 'Tous les disques'}" Command="{Binding AllDrivesCommand}"
+                  ToolTip.Tip="{l:T 'Remplit le champ avec tous les disques du PC (C:\\;D:\\;…)'}" />
+        </Grid>
+      </StackPanel>
+
+      <StackPanel Grid.Row="1" Spacing="4" Margin="0,12,0,0">
+        <TextBlock Classes="subtle" Text="{l:T 'Nom (masque : *.jpg;*.png  ou  *.* | *.tmp)'}" />
+        <TextBox x:Name="MaskBox" Text="{Binding NameMask}" />
+        <CheckBox Content="{l:T 'Chercher aussi dans les sous-dossiers'}" IsChecked="{Binding Recursive}" />
+      </StackPanel>
+      <StackPanel Grid.Row="1" Grid.Column="2" Spacing="4" Margin="0,12,0,0">
+        <TextBlock Classes="subtle" Text="{l:T 'Contenant le texte (facultatif)'}" />
+        <TextBox Text="{Binding ContainsText}" />
+        <StackPanel Orientation="Horizontal" Spacing="16">
+          <CheckBox Content="{l:T 'Respecter la casse'}" IsChecked="{Binding MatchCase}" />
+          <CheckBox Content="{l:T 'Expression régulière'}" IsChecked="{Binding TextIsRegex}" />
+        </StackPanel>
+      </StackPanel>
+
+      <Grid Grid.Row="2" ColumnDefinitions="*,8,*" Margin="0,12,0,0">
+        <StackPanel Spacing="4">
+          <TextBlock Classes="subtle" Text="{l:T 'Taille min. (Ko)'}" />
+          <NumericUpDown Value="{Binding MinSizeKb}" Minimum="0" Increment="100" FormatString="0" />
+        </StackPanel>
+        <StackPanel Grid.Column="2" Spacing="4">
+          <TextBlock Classes="subtle" Text="{l:T 'Taille max. (Ko)'}" />
+          <NumericUpDown Value="{Binding MaxSizeKb}" Minimum="0" Increment="100" FormatString="0" />
+        </StackPanel>
+      </Grid>
+      <Grid Grid.Row="2" Grid.Column="2" ColumnDefinitions="*,8,*" Margin="0,12,0,0">
+        <StackPanel Spacing="4">
+          <TextBlock Classes="subtle" Text="{l:T 'Modifié depuis le'}" />
+          <CalendarDatePicker SelectedDate="{Binding ModifiedAfter}" HorizontalAlignment="Stretch" />
+        </StackPanel>
+        <StackPanel Grid.Column="2" Spacing="4">
+          <TextBlock Classes="subtle" Text="{l:T 'Modifié jusqu\'au'}" />
+          <CalendarDatePicker SelectedDate="{Binding ModifiedBefore}" HorizontalAlignment="Stretch" />
+        </StackPanel>
+      </Grid>
+
+      <Grid Grid.Row="3" Grid.ColumnSpan="3" ColumnDefinitions="*,Auto,Auto" Margin="0,12,0,0">
+        <CheckBox Content="{l:T 'Chercher les doublons (fichiers au contenu identique)'}" IsChecked="{Binding FindDuplicates}" />
+        <Button Grid.Column="1" Content="{l:T 'Rechercher'}" Classes="accent" IsDefault="True" Margin="0,0,8,0" Command="{Binding StartCommand}" />
+        <Button Grid.Column="2" Content="{l:T 'Arrêter'}" Command="{Binding StopCommand}" />
+      </Grid>
+    </Grid>
+
+    <ProgressBar DockPanel.Dock="Top" IsIndeterminate="True" Height="2" MinHeight="2" Margin="0,12,0,0" IsVisible="{Binding IsRunning}" />
+
+    <Border Margin="0,8,0,0" Background="{DynamicResource PanelBackground}" BorderBrush="{DynamicResource PanelBorder}"
+            BorderThickness="1" CornerRadius="8" ClipToBounds="True">
+      <DataGrid x:Name="ResultsGrid" ItemsSource="{Binding Results}" SelectedItem="{Binding SelectedResult, Mode=TwoWay}"
+                IsReadOnly="True" GridLinesVisibility="None" HeadersVisibility="Column" CanUserSortColumns="True"
+                RowHeight="26" Background="Transparent" SelectionMode="Single">
+        <DataGrid.Columns>
+          <DataGridTemplateColumn Width="30" CanUserSort="False">
+            <DataGridTemplateColumn.CellTemplate>
+              <DataTemplate>
+                <PathIcon Width="14" Height="14" HorizontalAlignment="Center"
+                          Data="{Binding Category, Converter={x:Static conv:CategoryToGeometryConverter.Instance}}"
+                          Foreground="{Binding Category, Converter={x:Static conv:CategoryToBrushConverter.Instance}}" />
+              </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+          </DataGridTemplateColumn>
+          <DataGridTextColumn Header="{l:T 'Nom'}" Binding="{Binding Name}" Width="2*" />
+          <DataGridTextColumn Header="{l:T 'Dossier'}" Binding="{Binding Folder}" Width="3*" />
+          <DataGridTextColumn Header="{l:T 'Taille'}" Binding="{Binding SizeText}" Width="90" />
+          <DataGridTextColumn Header="Date" Binding="{Binding DateText}" Width="130" />
+          <DataGridTextColumn Header="{l:T 'Doublons'}" Binding="{Binding Group}" Width="170" />
+        </DataGrid.Columns>
+      </DataGrid>
+    </Border>
+  </DockPanel>
+</Window>

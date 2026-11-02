@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>TwinPanel.App</RootNamespace>
+    <AssemblyName>TwinPanel</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- Icône du programme (Explorateur, barre des tâches, raccourcis). -->
+    <ApplicationIcon>Assets\twinpanel.ico</ApplicationIcon>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <AvaloniaVersion>12.1.4</AvaloniaVersion>
+    <!-- La DataGrid a sa propre numérotation depuis Avalonia 12. -->
+    <DataGridVersion>12.1.2</DataGridVersion>
+    <!-- Liaisons par réflexion : le choix par défaut d'Avalonia a changé en 12. -->
+    <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="$(AvaloniaVersion)" />
+    <PackageReference Include="Avalonia.Desktop" Version="$(AvaloniaVersion)" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="$(AvaloniaVersion)" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="$(AvaloniaVersion)" />
+    <PackageReference Include="Avalonia.Controls.DataGrid" Version="$(DataGridVersion)" />
+    <PackageReference Include="Avalonia.Controls.ColorPicker" Version="$(AvaloniaVersion)" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Logo de TwinPanel (fenêtres, barre d'outils, À propos). -->
+    <AvaloniaResource Include="Assets\**" />
+    <!-- Texte de la licence, affiché par « À propos » → « Licence TwinPanel 1.0 ». -->
+    <AvaloniaResource Include="..\..\LICENSE" Link="Assets\LICENSE.txt" />
+    <AvaloniaResource Include="..\..\LICENSE.en.txt" Link="Assets\LICENSE.en.txt" />
+    <!-- Guide intégré (F1) : le même texte que sur GitHub. -->
+    <AvaloniaResource Include="..\..\README.md" Link="Assets\README.md" />
+    <AvaloniaResource Include="..\..\README.en.md" Link="Assets\README.en.md" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TwinPanel.Core\TwinPanel.Core.csproj" />
+    <Using Include="TwinPanel.Core.Localization" />
+  </ItemGroup>
+</Project>
