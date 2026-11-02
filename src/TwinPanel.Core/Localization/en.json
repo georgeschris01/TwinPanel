@@ -1623,6 +1623,7 @@
  "Terminal intégré : chercher dans le texte": "Built-in terminal: search the text",
  "Terminal intégré : changer de côté": "Built-in terminal: switch side",
  "Changer de côté": "Switch side",
+ "Le nom de ce dossier contient des caractères de contrôle : le terminal s'ouvre dans le dossier personnel.": "This folder's name contains control characters: the terminal opens in the home folder.",
  "Ctrl+Maj+F": "Ctrl+Shift+F",
  "Dans le terminal : chercher dans le texte": "In the terminal: search the text",
  "Aucun résultat": "No result",

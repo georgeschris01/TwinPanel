@@ -188,6 +188,11 @@ public partial class MainWindowViewModel
         family ??= new TerminalFamily();
         ApplyTerminalSettings();
         if (_remote is null) return;
+        if (directory is not null && !SshTerminalConnection.CanTypePath(directory))
+        {
+            StatusMessage = L.T("Le nom de ce dossier contient des caractères de contrôle : le terminal s'ouvre dans le dossier personnel.");
+            directory = null;
+        }
         var tab = Terminal.Add(profile.Name);
         tab.ServerId = profile.Id;
         tab.ServerName = profile.Name;

@@ -324,9 +324,27 @@ public class TerminalKeysTests
     [Fact]
     public void Paste_cannot_escape_from_the_brackets()
     {
-        Assert.Equal("a\rb\r", TerminalKeys.Paste("a\r\nb\n", false));
-        Assert.Equal("\u001b[200~ab\u001b[201~", TerminalKeys.Paste("a\u001b[201~b", true));
+        Assert.Equal("a\rb", TerminalKeys.Paste("a\r\nb\n", false));
+        Assert.Equal("\u001b[200~a[201~b\u001b[201~", TerminalKeys.Paste("a\u001b[201~b", true));
     }
+
+    [Fact]
+    public void A_nested_end_mark_cannot_rebuild_itself()
+    {
+        var sent = TerminalKeys.Paste("sage\u001b[20\u001b[201~1~\rpiege\r", true);
+        Assert.Equal("\u001b[200~sage[20[201~1~\rpiege\r\u001b[201~", sent);
+        Assert.Equal(sent.Length - 6, sent.LastIndexOf("\u001b[201~", StringComparison.Ordinal));
+        Assert.Equal(1, sent.Split("\u001b[201~").Length - 1);
+    }
+
+    [Theory]
+    [InlineData("ls\n", "ls")]
+    [InlineData("a\u000fb", "ab")]
+    [InlineData("a\u0015b", "ab")]
+    [InlineData("a\u007fb", "ab")]
+    [InlineData("a\u009b1~b", "a1~b")]
+    [InlineData("a\tb", "a\tb")]
+    public void Pasted_text_cannot_act_on_the_line(string text, string expected) => Assert.Equal(expected, TerminalKeys.Paste(text, false));
 
     [Theory]
     [InlineData("ls", false)]
@@ -564,6 +582,16 @@ public class TerminalShellsTests
     [InlineData("/l'été", "cd -- '/l'\\''été' && clear\n")]
     public void Remote_folder_is_quoted(string folder, string expected) =>
         Assert.Equal(expected, SshTerminalConnection.ChangeDirectoryCommand(folder));
+
+    [Theory]
+    [InlineData("/srv/mon dossier/l'été", true)]
+    [InlineData("/srv/x\u0015curl site|sh\r", false)]
+    [InlineData("/srv/x\u0003y", false)]
+    [InlineData("/srv/x\ny", false)]
+    [InlineData("/srv/x\u001by", false)]
+    [InlineData("/srv/x\u007fy", false)]
+    [InlineData("/srv/x\u009by", false)]
+    public void Only_a_clean_path_is_typed_in_the_shell(string folder, bool expected) => Assert.Equal(expected, SshTerminalConnection.CanTypePath(folder));
 }
 
 public class ConPtyTests

@@ -53,9 +53,15 @@ public sealed class SshTerminalConnection : ITerminalConnection
         _shell.Closed += (_, _) => Close(null);
         _shell.ErrorOccurred += (_, e) => Close(e.Exception.Message);
         new Thread(ReadLoop) { IsBackground = true, Name = "Terminal : lecture SSH" }.Start();
-        if (_startDirectory is { Length: > 0 } directory)
+        if (_startDirectory is { Length: > 0 } directory && CanTypePath(directory))
             Write(System.Text.Encoding.UTF8.GetBytes(ChangeDirectoryCommand(directory)));
     }
+
+    /// <summary>
+    /// Ce chemin est tapé dans le shell : un caractère de contrôle y agirait avant les guillemets. Ctrl+U, par exemple,
+    /// effacerait le début de la ligne, et un dossier piégé ferait exécuter la fin de son nom.
+    /// </summary>
+    public static bool CanTypePath(string directory) => !directory.Any(char.IsControl);
 
     /// <summary>Commande qui place le shell dans le dossier du panneau, sans laisser de trace à l'écran.</summary>
     public static string ChangeDirectoryCommand(string directory) =>

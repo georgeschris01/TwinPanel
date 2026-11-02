@@ -368,7 +368,7 @@ When the keyboard is in the terminal, keys go to the program running there: `F5`
 - Right-click: copies the selection, or pastes if nothing is selected.
 - Double-click: a word. Triple-click: a line.
 - If a program uses the mouse, hold `Shift` to select text.
-- Before pasting several lines into a program that would run them at once, TwinPanel asks for confirmation.
+- Before pasting several lines into a program that would run them at once, TwinPanel asks for confirmation. Pasted text loses its control characters, and a final line break runs nothing.
 
 When the keyboard is in the terminal, every key goes to the program running there: `F5` does not copy a file. Only `F12` and `Alt+F4` stay with TwinPanel. Click a list to go back to your files.
 

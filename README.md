@@ -368,7 +368,7 @@ Quand le clavier est dans le terminal, les touches vont au programme qui y tourn
 - Clic droit : copie la sélection, ou colle s'il n'y a rien de sélectionné.
 - Double-clic : un mot. Triple-clic : une ligne.
 - Si un programme utilise la souris, garde `Maj` enfoncée pour sélectionner du texte.
-- Avant de coller plusieurs lignes dans un programme qui les exécuterait aussitôt, TwinPanel demande confirmation.
+- Avant de coller plusieurs lignes dans un programme qui les exécuterait aussitôt, TwinPanel demande confirmation. Le texte collé perd ses caractères de contrôle, et un dernier retour à la ligne ne lance rien.
 
 Quand le clavier est dans le terminal, toutes les touches vont au programme qui y tourne : `F5` ne copie pas de fichier. Seuls `F12` et `Alt+F4` restent à TwinPanel. Clique sur une liste pour revenir aux fichiers.
 

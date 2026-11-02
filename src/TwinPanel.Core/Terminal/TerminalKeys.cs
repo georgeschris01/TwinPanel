@@ -90,13 +90,14 @@ public static class TerminalKeys
 
     /// <summary>
     /// Texte collé : les retours à la ligne deviennent des Entrée, et le collage est encadré si le programme le demande.
-    /// La marque de fin est retirée du texte : un texte piégé ne doit pas pouvoir faire exécuter la suite.
+    /// Un texte piégé ne doit rien pouvoir lancer : sans caractère de contrôle, il ne peut ni fermer le cadre ni agir
+    /// sur la ligne en cours, et un dernier retour à la ligne ne valide pas la commande.
     /// </summary>
     public static string Paste(string text, bool bracketed)
     {
         text = text.Replace("\r\n", "\r", StringComparison.Ordinal).Replace('\n', '\r');
-        if (!bracketed) return text;
-        return "\u001b[200~" + text.Replace("\u001b[201~", string.Empty, StringComparison.Ordinal) + "\u001b[201~";
+        text = string.Concat(text.Where(c => c is '\t' or '\r' || !char.IsControl(c)));
+        return bracketed ? "\u001b[200~" + text + "\u001b[201~" : text.TrimEnd('\r');
     }
 
     /// <summary>Le texte contient-il plusieurs lignes, donc risque-t-il de lancer des commandes dès le collage ?</summary>
