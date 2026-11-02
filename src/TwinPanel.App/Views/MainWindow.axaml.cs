@@ -319,7 +319,7 @@ public partial class MainWindow : Window
         {
             var item = new MenuItem
             {
-                Header = fav.Name,
+                Header = AppMenus.Literal(fav.Name),
                 Command = vm.OpenFavoriteCommand,
                 CommandParameter = fav,
             };
@@ -330,7 +330,7 @@ public partial class MainWindow : Window
         items.Add(new Separator());
         var remove = new MenuItem { Header = L.T("Retirer un favori") };
         foreach (var fav in vm.Favorites)
-            remove.Items.Add(new MenuItem { Header = fav.Name, Command = vm.RemoveFavoriteCommand, CommandParameter = fav });
+            remove.Items.Add(new MenuItem { Header = AppMenus.Literal(fav.Name), Command = vm.RemoveFavoriteCommand, CommandParameter = fav });
         items.Add(remove);
     }
 
@@ -465,7 +465,7 @@ public partial class MainWindow : Window
         foreach (var profile in servers)
         {
             var header = vm.IsServerConnected(profile) ? L.F("{0}  ● connecté", profile.Name) : profile.Name;
-            items.Add(new MenuItem { Header = header, Command = vm.NewServerTerminalCommand, CommandParameter = profile });
+            items.Add(new MenuItem { Header = AppMenus.Literal(header), Command = vm.NewServerTerminalCommand, CommandParameter = profile });
         }
     }
 
@@ -493,7 +493,7 @@ public partial class MainWindow : Window
             items.Add(new MenuItem { Header = L.T("Connexions ouvertes"), IsEnabled = false });
             foreach (var s in open)
             {
-                var item = new MenuItem { Header = $"{s.Profile.Name}  ({s.Scheme}://{s.Alias})" };
+                var item = new MenuItem { Header = AppMenus.Literal($"{s.Profile.Name}  ({s.Scheme}://{s.Alias})") };
                 item.Items.Add(new MenuItem { Header = L.T("Afficher dans le panneau actif"), Command = vm.ShowSessionCommand, CommandParameter = s });
                 item.Items.Add(new MenuItem { Header = L.T("Déconnecter"), Command = vm.DisconnectCommand, CommandParameter = s });
                 items.Add(item);
@@ -509,7 +509,7 @@ public partial class MainWindow : Window
             // Les plus récemment utilisées d'abord (15 au maximum ; toutes sont dans le gestionnaire).
             foreach (var p in saved.OrderByDescending(p => p.LastUsedUtc ?? DateTime.MinValue).ThenBy(p => p.Name).Take(15))
             {
-                var item = new MenuItem { Header = $"{p.Name}  —  {p.Summary}", Command = vm.ConnectProfileCommand, CommandParameter = p };
+                var item = new MenuItem { Header = AppMenus.Literal($"{p.Name}  —  {p.Summary}"), Command = vm.ConnectProfileCommand, CommandParameter = p };
                 ToolTip.SetTip(item, TwinPanel.Core.Remote.RemoteProtocols.Label(p.Protocol) + (p.Group.Length > 0 ? $" — {p.Group}" : string.Empty));
                 items.Add(item);
             }
@@ -630,7 +630,7 @@ public partial class MainWindow : Window
             {
                 if (!groups.TryGetValue(c.Group, out var parent))
                 {
-                    parent = new MenuItem { Header = c.Group };
+                    parent = new MenuItem { Header = AppMenus.Literal(c.Group) };
                     groups[c.Group] = parent;
                     items.Add(parent);
                 }
@@ -639,7 +639,7 @@ public partial class MainWindow : Window
             if (c.Kind == TwinPanel.Core.Settings.CustomCommandKind.Separator) { target.Add(new Separator()); continue; }
             var item = new MenuItem
             {
-                Header = c.Label.Length > 0 ? c.Label : c.Target,
+                Header = AppMenus.Literal(c.Label.Length > 0 ? c.Label : c.Target),
                 Command = vm.RunCustomCommandCommand,
                 CommandParameter = c,
                 Icon = CustomIcons.For(c) is { } g ? new PathIcon { Data = g, Width = 14, Height = 14 } : null,

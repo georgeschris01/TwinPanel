@@ -45,6 +45,9 @@ public static class AppMenus
         foreach (var e in entries) if (e is not null) items.Add(e);
     }
 
+    /// <summary>Nom choisi par l'utilisateur dans un menu : « _ » y désigne une touche de raccourci, doublé il s'affiche tel quel.</summary>
+    public static string Literal(string text) => text.Replace("_", "__");
+
     private static MenuItem Sub(string header) => new() { Header = header };
 
     /// <summary>Liste des dossiers récents (Alt+Bas, clic droit sur Précédent, menu ≡).</summary>
