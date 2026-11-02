@@ -8,8 +8,19 @@ namespace TwinPanel.App.Services;
 public static class ShellService
 {
     /// <summary>Ouvre un fichier avec l'application associée (comme un double-clic dans l'Explorateur).</summary>
-    public static void Open(string path) =>
+    public static void Open(string path)
+    {
+        if (OperatingSystem.IsLinux())
+        {
+            // Pas d'ouverture directe : .NET lancerait tout fichier marqué exécutable, même un texte venu d'une clé USB.
+            // xdg-open choisit le programme d'après le type du fichier, comme le bureau.
+            var open = new ProcessStartInfo("xdg-open") { UseShellExecute = false };
+            open.ArgumentList.Add(path);
+            Process.Start(open)?.Dispose();
+            return;
+        }
         Process.Start(new ProcessStartInfo(path) { UseShellExecute = true })?.Dispose();
+    }
 
     /// <summary>Imprime avec l'application associée (action « Imprimer » de Windows) ; faux si ce type de fichier ne sait pas s'imprimer.</summary>
     public static bool Print(string path)

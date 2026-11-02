@@ -16,7 +16,7 @@ public sealed class NavigationHistory(int capacity = 100)
     /// <summary>Enregistre une nouvelle visite ; efface la branche "suivant".</summary>
     public void Push(string path)
     {
-        if (Current is { } cur && string.Equals(cur, path, StringComparison.OrdinalIgnoreCase)) return;
+        if (Current is { } cur && string.Equals(cur, path, PathText.Comparison)) return;
         if (_index < _items.Count - 1) _items.RemoveRange(_index + 1, _items.Count - _index - 1);
         _items.Add(path);
         if (_items.Count > capacity) _items.RemoveAt(0);

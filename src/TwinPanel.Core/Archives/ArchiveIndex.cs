@@ -15,7 +15,7 @@ public sealed record ArchiveItem(string Key, bool IsDirectory, long Size, DateTi
 public sealed class ArchiveIndex
 {
     private static readonly ConcurrentDictionary<string, (long Length, DateTime Stamp, ArchiveIndex Index)> Cache =
-        new(StringComparer.OrdinalIgnoreCase);
+        new(PathText.Comparer);
 
     private readonly Dictionary<string, ArchiveItem> _items;
     private readonly Dictionary<string, List<ArchiveItem>> _children;

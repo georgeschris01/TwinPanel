@@ -59,7 +59,7 @@ public partial class DriveButtonViewModel : ObservableObject
         get
         {
             if (!s_custom || Kind == DriveButtonKind.Separator) return null;
-            var letter = Kind == DriveButtonKind.Drive ? Key.TrimEnd('\\', '/') : null;
+            var letter = Kind == DriveButtonKind.Drive ? Label : null;
             if (letter is not null && s_driveColors.TryGetValue(letter, out var own) && TwinPanel.Core.Customization.FileColorRules.IsColor(own)) return own;
             return s_typeColors.TryGetValue(TypeOf(IconKey), out var t) && TwinPanel.Core.Customization.FileColorRules.IsColor(t) ? t : null;
         }
@@ -80,14 +80,29 @@ public static class DriveScanner
     public static IReadOnlyList<DriveSnapshot> Scan()
     {
         var list = new List<DriveSnapshot>();
-        foreach (var d in DriveInfo.GetDrives())
+        if (OperatingSystem.IsLinux())
+        {
+            var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            list.Add(new DriveSnapshot(home, "~", home, "IconHome"));
+        }
+        foreach (var d in LocalDisks.Usable())
         {
             try
             {
                 if (!d.IsReady) continue;
+                var free = L.F("{0} libres sur {1}", FileEntry.FormatSize(d.AvailableFreeSpace), FileEntry.FormatSize(d.TotalSize));
+                if (OperatingSystem.IsLinux())
+                {
+                    list.Add(new DriveSnapshot(d.Name, LocalDisks.ShortName(d.Name), $"{d.Name}\n{free}", d.DriveType switch
+                    {
+                        DriveType.Network => "IconNetwork",
+                        DriveType.CDRom => "IconCd",
+                        _ => LocalDisks.IsRemovable(d.Name) ? "IconUsb" : "IconDrive",
+                    }));
+                    continue;
+                }
                 var letter = d.Name.TrimEnd('\\', '/');
                 var volume = string.IsNullOrWhiteSpace(d.VolumeLabel) ? TypeName(d.DriveType) : d.VolumeLabel;
-                var free = L.F("{0} libres sur {1}", FileEntry.FormatSize(d.AvailableFreeSpace), FileEntry.FormatSize(d.TotalSize));
                 list.Add(new DriveSnapshot(d.Name, letter, $"{letter}  {volume}\n{free}", d.DriveType switch
                 {
                     DriveType.Removable => "IconUsb",

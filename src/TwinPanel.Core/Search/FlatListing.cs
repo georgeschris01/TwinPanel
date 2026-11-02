@@ -19,20 +19,20 @@ public static class FlatListing
         if (cut < 0) return string.Empty;
         var folder = fullPath[..cut];
         var start = root.TrimEnd('/', '\\');
-        return folder.StartsWith(start, StringComparison.OrdinalIgnoreCase)
+        return folder.StartsWith(start, PathText.Comparison)
             ? folder[start.Length..].TrimStart('/', '\\')
             : folder;
     }
 
     /// <summary>Noms présents plusieurs fois (majuscules ignorées : ils iraient dans un seul dossier, peut-être sous Windows).</summary>
     public static IReadOnlyList<string> DuplicateNames(IEnumerable<string> names) =>
-        names.GroupBy(n => n, StringComparer.OrdinalIgnoreCase).Where(g => g.Count() > 1).Select(g => g.Key).ToList();
+        names.GroupBy(n => n, PathText.Comparer).Where(g => g.Count() > 1).Select(g => g.Key).ToList();
 
     /// <summary>Répartit les éléments en groupes où chaque nom n'apparaît qu'une fois, dans l'ordre d'origine.</summary>
     public static IReadOnlyList<IReadOnlyList<T>> SplitUniqueNames<T>(IEnumerable<T> items, Func<T, string> name)
     {
         var groups = new List<List<T>>();
-        var seen = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        var seen = new Dictionary<string, int>(PathText.Comparer);
         foreach (var item in items)
         {
             int round = seen.GetValueOrDefault(name(item));

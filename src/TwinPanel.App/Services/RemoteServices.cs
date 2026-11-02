@@ -1,6 +1,7 @@
 // TwinPanel — © 2026 Georges Christophe (chrypox). Tous droits réservés.
 // Licence TwinPanel 1.0 (gratuit, non commercial, sans modification) : voir le fichier LICENSE.
 using Avalonia.Threading;
+using TwinPanel.Core;
 using TwinPanel.Core.Archives;
 using TwinPanel.Core.Remote;
 
@@ -69,7 +70,7 @@ public sealed class RemoteEdits(IDialogService dialogs, Action<string> status, F
     private void Add(RemoteSession? session, string localFile, string target, bool isArchive, string archiveFolder = "")
     {
         // Même copie ouverte une deuxième fois : une seule surveillance (sinon la question viendrait deux fois).
-        foreach (var old in _entries.Where(e => string.Equals(e.Local, localFile, StringComparison.OrdinalIgnoreCase)).ToList())
+        foreach (var old in _entries.Where(e => string.Equals(e.Local, localFile, PathText.Comparison)).ToList())
         {
             old.Dispose();
             _entries.Remove(old);

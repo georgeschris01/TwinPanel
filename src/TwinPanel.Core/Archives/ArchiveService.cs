@@ -168,7 +168,7 @@ public static class ArchiveService
                     {
                         var rel = Path.GetRelativePath(baseDir, info.FullName).Replace('\\', '/');
                         if (info is DirectoryInfo) dirs.Add(rel);
-                        else if (!string.Equals(info.FullName, outputFull, StringComparison.OrdinalIgnoreCase)) files.Add((info.FullName, rel));
+                        else if (!string.Equals(info.FullName, outputFull, PathText.Comparison)) files.Add((info.FullName, rel));
                     }
                 }
                 else throw new FileOperationException(L.F("Source introuvable : {0}", src));

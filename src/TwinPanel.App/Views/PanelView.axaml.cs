@@ -9,6 +9,7 @@ using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using TwinPanel.Core;
 using TwinPanel.App.ViewModels;
 using TwinPanel.Core.Navigation;
 
@@ -398,7 +399,7 @@ public partial class PanelView : UserControl
         bool files = !ours && e.DataTransfer.Contains(DataFormat.File);
         var target = (ours || files) ? DropTarget(e, quiet: true) : null;
         // Lâcher dans le dossier d'où viennent les fichiers : rien à faire.
-        if (target is null || (ours && s_drag is { } d && string.Equals(target, d.FromDir, StringComparison.OrdinalIgnoreCase)))
+        if (target is null || (ours && s_drag is { } d && string.Equals(target, d.FromDir, PathText.Comparison)))
             e.DragEffects = DragDropEffects.None;
         else
             e.DragEffects = e.KeyModifiers.HasFlag(KeyModifiers.Shift) ? DragDropEffects.Move : DragDropEffects.Copy;
@@ -415,7 +416,7 @@ public partial class PanelView : UserControl
         {
             e.Handled = true;
             var target = DropTarget(e, quiet: false);
-            if (target is null || string.Equals(target, d.FromDir, StringComparison.OrdinalIgnoreCase)) return;
+            if (target is null || string.Equals(target, d.FromDir, PathText.Comparison)) return;
             var (entries, panel) = (d.Entries, d.Panel);
             if (forced is { } m) await main.DropAsync(panel, entries, target, m);
             else AskCopyOrMove(entries.Count, target, move => main.DropAsync(panel, entries, target, move));

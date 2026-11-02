@@ -1,6 +1,7 @@
 // TwinPanel — © 2026 Georges Christophe (chrypox). Tous droits réservés.
 // Licence TwinPanel 1.0 (gratuit, non commercial, sans modification) : voir le fichier LICENSE.
 using System.Collections.ObjectModel;
+using TwinPanel.Core;
 using TwinPanel.Core.Navigation;
 using TwinPanel.Core.Settings;
 using TwinPanel.Core.Sources;
@@ -68,7 +69,7 @@ public partial class FilePanelViewModel : ObservableObject
                     // Clic dans l'arborescence : on ouvre le dossier dans l'onglet courant.
                     if (e.PropertyName == nameof(FolderTreeViewModel.SelectedNode) && !Tree.IsRevealing
                         && Tree.SelectedNode is { FullPath.Length: > 0 } node
-                        && !string.Equals(node.FullPath.TrimEnd('\\', '/'), Current.CurrentPath.TrimEnd('\\', '/'), StringComparison.OrdinalIgnoreCase))
+                        && !string.Equals(node.FullPath.TrimEnd('\\', '/'), Current.CurrentPath.TrimEnd('\\', '/'), PathText.Comparison))
                         _ = Current.NavigateAsync(node.FullPath);
                 };
             }
@@ -229,7 +230,7 @@ public partial class FilePanelViewModel : ObservableObject
     public int RemoveDuplicateTabs()
     {
         int closed = 0;
-        foreach (var group in Tabs.GroupBy(t => t.CurrentPath, StringComparer.OrdinalIgnoreCase).Where(g => g.Count() > 1).ToList())
+        foreach (var group in Tabs.GroupBy(t => t.CurrentPath, PathText.Comparer).Where(g => g.Count() > 1).ToList())
         {
             var list = group.ToList();
             var keep = list.FirstOrDefault(t => ReferenceEquals(t, SelectedTab)) ?? list.FirstOrDefault(t => t.IsLocked) ?? list[0];
@@ -252,7 +253,7 @@ public partial class FilePanelViewModel : ObservableObject
         if (value is not null) value.PropertyChanged += OnTabPropertyChanged;
         // Verrouillé avec changement de dossier : en reprenant l'onglet, on revient à son dossier.
         if (value is { LockMode: TwinPanel.Core.Settings.TabLock.LockedAllowChange } t && t.LockedPath.Length > 0
-            && !string.Equals(t.CurrentPath, t.LockedPath, StringComparison.OrdinalIgnoreCase))
+            && !string.Equals(t.CurrentPath, t.LockedPath, PathText.Comparison))
             _ = t.NavigateAsync(t.LockedPath);
         SyncFromCurrent();
         if (ShowTree && value is not null) Tree?.Reveal(value.CurrentPath);
@@ -365,11 +366,14 @@ public partial class FilePanelViewModel : ObservableObject
     {
         var path = Current.CurrentPath;
         string? alias = TwinPanel.Core.Remote.PanelRemotePath.TryParse(path, out var remote) ? remote.Session : null;
-        var root = alias is null && path.Length > 0 ? Path.GetPathRoot(path) : null;
+        // Sous Linux, tout part de « / » : le bouton allumé est celui du disque le plus précis.
+        var root = alias is not null || path.Length == 0 ? null
+            : OperatingSystem.IsLinux() ? LocalDisks.Containing(path, DriveBar.Where(b => b.Kind == DriveButtonKind.Drive).Select(b => b.Key))
+            : Path.GetPathRoot(path);
         foreach (var b in DriveBar)
             b.IsCurrent = b.Kind switch
             {
-                DriveButtonKind.Drive => root is not null && string.Equals(b.Key, root, StringComparison.OrdinalIgnoreCase),
+                DriveButtonKind.Drive => root is not null && string.Equals(b.Key, root, PathText.Comparison),
                 DriveButtonKind.Connection => alias is not null && string.Equals(b.OpenAlias, alias, StringComparison.OrdinalIgnoreCase),
                 _ => false,
             };

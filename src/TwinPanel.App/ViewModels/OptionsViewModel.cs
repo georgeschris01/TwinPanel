@@ -461,7 +461,9 @@ public partial class OptionsViewModel : ObservableObject
         : string.IsNullOrWhiteSpace(_settings.EditorName) ? _settings.EditorPath : _settings.EditorName;
 
     // ---- Terminal
-    public static IReadOnlyList<Choice<TermKind>> TerminalKinds { get; } =
+    public static IReadOnlyList<Choice<TermKind>> TerminalKinds { get; } = !OperatingSystem.IsWindows()
+    ? [new(TermKind.Auto, L.T("Automatique (terminal par défaut du système)")), new(TermKind.Custom, L.T("Autre programme…"))]
+    :
     [
         new(TermKind.Auto, L.T("Automatique (Windows Terminal s'il est installé, sinon PowerShell)")),
         new(TermKind.WindowsTerminal, "Windows Terminal"),
@@ -478,6 +480,7 @@ public partial class OptionsViewModel : ObservableObject
     public string ResolvedTerminal => TerminalCommand.Resolve(new TerminalSettings { Kind = TermKind.Auto }) switch
     {
         TermKind.WindowsTerminal => L.T("Sur ce PC, « Automatique » ouvre : Windows Terminal."),
+        TermKind.Custom => L.T("Sur ce PC, « Automatique » ouvre : le terminal par défaut du système."),
         _ => L.T("Sur ce PC, « Automatique » ouvre : PowerShell (Windows Terminal n'est pas installé)."),
     };
 

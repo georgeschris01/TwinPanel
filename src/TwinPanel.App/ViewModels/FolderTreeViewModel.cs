@@ -3,6 +3,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 
+using TwinPanel.Core;
 namespace TwinPanel.App.ViewModels;
 
 /// <summary>Un dossier de l'arborescence ; ses sous-dossiers sont lus seulement quand on l'ouvre.</summary>
@@ -63,7 +64,8 @@ public partial class FolderTreeViewModel : ObservableObject
     public void ReloadDrives()
     {
         Roots.Clear();
-        foreach (var d in DriveInfo.GetDrives())
+        // Sous Linux, tous les disques sont des dossiers de la racine : une seule entrée.
+        foreach (var d in DriveInfo.GetDrives().Where(d => !OperatingSystem.IsLinux() || d.Name == "/"))
         {
             bool ready;
             try { ready = d.IsReady; } catch (IOException) { ready = false; }
@@ -87,7 +89,7 @@ public partial class FolderTreeViewModel : ObservableObject
     private void RevealCore(string path)
     {
         var root = Path.GetPathRoot(path);
-        var node = Roots.FirstOrDefault(r => string.Equals(r.FullPath, root, StringComparison.OrdinalIgnoreCase));
+        var node = Roots.FirstOrDefault(r => string.Equals(r.FullPath, root, PathText.Comparison));
         if (node is null) return;
 
         var relative = Path.GetRelativePath(node.FullPath, path);
@@ -96,7 +98,7 @@ public partial class FolderTreeViewModel : ObservableObject
             foreach (var part in relative.Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries))
             {
                 node.IsExpanded = true;
-                var child = node.Children.FirstOrDefault(c => string.Equals(c.Name, part, StringComparison.OrdinalIgnoreCase));
+                var child = node.Children.FirstOrDefault(c => string.Equals(c.Name, part, PathText.Comparison));
                 if (child is null) break; // dossier caché ou illisible : on s'arrête au parent
                 node = child;
             }
