@@ -398,12 +398,25 @@ public partial class PanelView : UserControl
         bool ours = IsOurDrag(e);
         bool files = !ours && e.DataTransfer.Contains(DataFormat.File);
         var target = (ours || files) ? DropTarget(e, quiet: true) : null;
-        // Lâcher dans le dossier d'où viennent les fichiers : rien à faire.
-        if (target is null || (ours && s_drag is { } d && string.Equals(target, d.FromDir, PathText.Comparison)))
-            e.DragEffects = DragDropEffects.None;
-        else
-            e.DragEffects = e.KeyModifiers.HasFlag(KeyModifiers.Shift) ? DragDropEffects.Move : DragDropEffects.Copy;
+        // Lâcher au point de départ ne fait simplement rien : ce n'est pas interdit, et le curseur ne doit pas le laisser croire
+        // (le glissement commence toujours là, sur l'élément qu'on tient).
+        bool nothingToDo = ours && (target is null || (s_drag is { } d && string.Equals(target, d.FromDir, PathText.Comparison)));
+        if (nothingToDo) e.DragEffects = DragDropEffects.Move;
+        else if (target is null) e.DragEffects = DragDropEffects.None;
+        else e.DragEffects = e.KeyModifiers.HasFlag(KeyModifiers.Shift) ? DragDropEffects.Move : DragDropEffects.Copy;
         e.Handled = true;
+    }
+
+    /// <summary>
+    /// Survol du reste de la fenêtre (barres, séparation) pendant qu'on glisse des fichiers : lâcher n'y fait rien, sans curseur « interdit ».
+    /// </summary>
+    public static void AllowPassingOver(Control window)
+    {
+        DragDrop.SetAllowDrop(window, true);
+        window.AddHandler(DragDrop.DragOverEvent, (_, e) =>
+        {
+            if (s_drag is not null) e.DragEffects = DragDropEffects.Move;
+        });
     }
 
     private async void OnDrop(object? sender, DragEventArgs e)
@@ -649,7 +662,7 @@ public partial class PanelView : UserControl
         Toggle(L.T("Langues audio"), a.ShowAudioLanguagesColumn, "MediaAudioLanguages");
         menu.Items.Add(new Separator());
         Toggle(L.T("Taille des dossiers (calcul automatique)"), a.ShowFolderSizes, "FolderSizes");
-        if (TwinPanel.App.Services.ShellIcons.IsSupported) Toggle(L.T("Vraies icônes de Windows"), a.UseShellIcons, "ShellIcons");
+        if (TwinPanel.App.Services.ShellIcons.IsSupported) Toggle(TwinPanel.App.Services.ShellIcons.OptionName, a.UseShellIcons, "ShellIcons");
         var reset = new MenuItem { Header = L.T("Ordre des colonnes par défaut"), IsEnabled = a.ColumnOrder.Count > 0 };
         reset.Click += (_, _) => main.SetColumnOrder([]);
         menu.Items.Add(reset);

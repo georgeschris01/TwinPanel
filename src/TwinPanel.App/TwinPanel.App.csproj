@@ -25,6 +25,8 @@
     <PackageReference Include="Avalonia.Controls.DataGrid" Version="$(DataGridVersion)" />
     <PackageReference Include="Avalonia.Controls.ColorPicker" Version="$(AvaloniaVersion)" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <!-- Dessin des icônes SVG des thèmes Linux. 5.1.1 : dernière version sur SkiaSharp 3, celui d'Avalonia 12. -->
+    <PackageReference Include="Svg.Skia" Version="5.1.1" />
   </ItemGroup>
 
   <ItemGroup>

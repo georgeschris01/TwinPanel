@@ -3,7 +3,7 @@
 Tout ce que TwinPanel utilise et qui ne vient pas de nous, ainsi que le plan de nos propres modules.
 **À mettre à jour à chaque ajout, retrait ou changement de version** (le journal note aussi chaque changement).
 
-Dernière mise à jour : 02/11/2026 (version 0.8.4, terminal intégré).
+Dernière mise à jour : 02/11/2026 (version 0.8.4, terminal intégré ; bêta Linux en cours).
 
 ---
 
@@ -36,6 +36,7 @@ Dernière mise à jour : 02/11/2026 (version 0.8.4, terminal intégré).
 | **MediaInfo.Core.Native** | 26.10.0 | BSD-2 (MediaArea) | Bibliothèque native MediaInfo (libmediainfo, avec libcurl, libssh2, OpenSSL et Brotli) : codecs, pistes, langues, HDR / Dolby Vision. Appelée directement par `Core/Media/MediaInfoLib.cs`. | Référence de l'analyse des médias, utilisée par la plupart des lecteurs. |
 | **z440.atl.core** (ATL .NET) | 7.19.0 | MIT | Lecture et écriture des tags des musiques (MP3, FLAC, M4A, OGG, Opus, WMA…) et des MP4 ; débit, fréquence, durée. | Pur .NET, très complet, mis à jour régulièrement (MIT plutôt que la LGPL de TagLib#). |
 | **MetadataExtractor** | 2.9.3 | Apache-2.0 | Lecture de l'EXIF / XMP / GPS des photos (avec XmpCore, licence BSD d'Adobe). | Référence en .NET pour lire les métadonnées d'images. |
+| **Svg.Skia** | 5.1.1 | MIT | Dessin des icônes SVG des thèmes Linux (option « Vraies icônes du système »). Livré aussi sous Windows, où il ne sert pas. | Repose sur Skia, déjà utilisé par Avalonia. 5.1.1 : dernière version sur SkiaSharp 3, celui d'Avalonia 12 (5.2 exige SkiaSharp 4). |
 
 ### Installées automatiquement avec Avalonia (dépendances indirectes)
 
@@ -54,6 +55,9 @@ Dernière mise à jour : 02/11/2026 (version 0.8.4, terminal intégré).
 | Microsoft.Extensions.DependencyInjection.Abstractions | 8.0.2 (amenée par Logging.Abstractions) | MIT | Élément interne (inutilisé par TwinPanel). |
 | Ude.NetStandard | 1.2.0 (amenée par ATL .NET) | MPL-1.1 (ou GPL / LGPL au choix) | Détection de l'encodage des textes pour ATL. Livrée sans modification ; code source : https://github.com/yinyue200/ude. |
 | MicroCom.Runtime | 0.11.6 | MIT | Appels système natifs (interne à Avalonia). |
+| ShimSkiaSharp, Svg.Model, Svg.Animation, Svg.SceneGraph | 5.1.1 (amenées par Svg.Skia) | MIT | Éléments internes de Svg.Skia. |
+| Svg.Custom | 5.1.1 (amenée par Svg.Skia) | Ms-PL | Lecture des fichiers SVG (dérivé de SVG.NET). Livrée sans modification ; licence reproduite dans `THIRD-PARTY-NOTICES.md`. |
+| ExCSS | 4.3.1 (amenée par Svg.Custom) | MIT | Lecture des styles des fichiers SVG. |
 | **Avalonia.BuildServices** | 11.3.2 | MIT | ⚠️ Envoie des **statistiques anonymes de compilation** à l'équipe Avalonia (pas pendant l'utilisation de TwinPanel). Désactivable : variable d'environnement `AVALONIA_TELEMETRY_OPTOUT=1`. |
 
 ---
@@ -109,6 +113,12 @@ Dernière mise à jour : 02/11/2026 (version 0.8.4, terminal intégré).
 | `cmd.exe` | Ligne de commande en bas de la fenêtre. | — |
 | PowerShell, PowerShell 7, `cmd.exe`, WSL | Terminal intégré (F12), au choix dans Options → Terminal. Seuls les programmes **réellement installés** sont proposés. | Repli sur PowerShell, puis sur `cmd.exe`. |
 | Application associée par Windows | Entrée sur un fichier, Alt+F3. | Message d'erreur de Windows affiché proprement. |
+| `xdg-open` (Linux) | Entrée sur un fichier, Alt+F3. Choisit le programme d'après le type du fichier, sans jamais lancer un fichier marqué exécutable. | Message d'erreur. Recommandé par le paquet `.deb`. |
+| Shell du compte, `$SHELL` (Linux) | Terminal intégré (F12). | Repli sur `/bin/bash`, puis `/bin/sh`. |
+| `/bin/sh` (Linux) | Ligne de commande en bas de la fenêtre. La sortie de la commande n'est pas affichée : le terminal intégré sert à cela. | — |
+| `x-terminal-emulator` (Linux) | Terminal externe. | Message clair, choix d'un autre programme dans les Options. |
+| `secret-tool` (Linux, paquet `libsecret-tools`) | Coffre : garde une clé dans le trousseau du bureau. Recommandé par le paquet `.deb`. | Le coffre demande un mot de passe maître. |
+| `lpstat`, `lp` (Linux, système d'impression CUPS) | Impression. | Message « Aucune imprimante n'est installée ». |
 
 ---
 

@@ -76,7 +76,7 @@
               <CheckBox Content="{l:T 'Langues audio'}" IsChecked="{Binding ShowAudioLanguagesColumn}" Margin="0,0,16,0" />
             </WrapPanel>
             <CheckBox Content="{l:T 'Taille des dossiers (calcul automatique en arrière-plan, PC et serveurs)'}" IsChecked="{Binding ShowFolderSizes}" Margin="0,6,0,0" />
-            <CheckBox Content="{l:T 'Vraies icônes de Windows (celles de l\'Explorateur) au lieu des icônes colorées'}" IsChecked="{Binding UseShellIcons}" IsVisible="{Binding ShellIconsAvailable}" Margin="0,6,0,0" />
+            <CheckBox Content="{Binding ShellIconsLabel}" IsChecked="{Binding UseShellIcons}" IsVisible="{Binding ShellIconsAvailable}" Margin="0,6,0,0" />
             <TextBlock Classes="subtle" TextWrapping="Wrap" Margin="0,2,0,0"
                        Text="{l:T 'Ordre des colonnes : glisser un titre (Nom, Ext, Taille…) à la souris ; clic droit sur les titres pour revenir à l\'ordre par défaut.'}" />
             <TextBlock Classes="label" Text="{l:T 'Beaucoup d\'onglets'}" />

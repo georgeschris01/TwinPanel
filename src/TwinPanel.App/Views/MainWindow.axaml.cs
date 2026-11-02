@@ -15,6 +15,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        PanelView.AllowPassingOver(this);
         // « Quitter » : même chemin que la croix ou Alt+F4 (confirmation si des copies sont en cours).
         QuitButton.Click += (_, _) => Close();
         AddHandler(KeyDownEvent, OnPreviewKeyDown, RoutingStrategies.Tunnel);

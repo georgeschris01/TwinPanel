@@ -56,6 +56,7 @@ for size in 64 256; do
     cp "$ASSETS/twinpanel-$size.png" "$DEB/usr/share/icons/hicolor/${size}x${size}/apps/twinpanel.png"
 done
 cp LICENSE "$DEB/usr/share/doc/twinpanel/copyright"
+cp THIRD-PARTY-NOTICES.md "$DEB/usr/share/doc/twinpanel/"
 
 find "$DEB" -type d -exec chmod 755 {} +
 find "$DEB" -type f -exec chmod 644 {} +
@@ -87,6 +88,7 @@ mkdir -p "$DIR/usr/lib/twinpanel"
 cp -r "$APP/." "$DIR/usr/lib/twinpanel/"
 desktop_file TwinPanel > "$DIR/twinpanel.desktop"
 cp "$ASSETS/twinpanel-256.png" "$DIR/twinpanel.png"
+cp LICENSE THIRD-PARTY-NOTICES.md "$DIR/usr/lib/twinpanel/"
 cat > "$DIR/AppRun" <<'EOF'
 #!/bin/sh
 HERE="$(dirname "$(readlink -f "$0")")"

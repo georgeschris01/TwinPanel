@@ -484,8 +484,11 @@ public partial class OptionsViewModel : ObservableObject
         _ => L.T("Sur ce PC, « Automatique » ouvre : PowerShell (Windows Terminal n'est pas installé)."),
     };
 
-    /// <summary>Sous Linux, les thèmes d'icônes sont en SVG, que TwinPanel ne sait pas afficher : l'option n'est pas proposée.</summary>
+    /// <summary>Sous Linux, l'option n'est proposée que si le bureau a un thème d'icônes.</summary>
     public bool ShellIconsAvailable => TwinPanel.App.Services.ShellIcons.IsSupported;
+    public string ShellIconsLabel => OperatingSystem.IsWindows()
+        ? L.T("Vraies icônes de Windows (celles de l'Explorateur) au lieu des icônes colorées")
+        : L.T("Vraies icônes du système (celles du thème du bureau) au lieu des icônes colorées");
 
     // ---- Terminal intégré
     /// <summary>Seulement les programmes installés sur ce PC, plus « Autre programme ».</summary>

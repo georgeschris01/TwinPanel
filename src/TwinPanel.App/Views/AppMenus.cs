@@ -157,7 +157,7 @@ public static class AppMenus
         Col(L.T("Langues audio"), a.ShowAudioLanguagesColumn, "MediaAudioLanguages");
         columns.Items.Add(new Separator());
         Col(L.T("Taille des dossiers (automatique)"), a.ShowFolderSizes, "FolderSizes");
-        if (TwinPanel.App.Services.ShellIcons.IsSupported) Col(L.T("Vraies icônes de Windows"), a.UseShellIcons, "ShellIcons");
+        if (TwinPanel.App.Services.ShellIcons.IsSupported) Col(TwinPanel.App.Services.ShellIcons.OptionName, a.UseShellIcons, "ShellIcons");
         columns.Items.Add(new MenuItem { Header = L.T("Ordre des colonnes par défaut"), IsEnabled = a.ColumnOrder.Count > 0, Command = new Relay(() => vm.SetColumnOrder([])) });
         view.Items.Add(columns);
         view.Items.Add(new Separator());
