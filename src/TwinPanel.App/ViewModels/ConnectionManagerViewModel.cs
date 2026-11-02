@@ -962,7 +962,7 @@ public partial class ProfileEditor : ObservableObject
         foreach (var k in store.Keys) KeyChoices.Add(new Choice<Guid?>(k.Id, $"{k.Name} ({k.KeyType})"));
         JumpChoices.Clear();
         JumpChoices.Add(new Choice<Guid?>(null, L.T("(aucun : connexion directe)")));
-        foreach (var p in store.Profiles.Where(p => p.Id != currentId && RemoteProtocols.IsSsh(p.Protocol) && p.JumpHostId is null))
+        foreach (var p in store.Profiles.Where(p => RemoteProtocols.IsSsh(p.Protocol) && store.CanJumpThrough(p, currentId)))
             JumpChoices.Add(new Choice<Guid?>(p.Id, $"{p.Name} ({p.Summary})"));
         GroupChoices.Clear();
         foreach (var g in store.Groups) GroupChoices.Add(g);

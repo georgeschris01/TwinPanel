@@ -136,6 +136,21 @@ public partial class MainWindowViewModel
         else Terminal.Unsplit();
     }
 
+    /// <summary>En côte à côte : donne le clavier à l'autre côté.</summary>
+    [RelayCommand]
+    private void SwitchTerminalSide()
+    {
+        if (!Terminal.IsSplit) return;
+        Terminal.ActivatePane(!Terminal.ActiveIsRight);
+        Terminal.Show();
+    }
+
+    [RelayCommand]
+    private void SearchTerminal()
+    {
+        if (TerminalAllowed() && Terminal.Tabs.Count > 0) Terminal.OpenSearch();
+    }
+
     private string ActiveLocalFolder()
     {
         var folder = ActivePanel.Current;

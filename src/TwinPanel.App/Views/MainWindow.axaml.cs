@@ -116,6 +116,7 @@ public partial class MainWindow : Window
         {
             bool right = screen == TerminalScreen2;
             screen.PassThrough = e => _terminalGestures.Any(g => g.Matches(e));
+            screen.SearchRequested += () => vm.SearchTerminalCommand.Execute(null);
             screen.ConfirmPaste = text => new TwinPanel.App.Services.DialogService(this).ConfirmAsync(L.T("Coller dans le terminal"),
                 L.F("Ce texte fait {0} lignes : le programme peut exécuter chacune dès le collage.\nColler quand même ?", text.Split('\n').Length));
             screen.FocusChanged += focused =>
@@ -147,16 +148,71 @@ public partial class MainWindow : Window
             // La largeur du second terminal n'existe qu'en côte à côte, sinon il garderait sa moitié.
             if (e.PropertyName == nameof(TerminalPanelViewModel.IsSplit))
             {
-                TerminalPanes.ColumnDefinitions[0].Width = new GridLength(1, GridUnitType.Star);
-                TerminalPanes.ColumnDefinitions[2].Width = vm.Terminal.IsSplit ? new GridLength(1, GridUnitType.Star) : GridLength.Auto;
+                LayOutTerminalSides(vm);
                 PlaceTerminalStrips(vm);
             }
+            if (e.PropertyName == nameof(TerminalPanelViewModel.Selected) && vm.Terminal.IsSearchOpen) RunTerminalSearch(vm, 0);
         };
+        WireTerminalSearch(vm);
+        TerminalSplitter.DragCompleted += (_, _) => RememberTerminalSplit(vm);
         vm.TerminalCommands.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(TerminalCommandsViewModel.IsOpen)) PlaceTerminalStrips(vm);
         };
         PlaceTerminalStrips(vm);
+    }
+
+    private void LayOutTerminalSides(MainWindowViewModel vm)
+    {
+        double ratio = Math.Clamp(vm.Settings.Terminal.IntegratedSplitRatio, MinSplitRatio, 1 - MinSplitRatio);
+        var (left, right) = (TerminalPanes.ColumnDefinitions[0], TerminalPanes.ColumnDefinitions[2]);
+        left.Width = new GridLength(vm.Terminal.IsSplit ? ratio : 1, GridUnitType.Star);
+        right.Width = vm.Terminal.IsSplit ? new GridLength(1 - ratio, GridUnitType.Star) : GridLength.Auto;
+        right.MinWidth = vm.Terminal.IsSplit ? left.MinWidth : 0;
+    }
+
+    private const double MinSplitRatio = 0.15;
+
+    private void RememberTerminalSplit(MainWindowViewModel vm)
+    {
+        double left = TerminalPanes.ColumnDefinitions[0].ActualWidth, right = TerminalPanes.ColumnDefinitions[2].ActualWidth;
+        if (left + right > 0) vm.Settings.Terminal.IntegratedSplitRatio = left / (left + right);
+    }
+
+    private void WireTerminalSearch(MainWindowViewModel vm)
+    {
+        vm.Terminal.SearchRequested += () => Dispatcher.UIThread.Post(() =>
+        {
+            TerminalSearchBox.Focus();
+            TerminalSearchBox.SelectAll();
+            RunTerminalSearch(vm, 0);
+        }, DispatcherPriority.Loaded);
+        TerminalSearchBox.TextChanged += (_, _) => RunTerminalSearch(vm, 0);
+        TerminalSearchOlder.Click += (_, _) => RunTerminalSearch(vm, -1);
+        TerminalSearchNewer.Click += (_, _) => RunTerminalSearch(vm, 1);
+        TerminalSearchClose.Click += (_, _) => CloseTerminalSearch(vm);
+        TerminalSearchBox.AddHandler(KeyDownEvent, (_, e) =>
+        {
+            if (e.Key == Key.Escape) CloseTerminalSearch(vm);
+            else if (e.Key == Key.Enter) RunTerminalSearch(vm, e.KeyModifiers.HasFlag(KeyModifiers.Shift) ? 1 : -1);
+            else return;
+            e.Handled = true;
+        }, RoutingStrategies.Tunnel);
+    }
+
+    private void RunTerminalSearch(MainWindowViewModel vm, int step)
+    {
+        var text = TerminalSearchBox.Text ?? string.Empty;
+        var (position, count) = (vm.Terminal.ActiveIsRight ? TerminalScreen2 : TerminalScreen).Find(text, step);
+        TerminalSearchResult.Text = text.Length == 0 ? string.Empty : count == 0 ? L.T("Aucun résultat") : $"{position} / {count}";
+    }
+
+    private void CloseTerminalSearch(MainWindowViewModel vm)
+    {
+        vm.Terminal.IsSearchOpen = false;
+        TerminalScreen.ClearSearch();
+        TerminalScreen2.ClearSearch();
+        vm.Terminal.RequestFocus();
     }
 
     /// <summary>Les boutons du panneau sont posés en haut à droite : la dernière barre d'onglets leur laisse la place.</summary>
@@ -200,7 +256,7 @@ public partial class MainWindow : Window
     {
         if (Vm is not { } vm) return;
         // Dans le terminal, ces touches sont celles du programme qui y tourne ; dans le panneau des commandes, celles du texte.
-        if (e.Source is TerminalView || CommandsPane.IsKeyboardFocusWithin) return;
+        if (e.Source is TerminalView || CommandsPane.IsKeyboardFocusWithin || TerminalSearchBar.IsKeyboardFocusWithin) return;
 
         // Ici et pas dans les raccourcis de la fenêtre : la liste garde les touches fléchées (Alt+Bas n'y arriverait pas).
         if (_historyGestures.Any(g => g.Matches(e)))
@@ -292,6 +348,10 @@ public partial class MainWindow : Window
         split.ToggleType = MenuItemToggleType.CheckBox;
         split.IsChecked = vm.Terminal.IsSplit;
         items.Add(split);
+        if (vm.Terminal.IsSplit) items.Add(TerminalItem(vm, "SwitchTerminalSide", L.T("Changer de côté"), vm.SwitchTerminalSideCommand));
+        var search = TerminalItem(vm, "SearchTerminal", L.T("Chercher dans le terminal"), vm.SearchTerminalCommand);
+        search.IsEnabled = vm.Terminal.Tabs.Count > 0;
+        items.Add(search);
         items.Add(new Separator());
         AddTerminalPlaces(items, vm);
     }
@@ -362,6 +422,18 @@ public partial class MainWindow : Window
         {
             AddChoice(L.T("Dupliquer à gauche"), right: false);
             AddChoice(L.T("Dupliquer à droite"), right: true);
+            menu.Items.Add(new Separator());
+            bool isRight = vm.Terminal.RightTabs.Contains(tab);
+            menu.Items.Add(new MenuItem
+            {
+                Header = isRight ? L.T("Déplacer à gauche") : L.T("Déplacer à droite"),
+                IsEnabled = (isRight ? vm.Terminal.RightTabs : vm.Terminal.LeftTabs).Count > 1,
+                Command = new CommunityToolkit.Mvvm.Input.RelayCommand(() =>
+                {
+                    chosen = !isRight;
+                    vm.Terminal.MoveTab(tab);
+                }),
+            });
         }
         else
         {
@@ -443,6 +515,29 @@ public partial class MainWindow : Window
         }
     }
 
+    /// <summary>Les seuls raccourcis actifs quand le clavier est dans le terminal.</summary>
+    private static readonly HashSet<string> TerminalShortcuts =
+        ["ToggleTerminal", "NewTerminal", "DuplicateTerminal", "ToggleTerminalSplit", "SwitchTerminalSide", "SearchTerminal"];
+
+    private bool TerminalHasKeyboard => TerminalScreen.IsFocused || TerminalScreen2.IsFocused
+        || CommandsPane.IsKeyboardFocusWithin || TerminalSearchBar.IsKeyboardFocusWithin;
+
+    /// <summary>
+    /// Les raccourcis de la fenêtre passent avant la zone qui a le clavier. Sans ce garde, F8 ou Ctrl+W tapés
+    /// dans un programme du terminal agiraient sur les fichiers. Refusé, le raccourci laisse la touche continuer.
+    /// </summary>
+    private sealed class FilesShortcut(System.Windows.Input.ICommand command, Func<bool> allowed) : System.Windows.Input.ICommand
+    {
+        public event EventHandler? CanExecuteChanged
+        {
+            add => command.CanExecuteChanged += value;
+            remove => command.CanExecuteChanged -= value;
+        }
+
+        public bool CanExecute(object? parameter) => allowed() && command.CanExecute(parameter);
+        public void Execute(object? parameter) => command.Execute(parameter);
+    }
+
     private bool _closeConfirmed;
 
     /// <summary>Raccourcis clavier : ceux du catalogue, ou ceux choisis dans Options → Raccourcis.</summary>
@@ -469,8 +564,14 @@ public partial class MainWindow : Window
                 try
                 {
                     var gesture = KeyGesture.Parse(text);
-                    KeyBindings.Add(new KeyBinding { Gesture = gesture, Command = command, CommandParameter = info.Parameter! });
-                    if (info.Id is "ToggleTerminal" or "ToggleTerminalSplit") _terminalGestures.Add(gesture);
+                    bool forTerminal = TerminalShortcuts.Contains(info.Id);
+                    KeyBindings.Add(new KeyBinding
+                    {
+                        Gesture = gesture,
+                        Command = forTerminal ? command : new FilesShortcut(command, () => !TerminalHasKeyboard),
+                        CommandParameter = info.Parameter!,
+                    });
+                    if (forTerminal) _terminalGestures.Add(gesture);
                 }
                 catch (Exception ex) when (ex is ArgumentException or FormatException or KeyNotFoundException)
                 {

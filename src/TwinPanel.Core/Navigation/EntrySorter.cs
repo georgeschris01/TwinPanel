@@ -8,7 +8,8 @@ public enum SortColumn { Name, Extension, Size, Date, Mode, Owner, Group, Folder
 /// <summary>Tri façon Total Commander : ".." en premier, puis dossiers, puis fichiers.</summary>
 public static class EntrySorter
 {
-    public static IReadOnlyList<FileEntry> Sort(IEnumerable<FileEntry> entries, SortColumn column, bool descending)
+    /// <param name="folderSize">Taille connue d'un dossier, pour le tri par taille ; un dossier sans taille passe pour le plus petit.</param>
+    public static IReadOnlyList<FileEntry> Sort(IEnumerable<FileEntry> entries, SortColumn column, bool descending, Func<FileEntry, long?>? folderSize = null)
     {
         var list = entries.ToList();
         var parent = list.Where(e => e.IsParentLink);
@@ -17,7 +18,7 @@ public static class EntrySorter
 
         var byName = StringComparer.CurrentCultureIgnoreCase;
 
-        // Les dossiers n'ont ni taille ni extension : tri par date, sinon par nom
+        // Les dossiers n'ont ni taille (sauf calculée) ni extension : tri par date, sinon par nom
         // (ordre inversé seulement quand on trie explicitement par nom).
         var sortedDirs = column switch
         {
@@ -26,6 +27,7 @@ public static class EntrySorter
             SortColumn.Group => Order(dirs, e => e.DisplayGroup, descending, byName).ThenBy(e => e.Name, byName),
             SortColumn.Date => Order(dirs, e => e.LastWriteTime, descending).ThenBy(e => e.Name, byName),
             SortColumn.Name => Order(dirs, e => e.Name, descending, byName),
+            SortColumn.Size when folderSize is not null => Order(dirs, e => folderSize(e) ?? -1, descending).ThenBy(e => e.Name, byName),
             _ => Order(dirs, e => e.Name, false, byName),
         };
 

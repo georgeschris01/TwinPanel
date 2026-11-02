@@ -145,6 +145,8 @@ Tous les raccourcis se changent dans Options → Raccourcis. Dans le programme, 
 | `Ctrl+Maj+F1` | Miniatures |
 | `F12` / `Ctrl+F12` | Terminal intégré : afficher ou masquer / nouveau terminal |
 | `Ctrl+Maj+F12` | Deux terminaux côte à côte |
+| `Alt+F12` | Changer de côté dans le terminal |
+| `Ctrl+Maj+F` | Dans le terminal : chercher dans le texte |
 
 ### Marquage
 
@@ -226,6 +228,8 @@ Clic droit sur l'onglet :
 - **Miniatures** (`Ctrl+Maj+F1`) : images et vidéos sur le PC, images sur un serveur (chaque onglet a son mode).
 - **Vue à plat** (`Ctrl+B`) : tous les fichiers des sous-dossiers, sur le PC et sur un serveur. `Échap` arrête la lecture.
 
+Le tri par taille (`Ctrl+F6`) classe aussi les dossiers dont la taille est connue : calculée automatiquement (option **Taille des dossiers**) ou avec la barre d'espace. Les dossiers restent avant les fichiers.
+
 ## Marquer et travailler sur les fichiers
 
 ### Marquer
@@ -284,6 +288,7 @@ TwinPanel se connecte en SFTP, SCP, FTP, FTPS et WebDAV. Un serveur s'utilise co
 - `Ctrl+F` : gestionnaire de connexions, avec fiches, groupes, clés SSH, identités, serveurs connus et coffre.
 - Un bouton dans la barre des lecteurs ouvre chaque connexion enregistrée.
 - Les connexions de FileZilla, WinSCP, PuTTY, OpenSSH et Total Commander s'importent.
+- Un serveur inaccessible directement passe par un **serveur de rebond**, choisi dans sa fiche. Ce rebond peut lui-même passer par un autre, jusqu'à 8 à la suite. L'empreinte de chaque serveur est contrôlée.
 
 ### Sécurité
 
@@ -349,10 +354,12 @@ Un vrai terminal dans le bas de la fenêtre, écrit pour TwinPanel : les couleur
 - Le bouton **Terminal** de la barre du haut déroule un menu : afficher ou masquer, nouveau terminal, dupliquer, un programme de ton PC ou un de tes serveurs SFTP / SCP.
 - `Ctrl+F12` ouvre un autre terminal, dans un nouvel onglet. Le bouton **+** après les onglets propose tes programmes et tes serveurs SFTP / SCP.
 - Le bouton **⧉** d'un onglet le duplique : même programme ou même serveur, dans son dossier de départ. La copie porte un numéro dans son onglet, par exemple `serveur (2)`. Le clic droit sur un onglet propose aussi **Dupliquer** ; en côte à côte, tu choisis le côté de la copie.
-- Le bouton **Côte à côte** ou `Ctrl+Maj+F12` montre deux terminaux ensemble, avec une séparation à tirer. Chaque côté a ses onglets et son bouton **+**. S'il n'y a qu'un terminal, le second est sa copie. Clique dans un côté pour le rendre actif : il reçoit le clavier et les commandes enregistrées. En revenant à un seul côté, tous les terminaux restent ouverts.
+- Le bouton **Côte à côte** ou `Ctrl+Maj+F12` montre deux terminaux ensemble, avec une séparation à tirer. Chaque côté a ses onglets et son bouton **+**. S'il n'y a qu'un terminal, le second est sa copie. Clique dans un côté pour le rendre actif : il reçoit le clavier et les commandes enregistrées. `Alt+F12` passe d'un côté à l'autre. La largeur de la séparation est mémorisée. Le clic droit sur un onglet propose aussi **Déplacer** vers l'autre côté. En revenant à un seul côté, tous les terminaux restent ouverts.
 - Le terminal démarre dans le dossier du panneau actif.
 - Sur un serveur SFTP ou SCP, il ouvre un shell sur ce serveur, avec les mêmes identifiants, le même rebond et le même contrôle du serveur que le panneau.
 - Tire la séparation au-dessus du terminal pour changer sa hauteur : TwinPanel s'en souvient.
+
+Quand le clavier est dans le terminal, les touches vont au programme qui y tourne : `F5`, `F8` ou `Ctrl+W` n'agissent pas sur les fichiers. Seuls les raccourcis du terminal restent actifs.
 
 ### Copier et coller
 
@@ -381,6 +388,10 @@ Les commandes sont enregistrées en clair dans tes réglages : n'y mets jamais d
 La molette ou `Maj+PgPréc` / `Maj+PgSuiv` remontent dans les 10 000 dernières lignes de chaque terminal. Ce texte reste en mémoire et n'est jamais écrit sur le disque. Il disparaît à la fermeture.
 
 Si un serveur envoie du texte beaucoup plus vite que l'affichage, TwinPanel saute une partie du milieu et le signale par une ligne : il reste réactif et `Ctrl+C` agit tout de suite.
+
+### Chercher dans le texte
+
+`Ctrl+Maj+F` dans un terminal ouvre une barre de recherche, ou **Chercher dans le terminal** dans le menu du bouton Terminal. Le mot est cherché sans tenir compte des majuscules, dans tout le texte de ce terminal, et le résultat s'affiche sélectionné. `Entrée` remonte vers le plus ancien, `Maj+Entrée` redescend, `Échap` ferme la barre. `Ctrl+C` copie le résultat une fois la barre fermée.
 
 ### Réglages
 

@@ -145,6 +145,8 @@ All shortcuts can be changed in Options → Shortcuts. In the program, the list 
 | `Ctrl+Shift+F1` | Thumbnails |
 | `F12` / `Ctrl+F12` | Built-in terminal: show or hide / new terminal |
 | `Ctrl+Shift+F12` | Two terminals side by side |
+| `Alt+F12` | Switch side in the terminal |
+| `Ctrl+Shift+F` | In the terminal: search the text |
 
 ### Marking
 
@@ -226,6 +228,8 @@ Right click on the tab:
 - **Thumbnails** (`Ctrl+Shift+F1`): images and videos on the PC, images on a server (each tab has its own mode).
 - **Flat view** (`Ctrl+B`): all the files from subfolders, on the PC and on a server. `Esc` stops reading.
 
+Sorting by size (`Ctrl+F6`) also orders the folders whose size is known: calculated automatically (**Folder size** option) or with the space bar. Folders stay before files.
+
 ## Marking and working on files
 
 ### Marking
@@ -284,6 +288,7 @@ TwinPanel connects over SFTP, SCP, FTP, FTPS and WebDAV. A server is used like a
 - `Ctrl+F`: connection manager, with entries, groups, SSH keys, identities, known servers and vault.
 - A button in the drive bar opens each saved connection.
 - Connections from FileZilla, WinSCP, PuTTY, OpenSSH and Total Commander can be imported.
+- A server that cannot be reached directly goes through a **jump server**, chosen in its entry. That jump server can itself go through another one, up to 8 in a row. The fingerprint of each server is checked.
 
 ### Security
 
@@ -349,10 +354,12 @@ A real terminal at the bottom of the window, written for TwinPanel: colours, `vi
 - The **Terminal** button in the top bar opens a menu: show or hide, new terminal, duplicate, a program on your PC or one of your SFTP / SCP servers.
 - `Ctrl+F12` opens another terminal in a new tab. The **+** button after the tabs offers your programs and your SFTP / SCP servers.
 - The **⧉** button on a tab duplicates it: same program or same server, in its starting folder. The copy has a number in its tab, such as `server (2)`. Right-clicking a tab also offers **Duplicate**; side by side, you choose which side the copy goes to.
-- The **Side by side** button or `Ctrl+Shift+F12` shows two terminals together, with a separator to drag. Each side has its own tabs and **+** button. If there is only one terminal, the second is a copy of it. Click a side to make it active: it receives the keyboard and saved commands. Going back to one side keeps every terminal open.
+- The **Side by side** button or `Ctrl+Shift+F12` shows two terminals together, with a separator to drag. Each side has its own tabs and **+** button. If there is only one terminal, the second is a copy of it. Click a side to make it active: it receives the keyboard and saved commands. `Alt+F12` switches side. The width of the separator is remembered. Right-clicking a tab also offers **Move** to the other side. Going back to one side keeps every terminal open.
 - The terminal starts in the folder of the active panel.
 - On an SFTP or SCP server, it opens a shell on that server, with the same credentials, jump host and server check as the panel.
 - Drag the separator above the terminal to change its height: TwinPanel remembers it.
+
+When the keyboard is in the terminal, keys go to the program running there: `F5`, `F8` or `Ctrl+W` do not act on files. Only the terminal's own shortcuts stay active.
 
 ### Copy and paste
 
@@ -381,6 +388,10 @@ Commands are saved as plain text in your settings: never put a password in them.
 The mouse wheel or `Shift+PgUp` / `Shift+PgDn` scroll through the last 10,000 lines of each terminal. This text stays in memory and is never written to disk. It disappears on closing.
 
 If a server sends text much faster than the display can follow, TwinPanel skips part of the middle and says so in one line: it stays responsive and `Ctrl+C` acts at once.
+
+### Searching the text
+
+`Ctrl+Shift+F` in a terminal opens a search bar, as does **Search the terminal** in the Terminal button's menu. The word is searched regardless of case, through all the text of that terminal, and the result appears selected. `Enter` goes to older results, `Shift+Enter` to newer ones, `Esc` closes the bar. `Ctrl+C` copies the result once the bar is closed.
 
 ### Settings
 

@@ -709,6 +709,7 @@ public partial class OptionsViewModel : ObservableObject
             IntegratedShellPath = IntegratedShellPath.Trim().Trim('"'),
             IntegratedFontSize = (double)Math.Clamp(IntegratedFontSize ?? 13, 8, 32),
             IntegratedHeight = s.Terminal.IntegratedHeight,
+            IntegratedSplitRatio = s.Terminal.IntegratedSplitRatio,
             CommandsPanelOpen = s.Terminal.CommandsPanelOpen,
             SavedCommands = s.Terminal.SavedCommands,
         };

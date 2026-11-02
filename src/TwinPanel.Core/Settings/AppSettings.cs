@@ -249,6 +249,9 @@ public sealed class TerminalSettings
     public string IntegratedShellPath { get; set; } = string.Empty;
     public double IntegratedFontSize { get; set; } = 13;
     public double IntegratedHeight { get; set; } = 260;
+
+    /// <summary>Part de la largeur donnée au côté gauche, en côte à côte.</summary>
+    public double IntegratedSplitRatio { get; set; } = 0.5;
     public bool CommandsPanelOpen { get; set; }
     /// <summary>En clair dans les réglages, comme les boutons personnels : jamais de mot de passe ici.</summary>
     public List<SavedTerminalCommand> SavedCommands { get; set; } = [];

@@ -26,20 +26,28 @@ public static class RemoteConnector
         if (errors.Count > 0) throw new RemoteException(string.Join(Environment.NewLine, errors));
         trust ??= new SessionTrust();
 
+        if (store is null && profile.JumpHostId is not null) throw new RemoteException(L.T("Le serveur de rebond de cette connexion n'existe plus."));
+
+        // Du premier serveur à joindre vers la connexion : chacun passe par le précédent.
         ConnectionContext? jump = null;
-        if (profile.JumpHostId is { } jumpId)
+        foreach (var hop in (store?.JumpChain(profile) ?? []).Reverse())
         {
-            var jumpProfile = store?.FindProfile(jumpId) ?? throw new RemoteException(L.T("Le serveur de rebond de cette connexion n'existe plus."));
-            if (!RemoteProtocols.IsSsh(jumpProfile.Protocol)) throw new RemoteException(L.T("Le serveur de rebond doit être une connexion SSH (SFTP ou SCP)."));
-            if (jumpProfile.JumpHostId is not null) throw new RemoteException(L.T("Un seul serveur de rebond est pris en charge (pas de rebond en cascade)."));
-            var jumpCreds = await CredentialResolver.ResolveAsync(jumpProfile, store, prompts).ConfigureAwait(false);
-            if (jumpCreds is null) return null;
-            jump = new ConnectionContext { Profile = jumpProfile, Credentials = jumpCreds, Prompts = prompts, KnownHosts = store?.KnownHosts, Trust = trust };
+            var hopCreds = await CredentialResolver.ResolveAsync(hop, store, prompts).ConfigureAwait(false);
+            if (hopCreds is null) return null;
+            jump = new ConnectionContext { Profile = hop, Credentials = hopCreds, Prompts = prompts, KnownHosts = store?.KnownHosts, Trust = trust, Jump = jump };
         }
 
         var creds = await CredentialResolver.ResolveAsync(profile, store, prompts).ConfigureAwait(false);
         if (creds is null) return null;
         return new ConnectionContext { Profile = profile, Credentials = creds, Prompts = prompts, KnownHosts = store?.KnownHosts, Trust = trust, Jump = jump };
+    }
+
+    /// <summary>Noms des rebonds, dans l'ordre où ils sont joints.</summary>
+    private static IEnumerable<string> JumpNames(ConnectionContext ctx)
+    {
+        var names = new List<string>();
+        for (var hop = ctx.Jump; hop is not null; hop = hop.Jump) names.Insert(0, hop.Profile.Name);
+        return names;
     }
 
     /// <summary>« Tester la connexion » : connexion, lecture du dossier de départ, déconnexion. Retourne un compte rendu.</summary>
@@ -54,7 +62,7 @@ public static class RemoteConnector
         ctx.Credentials.CommitRemembered();
         var sb = new StringBuilder();
         sb.AppendLine(L.F("Connexion réussie à {0}:{1} ({2}) en {3:0.0} s.", profile.Host, profile.Port, RemoteProtocols.Label(profile.Protocol), elapsed.TotalSeconds));
-        if (ctx.Jump is not null) sb.AppendLine(L.F("Par le serveur de rebond {0}.", ctx.Jump.Profile.Name));
+        if (ctx.Jump is not null) sb.AppendLine(L.F("Par le serveur de rebond {0}.", string.Join(" → ", JumpNames(ctx))));
         sb.AppendLine(L.F("Dossier {0} : {1} élément(s).", start, items.Count));
         if (RemoteProtocols.IsUnencrypted(profile.Protocol)) sb.AppendLine(L.T("Attention : cette connexion n'est pas chiffrée."));
         return sb.ToString().TrimEnd();

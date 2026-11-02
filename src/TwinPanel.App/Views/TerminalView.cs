@@ -106,6 +106,9 @@ public sealed class TerminalView : Control
 
     public event Action<bool>? FocusChanged;
 
+    /// <summary>Ctrl+Maj+F dans le terminal.</summary>
+    public event Action? SearchRequested;
+
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
@@ -443,6 +446,59 @@ public sealed class TerminalView : Control
         static bool IsBreak(in TerminalCell c) => c.Width != 0 && (c.Text is null || WordBreaks.Contains(c.Text[0], StringComparison.Ordinal));
     }
 
+    /// <summary>
+    /// Sélectionne un résultat et l'amène à l'écran. step : 0 reste sur le résultat actuel, -1 va vers le plus ancien, 1 vers le plus récent.
+    /// Rend sa position et le nombre de résultats (0, 0 s'il n'y en a pas).
+    /// </summary>
+    public (int Position, int Count) Find(string text, int step)
+    {
+        if (Session is not { } session) return (0, 0);
+        lock (session.Gate)
+        {
+            var screen = session.Screen;
+            var matches = screen.Find(text);
+            if (matches.Count == 0)
+            {
+                ClearSelection();
+                return (0, 0);
+            }
+            long dropped = screen.HistoryDropped;
+            int index = NextMatch(matches, dropped, step);
+            var match = matches[index];
+            _selectionStart = (match.StartLine + dropped, match.StartColumn);
+            _selectionEnd = (match.EndLine + dropped, match.EndColumn);
+            ShowLines(screen, match);
+            InvalidateVisual();
+            return (index + 1, matches.Count);
+        }
+    }
+
+    private int NextMatch(List<TerminalMatch> matches, long dropped, int step)
+    {
+        if (OrderedSelection() is not { } range) return matches.Count - 1;
+        var from = range.From;
+        (long Line, int Column) StartOf(TerminalMatch m) => (m.StartLine + dropped, m.StartColumn);
+        if (step > 0)
+        {
+            int newer = matches.FindIndex(m => StartOf(m).CompareTo(from) > 0);
+            return newer >= 0 ? newer : 0;
+        }
+        int older = step < 0
+            ? matches.FindLastIndex(m => StartOf(m).CompareTo(from) < 0)
+            : matches.FindLastIndex(m => StartOf(m).CompareTo(from) <= 0);
+        return older >= 0 ? older : matches.Count - 1;
+    }
+
+    private void ShowLines(TerminalEmulator screen, TerminalMatch match)
+    {
+        if (screen.IsAlternateScreen) return;
+        int top = screen.HistoryCount - Math.Min(_scroll, screen.HistoryCount);
+        if (match.StartLine >= top && match.EndLine < top + screen.Rows) return;
+        _scroll = Math.Clamp(screen.HistoryCount - match.StartLine + screen.Rows / 2, 0, screen.HistoryCount);
+    }
+
+    public void ClearSearch() => ClearSelection();
+
     private async Task CopySelectionAsync()
     {
         if (OrderedSelection() is not { } range || Session is not { } session) return;
@@ -558,6 +614,12 @@ public sealed class TerminalView : Control
             {
                 e.Handled = true;
                 _ = PasteAsync();
+                return;
+            }
+            if (e.Key == Key.F && shift)
+            {
+                e.Handled = true;
+                SearchRequested?.Invoke();
                 return;
             }
         }

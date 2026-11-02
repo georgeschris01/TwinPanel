@@ -118,6 +118,7 @@ public sealed partial class TerminalPanelViewModel : ObservableObject
 
     [ObservableProperty] private bool _isSplit;
     [ObservableProperty] private bool _isOpen;
+    [ObservableProperty] private bool _isSearchOpen;
     [ObservableProperty] private double _fontSize = 13;
 
     /// <summary>Le terminal du côté actif.</summary>
@@ -133,6 +134,7 @@ public sealed partial class TerminalPanelViewModel : ObservableObject
     public event Action? FocusTerminalRequested;
     public event Action? FocusFilesRequested;
     public event Action<string>? CopyRequested;
+    public event Action? SearchRequested;
 
     public void RequestCopy(string text) => CopyRequested?.Invoke(text);
 
@@ -163,10 +165,19 @@ public sealed partial class TerminalPanelViewModel : ObservableObject
 
     public void RequestFocus() => FocusTerminalRequested?.Invoke();
 
+    /// <summary>Ouvre la barre de recherche : c'est elle qui prend le clavier.</summary>
+    public void OpenSearch()
+    {
+        IsOpen = true;
+        IsSearchOpen = true;
+        SearchRequested?.Invoke();
+    }
+
     [RelayCommand]
     public void Hide()
     {
         IsOpen = false;
+        IsSearchOpen = false;
         HasFocus = false;
         FocusFilesRequested?.Invoke();
     }
@@ -196,6 +207,27 @@ public sealed partial class TerminalPanelViewModel : ObservableObject
         ActiveIsRight = false;
         LeftTab = active ?? LeftTab ?? LeftTabs.FirstOrDefault();
         RequestFocus();
+    }
+
+    /// <summary>Envoie un terminal de l'autre côté, sans le relancer. Un côté garde toujours au moins un onglet.</summary>
+    public void MoveTab(TerminalTabViewModel tab)
+    {
+        bool right = RightTabs.Contains(tab);
+        var from = right ? RightTabs : LeftTabs;
+        if (!IsSplit || from.Count < 2 || !from.Contains(tab)) return;
+        // La liste vide sa sélection dès la suppression : on regarde avant.
+        bool wasShown = (right ? RightTab : LeftTab) == tab;
+        int index = from.IndexOf(tab);
+        from.RemoveAt(index);
+        (right ? LeftTabs : RightTabs).Add(tab);
+        if (wasShown)
+        {
+            var next = from[Math.Min(index, from.Count - 1)];
+            if (right) RightTab = next;
+            else LeftTab = next;
+        }
+        if (right) LeftTab = tab;
+        else RightTab = tab;
     }
 
     /// <summary>Un clic dans un côté, ou sur son bouton +, le rend actif.</summary>
@@ -259,6 +291,7 @@ public sealed partial class TerminalPanelViewModel : ObservableObject
         IsSplit = false;
         ActiveIsRight = false;
         IsOpen = false;
+        IsSearchOpen = false;
         HasFocus = false;
     }
 }

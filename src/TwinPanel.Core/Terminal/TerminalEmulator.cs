@@ -103,6 +103,9 @@ public sealed class TerminalLine(int columns, int foreground, int background)
 
 public enum MouseTracking { None, Press, Drag, All }
 
+/// <summary>Un mot trouvé : de sa première case à la case qui suit la dernière, en numéros de ligne de <see cref="TerminalEmulator.LineAt"/>.</summary>
+public readonly record struct TerminalMatch(int StartLine, int StartColumn, int EndLine, int EndColumn);
+
 /// <summary>
 /// Écran virtuel d'un terminal : reçoit le flux du programme et tient à jour les lignes, le curseur,
 /// les couleurs et l'historique. Sans interface, donc testable. Il n'est pas protégé contre les
@@ -219,6 +222,46 @@ public sealed class TerminalEmulator : IVtHandler
             sb.Append(c.Text ?? " ");
         }
         return keepTrailing ? sb.ToString() : sb.ToString().TrimEnd(' ');
+    }
+
+    /// <summary>Cherche un texte, sans tenir compte des majuscules. Les lignes coupées par la largeur sont lues d'un seul tenant.</summary>
+    public List<TerminalMatch> Find(string text)
+    {
+        var matches = new List<TerminalMatch>();
+        if (text.Length == 0) return matches;
+        var content = new StringBuilder();
+        var places = new List<(int Line, int Column, int Width)>();
+        int last = _history.Count + Rows - 1;
+        // Le second écran (nano, less…) n'a pas d'historique : l'autre texte n'y est pas visible.
+        for (int i = IsAlternateScreen ? _history.Count : 0; i <= last; i++)
+        {
+            var line = LineAt(i);
+            for (int x = 0; x < line.Cells.Length; x++)
+            {
+                ref var cell = ref line.Cells[x];
+                if (cell.Width == 0) continue;
+                var value = cell.Text ?? " ";
+                content.Append(value);
+                for (int c = 0; c < value.Length; c++) places.Add((i, x, Math.Max(1, (int)cell.Width)));
+            }
+            if (line.Wrapped && i < last) continue;
+            CollectMatches(content.ToString(), places, text, matches);
+            content.Clear();
+            places.Clear();
+        }
+        return matches;
+    }
+
+    private static void CollectMatches(string content, List<(int Line, int Column, int Width)> places, string text, List<TerminalMatch> matches)
+    {
+        int at = 0;
+        while ((at = content.IndexOf(text, at, StringComparison.OrdinalIgnoreCase)) >= 0)
+        {
+            var (firstLine, firstColumn, _) = places[at];
+            var (lastLine, lastColumn, lastWidth) = places[at + text.Length - 1];
+            matches.Add(new TerminalMatch(firstLine, firstColumn, lastLine, lastColumn + lastWidth));
+            at += text.Length;
+        }
     }
 
     public void Resize(int columns, int rows)

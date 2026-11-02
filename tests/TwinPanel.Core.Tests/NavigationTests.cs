@@ -37,6 +37,15 @@ public class EntrySorterTests
     }
 
     [Fact]
+    public void By_size_uses_the_known_folder_sizes()
+    {
+        long? Size(FileEntry e) => e.Name switch { "zeta" => 900, "alpha" => 10, _ => null };
+        var more = Sample.Append(D("mid", 2));
+        Assert.Equal(["..", "zeta", "alpha", "mid"], EntrySorter.Sort(more, SortColumn.Size, true, Size).Select(e => e.Name).Take(4));
+        Assert.Equal(["..", "mid", "alpha", "zeta"], EntrySorter.Sort(more, SortColumn.Size, false, Size).Select(e => e.Name).Take(4));
+    }
+
+    [Fact]
     public void By_extension()
     {
         var names = EntrySorter.Sort(Sample, SortColumn.Extension, false).Select(e => e.Name);

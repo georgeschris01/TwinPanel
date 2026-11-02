@@ -36,7 +36,7 @@ public sealed class ConnectionContext
 internal static class SshConnector
 {
     /// <summary>Tunnel par un serveur de rebond : une connexion SSH au rebond + une redirection de port locale.</summary>
-    internal sealed class Tunnel(SshClient jump, ForwardedPortLocal port) : IDisposable
+    internal sealed class Tunnel(SshClient jump, ForwardedPortLocal port, Prepared through) : IDisposable
     {
         public SshClient Client { get; } = jump;
         public uint LocalPort => port.BoundPort;
@@ -45,6 +45,8 @@ internal static class SshConnector
             try { if (port.IsStarted) port.Stop(); } catch (Exception ex) when (ex is SshException or ObjectDisposedException or InvalidOperationException) { }
             port.Dispose();
             Client.Dispose();
+            // Les rebonds d'avant, et les clés de celui-ci : ils vivent aussi longtemps que le tunnel.
+            through.Dispose();
         }
     }
 
@@ -67,13 +69,7 @@ internal static class SshConnector
         int port = p.Port;
         if (ctx.Jump is { } jumpCtx)
         {
-            var jumpPrep = await PrepareAsync(jumpCtx, ct).ConfigureAwait(false);
-            var jumpClient = new SshClient(jumpPrep.Info);
-            await ConnectAsync(jumpClient, jumpCtx, ct).ConfigureAwait(false);
-            var fwd = new ForwardedPortLocal("127.0.0.1", 0, p.Host, (uint)p.Port);
-            jumpClient.AddForwardedPort(fwd);
-            fwd.Start();
-            tunnel = new Tunnel(jumpClient, fwd);
+            tunnel = await OpenTunnelAsync(jumpCtx, p, ct).ConfigureAwait(false);
             host = "127.0.0.1";
             port = (int)tunnel.LocalPort;
         }
@@ -85,7 +81,11 @@ internal static class SshConnector
         {
             PrivateKeyFile file;
             try { file = SshKeys.Open(c.KeyText, c.KeyPassphrase); }
-            catch (KeyPassphraseException ex) { throw new RemoteException(L.F("Clé « {0} » : {1}", c.KeyName, ex.Message), ex); }
+            catch (KeyPassphraseException ex)
+            {
+                tunnel?.Dispose();
+                throw new RemoteException(L.F("Clé « {0} » : {1}", c.KeyName, ex.Message), ex);
+            }
             keys.Add(file);
             methods.Add(new PrivateKeyAuthenticationMethod(c.UserName, file));
         }
@@ -105,6 +105,29 @@ internal static class SshConnector
         info.Timeout = TimeSpan.FromSeconds(p.TimeoutSeconds);
         info.Encoding = Encoding.UTF8;
         return new Prepared(info, tunnel, keys);
+    }
+
+    /// <summary>Joint un serveur de rebond (lui-même par son rebond s'il en a un), puis ouvre le passage vers la cible.</summary>
+    private static async Task<Tunnel> OpenTunnelAsync(ConnectionContext jumpCtx, ConnectionProfile target, CancellationToken ct)
+    {
+        var through = await PrepareAsync(jumpCtx, ct).ConfigureAwait(false);
+        var client = new SshClient(through.Info);
+        ForwardedPortLocal? forward = null;
+        try
+        {
+            await ConnectAsync(client, jumpCtx, ct).ConfigureAwait(false);
+            forward = new ForwardedPortLocal("127.0.0.1", 0, target.Host, (uint)target.Port);
+            client.AddForwardedPort(forward);
+            forward.Start();
+            return new Tunnel(client, forward, through);
+        }
+        catch
+        {
+            forward?.Dispose();
+            client.Dispose();
+            through.Dispose();
+            throw;
+        }
     }
 
     private static KeyboardInteractiveAuthenticationMethod KeyboardInteractive(ConnectionContext ctx)
