@@ -348,6 +348,55 @@ public class TerminalKeysTests
     }
 }
 
+public class TerminalBacklogTests
+{
+    /// <summary>Connexion simulée : un énorme texte déjà arrivé et en attente de lecture.</summary>
+    private static (List<byte> Delivered, long Left) Run(long size, long limit, long tail)
+    {
+        long left = size;
+        var delivered = new List<byte>();
+        TerminalBacklog.Pump(
+            (buffer, offset, count) =>
+            {
+                int n = (int)Math.Min(count, left);
+                for (int i = 0; i < n; i++) buffer[offset + i] = (byte)'\n';
+                left -= n;
+                return n;
+            },
+            () => left,
+            (data, length) => delivered.AddRange(data.AsSpan(0, length)),
+            limit, tail);
+        return (delivered, left);
+    }
+
+    [Fact]
+    public void Everything_is_delivered_while_the_screen_follows()
+    {
+        var (delivered, left) = Run(100_000, limit: 1_000_000, tail: 10_000);
+        Assert.Equal(100_000, delivered.Count);
+        Assert.Equal(0, left);
+    }
+
+    [Fact]
+    public void A_huge_backlog_is_skipped_and_its_end_is_kept()
+    {
+        var (delivered, left) = Run(500_000_000, limit: 4_000_000, tail: 100_000);
+        Assert.Equal(0, left);
+        Assert.InRange(delivered.Count, 100, 300_000);
+        Assert.Contains((byte)0x18, delivered);
+    }
+
+    [Fact]
+    public void Lines_are_reused_without_old_text_coming_back()
+    {
+        var e = new TerminalEmulator(10, 2, historyLimit: 20);
+        for (int i = 0; i < 200; i++) e.Feed("abcdefghij\r\n"u8);
+        e.Feed("\u001b[2Jx"u8);
+        e.Feed("\r\n\r\n\r\n"u8);
+        for (int i = 0; i < e.Rows; i++) Assert.DoesNotContain("abc", new string(e.ScreenLine(i).Cells.Select(c => (c.Text ?? " ")[0]).ToArray()), StringComparison.Ordinal);
+    }
+}
+
 public class TerminalSessionTests
 {
     private sealed class FakeConnection : ITerminalConnection

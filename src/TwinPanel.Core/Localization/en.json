@@ -1610,5 +1610,7 @@
  "Un terminal dans le bas de la fenêtre, avec des onglets, sur ce PC ou sur un serveur SFTP / SCP (mêmes identifiants, même rebond que la connexion du panneau).": "A terminal at the bottom of the window, with tabs, on this PC or on an SFTP / SCP server (same credentials and jump host as the panel's connection).",
  "Activer le terminal intégré": "Enable the built-in terminal",
  "Programme lancé sur ce PC": "Program started on this PC",
- "Taille du texte": "Text size"
+ "Taille du texte": "Text size",
+ "… texte sauté : il arrivait trop vite pour l'affichage …": "… text skipped: it arrived too fast for the display …",
+ "Terminal : afficher ou masquer (F12)": "Terminal: show or hide (F12)"
 }

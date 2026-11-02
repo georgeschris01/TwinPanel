@@ -63,12 +63,9 @@ public sealed class SshTerminalConnection : ITerminalConnection
 
     private void ReadLoop()
     {
-        var buffer = new byte[16 * 1024];
         try
         {
-            int read;
-            while ((read = _shell.Read(buffer, 0, buffer.Length)) > 0)
-                DataReceived?.Invoke(buffer, read);
+            TerminalBacklog.Pump(_shell.Read, () => _shell.Length, (data, length) => DataReceived?.Invoke(data, length));
             Close(null);
         }
         catch (Exception ex) when (ex is SshException or IOException or ObjectDisposedException)

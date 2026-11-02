@@ -344,7 +344,7 @@ Un vrai terminal dans le bas de la fenêtre, écrit pour TwinPanel : les couleur
 
 ### L'ouvrir
 
-- `F12` ouvre le panneau. Si le clavier est déjà dans le terminal, `F12` le masque : les terminaux continuent de tourner.
+- `F12` ou le bouton **Terminal** de la barre du haut ouvre le panneau. Si le clavier est déjà dans le terminal, `F12` le masque : les terminaux continuent de tourner.
 - `Ctrl+F12` ou le bouton **+** ouvre un autre terminal, dans un nouvel onglet.
 - Le terminal démarre dans le dossier du panneau actif.
 - Sur un serveur SFTP ou SCP, il ouvre un shell sur ce serveur, avec les mêmes identifiants, le même rebond et le même contrôle du serveur que le panneau.
@@ -364,6 +364,8 @@ Quand le clavier est dans le terminal, toutes les touches vont au programme qui 
 ### Remonter dans le texte
 
 La molette ou `Maj+PgPréc` / `Maj+PgSuiv` remontent dans les 10 000 dernières lignes de chaque terminal. Ce texte reste en mémoire et n'est jamais écrit sur le disque. Il disparaît à la fermeture.
+
+Si un serveur envoie du texte beaucoup plus vite que l'affichage, TwinPanel saute une partie du milieu et le signale par une ligne : il reste réactif et `Ctrl+C` agit tout de suite.
 
 ### Réglages
 

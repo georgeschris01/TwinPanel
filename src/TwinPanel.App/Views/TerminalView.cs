@@ -27,6 +27,7 @@ public sealed class TerminalView : Control
         AvaloniaProperty.Register<TerminalView, double>(nameof(TerminalFontSize), 13);
 
     private const double Inset = 6;
+    private static readonly TimeSpan RefreshDelay = TimeSpan.FromMilliseconds(16);
     private const int WheelLines = 3;
     private const int TextCacheLimit = 5000;
     private const string WordBreaks = " \t\"'`()[]{}<>|;,";
@@ -145,17 +146,19 @@ public sealed class TerminalView : Control
     private void OnSessionChanged()
     {
         if (Interlocked.Exchange(ref _pendingRefresh, 1) != 0) return;
-        // Priorité basse : un programme bavard ne doit pas bloquer le clavier.
-        Dispatcher.UIThread.Post(() =>
-        {
-            Interlocked.Exchange(ref _pendingRefresh, 0);
-            if (Session is null) return;
-            long total = TotalLines();
-            // Remonté dans l'historique : la vue ne bouge pas quand de nouvelles lignes arrivent.
-            if (_scroll > 0) _scroll += (int)Math.Clamp(total - _lastTotalLines, 0, int.MaxValue / 2);
-            _lastTotalLines = total;
-            InvalidateVisual();
-        }, DispatcherPriority.Background);
+        // Une image toutes les 16 ms au plus : un programme bavard ne doit pas bloquer le clavier.
+        Dispatcher.UIThread.Post(() => DispatcherTimer.RunOnce(Refresh, RefreshDelay, DispatcherPriority.Background), DispatcherPriority.Background);
+    }
+
+    private void Refresh()
+    {
+        Interlocked.Exchange(ref _pendingRefresh, 0);
+        if (Session is null) return;
+        long total = TotalLines();
+        // Remonté dans l'historique : la vue ne bouge pas quand de nouvelles lignes arrivent.
+        if (_scroll > 0) _scroll += (int)Math.Clamp(total - _lastTotalLines, 0, int.MaxValue / 2);
+        _lastTotalLines = total;
+        InvalidateVisual();
     }
 
     private void UpdateMetrics()

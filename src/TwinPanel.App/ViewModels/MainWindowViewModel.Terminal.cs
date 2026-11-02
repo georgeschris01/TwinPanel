@@ -32,6 +32,14 @@ public partial class MainWindowViewModel
         else Terminal.Show();
     }
 
+    /// <summary>Bouton de la barre du haut : un clic prend le clavier, il ne sert donc qu'à afficher ou masquer.</summary>
+    [RelayCommand]
+    private async Task ToggleTerminalPanel()
+    {
+        if (Terminal.IsOpen) Terminal.Hide();
+        else await ToggleTerminal();
+    }
+
     /// <summary>Nouveau terminal dans le dossier du panneau actif : sur ce PC, ou sur le serveur SSH affiché.</summary>
     [RelayCommand]
     private async Task NewTerminal()

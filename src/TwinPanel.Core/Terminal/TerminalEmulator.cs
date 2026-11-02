@@ -84,6 +84,13 @@ public sealed class TerminalLine(int columns, int foreground, int background)
         return cells;
     }
 
+    /// <summary>Remet la ligne à neuf pour la réutiliser : un flot de texte ne crée plus de lignes à jeter.</summary>
+    public void Reset(int foreground, int background)
+    {
+        Array.Fill(Cells, TerminalCell.Blank(foreground, background));
+        Wrapped = false;
+    }
+
     /// <summary>Une ligne plus longue que l'écran garde son texte : il revient si la fenêtre s'élargit.</summary>
     public void EnsureColumns(int columns)
     {
@@ -105,6 +112,7 @@ public sealed class TerminalEmulator : IVtHandler
 {
     private readonly VtParser _parser;
     private readonly List<TerminalLine> _history = [];
+    private readonly Stack<TerminalLine> _spareLines = new();
     private TerminalLine[] _main;
     private TerminalLine[] _alternate;
     private TerminalLine[] _lines;
@@ -281,7 +289,17 @@ public sealed class TerminalEmulator : IVtHandler
         return lines;
     }
 
-    private TerminalLine NewLine(int columns) => new(columns, TerminalColor.Default, _background);
+    private TerminalLine NewLine(int columns)
+    {
+        while (_spareLines.Count > 0)
+        {
+            var line = _spareLines.Pop();
+            if (line.Cells.Length != columns) continue;
+            line.Reset(TerminalColor.Default, _background);
+            return line;
+        }
+        return new TerminalLine(columns, TerminalColor.Default, _background);
+    }
 
     private void ResetTabStops()
     {
@@ -304,8 +322,13 @@ public sealed class TerminalEmulator : IVtHandler
         }
 
         _lastPrinted = rune;
-        PutCell(rune.ToString(), width);
+        PutCell(TextOf(rune), width);
     }
+
+    /// <summary>Textes des caractères simples, partagés : créer une chaîne par lettre ralentirait tout le terminal.</summary>
+    private static readonly string[] AsciiText = [.. Enumerable.Range(0, 128).Select(i => ((char)i).ToString())];
+
+    private static string TextOf(Rune rune) => rune.Value < 128 ? AsciiText[rune.Value] : rune.ToString();
 
     private void PutCell(string text, int width)
     {
@@ -447,12 +470,17 @@ public sealed class TerminalEmulator : IVtHandler
 
     private void PushHistory(TerminalLine line)
     {
-        if (HistoryLimit == 0) return;
+        if (HistoryLimit == 0)
+        {
+            _spareLines.Push(line);
+            return;
+        }
         _history.Add(line);
         if (_history.Count > HistoryLimit)
         {
             // Par paquets : retirer une seule ligne à chaque fois recopierait toute la liste.
             int extra = Math.Max(1, HistoryLimit / 10);
+            for (int i = 0; i < extra; i++) _spareLines.Push(_history[i]);
             _history.RemoveRange(0, extra);
             HistoryDropped += extra;
         }
@@ -465,6 +493,7 @@ public sealed class TerminalEmulator : IVtHandler
         {
             var line = _lines[top];
             if (top == 0 && !IsAlternateScreen) PushHistory(line);
+            else _spareLines.Push(line);
             Array.Copy(_lines, top + 1, _lines, top, bottom - top);
             _lines[bottom] = NewLine(Columns);
         }
@@ -628,7 +657,7 @@ public sealed class TerminalEmulator : IVtHandler
             case 'T': ScrollDown(_top, _bottom, n); break;
             case 'X': EraseCells(CursorX, Math.Min(CursorX + n, Columns)); _pendingWrap = false; break;
             case 'Z': PreviousTab(n); break;
-            case 'b': if (_lastPrinted is { } last) for (int i = 0; i < Math.Min(n, Columns * Rows); i++) PutCell(last.ToString(), CharacterWidth(last)); break;
+            case 'b': if (_lastPrinted is { } last) for (int i = 0; i < Math.Min(n, Columns * Rows); i++) PutCell(TextOf(last), CharacterWidth(last)); break;
             case 'c': if (Param(p, 0, 0) == 0) Reply?.Invoke("\u001b[?1;2c"); break;
             case 'd': MoveWithOrigin(CursorX, n - 1); break;
             case 'g':

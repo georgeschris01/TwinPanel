@@ -101,6 +101,9 @@
         <Button Classes="icon" ToolTip.Tip="{l:T 'Rechercher (Alt+F7)'}" Command="{Binding SearchCommand}">
           <PathIcon Data="{StaticResource IconSearch}" />
         </Button>
+        <Button Classes="icon" ToolTip.Tip="{l:T 'Terminal : afficher ou masquer (F12)'}" Command="{Binding ToggleTerminalPanelCommand}" IsVisible="{Binding IsTerminalEnabled}">
+          <PathIcon Data="{StaticResource IconTerminal}" />
+        </Button>
         <Button x:Name="MainMenuButton" Classes="icon" ToolTip.Tip="{l:T 'Menu (toutes les commandes)'}">
           <PathIcon Data="{StaticResource IconMenu}" />
           <Button.Flyout>

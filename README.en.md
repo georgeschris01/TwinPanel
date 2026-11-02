@@ -344,7 +344,7 @@ A real terminal at the bottom of the window, written for TwinPanel: colours, `vi
 
 ### Opening it
 
-- `F12` opens the panel. If the keyboard is already in the terminal, `F12` hides it: terminals keep running.
+- `F12` or the **Terminal** button in the top bar opens the panel. If the keyboard is already in the terminal, `F12` hides it: terminals keep running.
 - `Ctrl+F12` or the **+** button opens another terminal in a new tab.
 - The terminal starts in the folder of the active panel.
 - On an SFTP or SCP server, it opens a shell on that server, with the same credentials, jump host and server check as the panel.
@@ -364,6 +364,8 @@ When the keyboard is in the terminal, every key goes to the program running ther
 ### Scrolling back
 
 The mouse wheel or `Shift+PgUp` / `Shift+PgDn` scroll through the last 10,000 lines of each terminal. This text stays in memory and is never written to disk. It disappears on closing.
+
+If a server sends text much faster than the display can follow, TwinPanel skips part of the middle and says so in one line: it stays responsive and `Ctrl+C` acts at once.
 
 ### Settings
 
