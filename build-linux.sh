@@ -58,6 +58,39 @@ done
 cp LICENSE "$DEB/usr/share/doc/twinpanel/copyright"
 cp THIRD-PARTY-NOTICES.md "$DEB/usr/share/doc/twinpanel/"
 
+# Fiche AppStream : sans elle, les logithèques (Discover, GNOME Logiciels) ignorent l'application.
+mkdir -p "$DEB/usr/share/metainfo"
+cat > "$DEB/usr/share/metainfo/be.chrypox.TwinPanel.metainfo.xml" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>be.chrypox.TwinPanel</id>
+  <name>TwinPanel</name>
+  <summary>Two-panel file manager</summary>
+  <summary xml:lang="fr">Gestionnaire de fichiers à deux panneaux</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>LicenseRef-proprietary=https://github.com/georgeschris01/TwinPanel/blob/main/LICENSE</project_license>
+  <developer id="be.chrypox">
+    <name>Georges Christophe (chrypox)</name>
+  </developer>
+  <description>
+    <p>TwinPanel is a two-panel file manager with tabs, archives, SFTP, FTP and WebDAV connections, an integrated terminal, search and batch renaming. The Linux version is a beta.</p>
+    <p xml:lang="fr">TwinPanel est un gestionnaire de fichiers à deux panneaux, avec onglets, archives, connexions SFTP, FTP et WebDAV, terminal intégré, recherche et renommage par lot. La version Linux est une bêta.</p>
+  </description>
+  <launchable type="desktop-id">twinpanel.desktop</launchable>
+  <url type="homepage">https://github.com/georgeschris01/TwinPanel</url>
+  <url type="bugtracker">https://github.com/georgeschris01/TwinPanel/issues</url>
+  <categories>
+    <category>System</category>
+    <category>FileTools</category>
+    <category>FileManager</category>
+  </categories>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="$VERSION" date="$(date +%F)" type="development"/>
+  </releases>
+</component>
+EOF
+
 find "$DEB" -type d -exec chmod 755 {} +
 find "$DEB" -type f -exec chmod 644 {} +
 chmod 755 "$DEB/usr/lib/twinpanel/TwinPanel"
