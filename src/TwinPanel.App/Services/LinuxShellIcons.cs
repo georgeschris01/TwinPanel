@@ -31,7 +31,8 @@ internal static class LinuxShellIcons
     private static Bitmap? Draw(string file)
     {
         using var svg = new SKSvg();
-        if (svg.Load(file) is null || svg.Picture is not { } picture) return null;
+        svg.FromSvg(LinuxSvgText.SeparateTransformNumbers(File.ReadAllText(file)));
+        if (svg.Picture is not { } picture) return null;
         var bounds = picture.CullRect;
         if (bounds.Width <= 0 || bounds.Height <= 0) return null;
 
@@ -43,6 +44,8 @@ internal static class LinuxShellIcons
             canvas.Translate(-bounds.Left, -bounds.Top);
             canvas.DrawPicture(picture);
         }
+        // Une image vide cacherait l'icône colorée, qui reste affichée quand il n'y a pas d'icône.
+        if (!bitmap.Pixels.Any(p => p.Alpha > 0)) return null;
         using var image = SKImage.FromBitmap(bitmap);
         using var png = image.Encode(SKEncodedImageFormat.Png, 100);
         using var stream = new MemoryStream(png.ToArray());

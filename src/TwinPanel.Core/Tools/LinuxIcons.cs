@@ -1,8 +1,23 @@
 // TwinPanel — © 2026 Georges Christophe (chrypox). Tous droits réservés.
 // Licence TwinPanel 1.0 (gratuit, non commercial, sans modification) : voir le fichier LICENSE.
 using System.Globalization;
+using System.Text.RegularExpressions;
 
 namespace TwinPanel.Core.Tools;
+
+/// <summary>Remise en forme des SVG des thèmes, avant de les donner à la bibliothèque de dessin.</summary>
+public static class LinuxSvgText
+{
+    private static readonly Regex Transforms = new("((?:gradient|pattern)?[tT]ransform=[\"'])([^\"']*)", RegexOptions.CultureInvariant);
+    private static readonly Regex GluedNumbers = new(@"(?<=[0-9.])-", RegexOptions.CultureInvariant);
+
+    /// <summary>
+    /// « translate(-384.57-515.8) » est valide en SVG, mais Svg.Skia le lit mal et dessine l'icône hors de l'image.
+    /// Les thèmes écrivent souvent ainsi : sans cet espace, seules 119 des 513 icônes de fichiers de Breeze s'affichent.
+    /// </summary>
+    public static string SeparateTransformNumbers(string svg) =>
+        Transforms.Replace(svg, m => m.Groups[1].Value + GluedNumbers.Replace(m.Groups[2].Value, " -"));
+}
 
 /// <summary>Type des fichiers d'après leur nom, avec la base commune aux bureaux Linux (shared-mime-info).</summary>
 public sealed class LinuxFileTypes

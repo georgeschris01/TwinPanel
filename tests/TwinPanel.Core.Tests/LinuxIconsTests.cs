@@ -108,4 +108,13 @@ public class LinuxIconsTests : IDisposable
 
     [Fact]
     public void An_unknown_theme_is_not_usable() => Assert.False(new LinuxIconTheme("absent", [_root]).IsUsable);
+
+    [Theory]
+    [InlineData("<g transform=\"translate(-384.57-515.8)\">", "<g transform=\"translate(-384.57 -515.8)\">")]
+    [InlineData("<g transform=\"scale(1-1)\">", "<g transform=\"scale(1 -1)\">")]
+    [InlineData("<linearGradient gradientTransform='translate(3.-4)'/>", "<linearGradient gradientTransform='translate(3. -4)'/>")]
+    [InlineData("<g transform=\"matrix(1 0 0 1e-5 -3 -4)\">", "<g transform=\"matrix(1 0 0 1e-5 -3 -4)\">")]
+    [InlineData("<path id=\"a-1\" d=\"m1-2\"/>", "<path id=\"a-1\" d=\"m1-2\"/>")]
+    public void Svg_transform_numbers_are_separated(string svg, string expected) =>
+        Assert.Equal(expected, LinuxSvgText.SeparateTransformNumbers(svg));
 }
