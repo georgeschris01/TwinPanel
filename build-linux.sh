@@ -60,6 +60,8 @@ cp THIRD-PARTY-NOTICES.md "$DEB/usr/share/doc/twinpanel/"
 
 # Fiche AppStream : sans elle, les logithèques (Discover, GNOME Logiciels) ignorent l'application.
 mkdir -p "$DEB/usr/share/metainfo"
+# Les logithèques chargent les captures depuis internet. À la fusion : remplacer linux-beta par main.
+SHOTS=https://raw.githubusercontent.com/georgeschris01/TwinPanel/linux-beta/docs/screenshots
 cat > "$DEB/usr/share/metainfo/be.chrypox.TwinPanel.metainfo.xml" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
@@ -90,6 +92,18 @@ cat > "$DEB/usr/share/metainfo/be.chrypox.TwinPanel.metainfo.xml" <<EOF
     <category>FileTools</category>
     <category>FileManager</category>
   </categories>
+  <screenshots>
+    <screenshot type="default">
+      <caption>Two panels with the dark theme and the icons of the desktop</caption>
+      <caption xml:lang="fr">Deux panneaux, thème sombre et icônes du bureau</caption>
+      <image type="source" width="1280" height="800">$SHOTS/twinpanel-sombre.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>The light theme</caption>
+      <caption xml:lang="fr">Le thème clair</caption>
+      <image type="source" width="1280" height="800">$SHOTS/twinpanel-clair.png</image>
+    </screenshot>
+  </screenshots>
   <content_rating type="oars-1.1"/>
   <releases>
     <release version="$VERSION" date="$(date +%F)" type="development"/>
