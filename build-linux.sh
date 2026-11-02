@@ -76,6 +76,8 @@ cat > "$DEB/usr/share/metainfo/be.chrypox.TwinPanel.metainfo.xml" <<EOF
     <p>TwinPanel is a two-panel file manager with tabs, archives, SFTP, FTP and WebDAV connections, an integrated terminal, search and batch renaming. The Linux version is a beta.</p>
     <p xml:lang="fr">TwinPanel est un gestionnaire de fichiers à deux panneaux, avec onglets, archives, connexions SFTP, FTP et WebDAV, terminal intégré, recherche et renommage par lot. La version Linux est une bêta.</p>
   </description>
+  <!-- Discover relie la fiche au paquet par ce nom : sans lui, l'application n'apparaît pas. -->
+  <pkgname>twinpanel</pkgname>
   <launchable type="desktop-id">twinpanel.desktop</launchable>
   <url type="homepage">https://github.com/georgeschris01/TwinPanel</url>
   <url type="bugtracker">https://github.com/georgeschris01/TwinPanel/issues</url>

@@ -136,6 +136,7 @@ Dernière mise à jour : 02/11/2026 (version 0.8.4, terminal intégré ; bêta L
 - **Couleurs et thème** : définis dans `App.axaml`.
 - **Traduction et guide** : moteur de traduction (`Core/Localization`), textes anglais, lecteur du guide, écrits pour TwinPanel, sans bibliothèque ajoutée.
 - **Terminal intégré** : analyse du flux, écran virtuel, clavier, souris et affichage écrits pour TwinPanel, sans bibliothèque de terminal. Il repose sur ConPTY, la console virtuelle fournie par Windows (Windows 10 version 1809 ou plus récent), et sur SSH.NET pour les serveurs. Le texte défilant reste en mémoire : il n'est jamais écrit sur le disque ni dans un journal.
+- **Glisser-déposer sous Linux en session Wayland** : TwinPanel tourne par XWayland, et KWin affiche le curseur « interdit » pendant tout glissement du système entre fenêtres XWayland (`Qt::ForbiddenCursor` tant qu'aucune cible Wayland n'accepte). TwinPanel utilise donc le glissement interne d'Avalonia (`InWindowDragSource`) : curseurs de copie et de déplacement corrects, mais on ne peut plus lâcher dans une autre application. L'inverse reste possible. En session X11 et sous Windows, rien ne change.
 - **Client WebDAV, coffre des secrets, gestion des serveurs connus, imports, écriture des clés Ed25519 au format OpenSSH** : écrits pour TwinPanel.
 
 ---
