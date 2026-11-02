@@ -93,6 +93,7 @@ HERE="$(dirname "$(readlink -f "$0")")"
 exec "$HERE/usr/lib/twinpanel/TwinPanel" "$@"
 EOF
 chmod 755 "$DIR/AppRun"
+chmod -R a+rX "$DIR"
 
 # L'outil n'est jamais téléchargé par ce script : il doit déjà être là, installé en connaissance de cause.
 TOOL="${APPIMAGETOOL:-$(command -v appimagetool || true)}"
