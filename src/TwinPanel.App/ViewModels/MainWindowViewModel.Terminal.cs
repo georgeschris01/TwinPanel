@@ -107,10 +107,15 @@ public partial class MainWindowViewModel
     [RelayCommand]
     private async Task DuplicateTerminal(TerminalTabViewModel? tab)
     {
-        var source = tab ?? Terminal.Selected;
-        if (source?.Reopen is not { } reopen || !TerminalAllowed()) return;
-        // La copie s'ouvre du même côté que l'original.
-        Terminal.Activate(source);
+        // Le bouton de l'onglet : la copie s'ouvre du même côté que l'original.
+        if ((tab ?? Terminal.Selected) is { } source) await DuplicateTerminalTo(source, Terminal.RightTabs.Contains(source));
+    }
+
+    /// <summary>Clic droit sur un onglet : la copie s'ouvre du côté choisi.</summary>
+    public async Task DuplicateTerminalTo(TerminalTabViewModel tab, bool right)
+    {
+        if (tab.Reopen is not { } reopen || !TerminalAllowed()) return;
+        Terminal.ActivatePane(right);
         await reopen();
     }
 

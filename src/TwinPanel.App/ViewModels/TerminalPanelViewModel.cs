@@ -201,13 +201,6 @@ public sealed partial class TerminalPanelViewModel : ObservableObject
     /// <summary>Un clic dans un côté, ou sur son bouton +, le rend actif.</summary>
     public void ActivatePane(bool right) => ActiveIsRight = right;
 
-    /// <summary>Rend actif le côté de cet onglet, et l'y affiche.</summary>
-    public void Activate(TerminalTabViewModel tab)
-    {
-        if (RightTabs.Contains(tab)) RightTab = tab;
-        else LeftTab = tab;
-    }
-
     [RelayCommand]
     public void CloseTab(TerminalTabViewModel? tab)
     {

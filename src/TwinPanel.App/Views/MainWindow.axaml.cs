@@ -24,6 +24,8 @@ public partial class MainWindow : Window
         ((MenuFlyout)TerminalButton.Flyout!).Opening += (_, _) => BuildTerminalMenu();
         WireTerminalAddButton(AddLeftButton, right: false);
         WireTerminalAddButton(AddRightButton, right: true);
+        LeftTabList.ContextRequested += OpenTerminalTabMenu;
+        RightTabList.ContextRequested += OpenTerminalTabMenu;
         RecentFlyout.Opening += (_, _) =>
         {
             if (Vm is { } vm) AppMenus.FillRecent(RecentFlyout.Items, vm);
@@ -323,13 +325,55 @@ public partial class MainWindow : Window
     {
         var flyout = (MenuFlyout)button.Flyout!;
         flyout.Opening += (_, _) => BuildTerminalAddMenu(button, right);
-        flyout.Closed += (_, _) => Dispatcher.UIThread.Post(() =>
+        flyout.Closed += (_, _) => ReturnToTerminalSide(right);
+    }
+
+    /// <summary>Un menu refermé rend le clavier à l'élément d'avant : on le remet dans le côté choisi.</summary>
+    private void ReturnToTerminalSide(bool right) => Dispatcher.UIThread.Post(() =>
+    {
+        if (Vm is not { } vm || !vm.Terminal.IsOpen) return;
+        if (right && !vm.Terminal.IsSplit) return;
+        vm.Terminal.ActivatePane(right);
+        vm.Terminal.RequestFocus();
+    }, DispatcherPriority.Background);
+
+    private ContextMenu? _terminalTabMenu;
+
+    /// <summary>Clic droit sur un onglet du terminal : en côte à côte, on choisit le côté de la copie.</summary>
+    private void OpenTerminalTabMenu(object? sender, ContextRequestedEventArgs e)
+    {
+        if (Vm is not { } vm || e.Source is not Control { DataContext: TerminalTabViewModel tab } source) return;
+        e.Handled = true;
+        bool? chosen = null;
+        var menu = new ContextMenu();
+
+        void AddChoice(string header, bool right) => menu.Items.Add(new MenuItem
         {
-            if (Vm is not { } vm || !vm.Terminal.IsOpen) return;
-            if (right && !vm.Terminal.IsSplit) return;
-            vm.Terminal.ActivatePane(right);
-            vm.Terminal.RequestFocus();
-        }, DispatcherPriority.Background);
+            Header = header,
+            IsEnabled = tab.Reopen is not null,
+            Command = new CommunityToolkit.Mvvm.Input.AsyncRelayCommand(() =>
+            {
+                chosen = right;
+                return vm.DuplicateTerminalTo(tab, right);
+            }),
+        });
+
+        if (vm.Terminal.IsSplit)
+        {
+            AddChoice(L.T("Dupliquer à gauche"), right: false);
+            AddChoice(L.T("Dupliquer à droite"), right: true);
+        }
+        else
+        {
+            AddChoice(L.T("Dupliquer"), right: false);
+        }
+
+        menu.Closed += (_, _) =>
+        {
+            if (chosen is { } right) ReturnToTerminalSide(right);
+        };
+        _terminalTabMenu = menu;
+        menu.Open(source);
     }
 
     private static void AddTerminalPlaces(ItemCollection items, MainWindowViewModel vm)

@@ -1614,6 +1614,8 @@
  "… texte sauté : il arrivait trop vite pour l'affichage …": "… text skipped: it arrived too fast for the display …",
  "Dupliquer le terminal intégré": "Duplicate the built-in terminal",
  "Dupliquer ce terminal": "Duplicate this terminal",
+ "Dupliquer à gauche": "Duplicate on the left",
+ "Dupliquer à droite": "Duplicate on the right",
  "Nouveau terminal ici": "New terminal here",
  "Afficher / masquer le terminal": "Show / hide the terminal",
  "Terminal : ce PC, serveurs, dupliquer": "Terminal: this PC, servers, duplicate",

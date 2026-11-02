@@ -348,7 +348,7 @@ A real terminal at the bottom of the window, written for TwinPanel: colours, `vi
 - `F12` opens the panel. If the keyboard is already in the terminal, `F12` hides it: terminals keep running.
 - The **Terminal** button in the top bar opens a menu: show or hide, new terminal, duplicate, a program on your PC or one of your SFTP / SCP servers.
 - `Ctrl+F12` opens another terminal in a new tab. The **+** button after the tabs offers your programs and your SFTP / SCP servers.
-- The **⧉** button on a tab duplicates it: same program or same server, in its starting folder. The copy has a number in its tab, such as `server (2)`.
+- The **⧉** button on a tab duplicates it: same program or same server, in its starting folder. The copy has a number in its tab, such as `server (2)`. Right-clicking a tab also offers **Duplicate**; side by side, you choose which side the copy goes to.
 - The **Side by side** button or `Ctrl+Shift+F12` shows two terminals together, with a separator to drag. Each side has its own tabs and **+** button. If there is only one terminal, the second is a copy of it. Click a side to make it active: it receives the keyboard and saved commands. Going back to one side keeps every terminal open.
 - The terminal starts in the folder of the active panel.
 - On an SFTP or SCP server, it opens a shell on that server, with the same credentials, jump host and server check as the panel.
