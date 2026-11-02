@@ -23,9 +23,10 @@ mkdir -p "$OUT"
 
 export DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1
 "$DOTNET" publish src/TwinPanel.App/TwinPanel.App.csproj -c Release -r linux-x64 --self-contained true \
-    -p:Version="$VERSION" -o "$APP" --nologo -v quiet
-# Les symboles de débogage ne servent pas aux utilisateurs, et rien de personnel ne doit partir.
+    -p:Version="$VERSION" -p:DebugType=none -p:PathMap="$PWD=." -o "$APP" --nologo -v quiet
+# Rien de personnel ne doit partir : ni symboles de débogage, ni chemin de la machine de fabrication dans les programmes.
 find "$APP" -name '*.pdb' -delete
+if grep -rlaF -- "$PWD" "$APP" --include='TwinPanel*.dll' | grep -q .; then echo "Chemin de fabrication trouvé dans les programmes."; exit 1; fi
 test -x "$APP/TwinPanel"
 
 desktop_file() { # $1 : commande à lancer
