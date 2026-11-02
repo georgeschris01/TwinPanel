@@ -143,6 +143,7 @@ All shortcuts can be changed in Options → Shortcuts. In the program, the list 
 | `Ctrl+Q` | Quick view |
 | `Ctrl+F8` | Folder tree |
 | `Ctrl+Shift+F1` | Thumbnails |
+| `F12` / `Ctrl+F12` | Built-in terminal: show or hide / new terminal |
 
 ### Marking
 
@@ -336,6 +337,39 @@ Two optional tools, to install yourself, add more possibilities: **mkvpropedit**
 ### Renaming from media data
 
 In `Ctrl+M`, on PC files: `[Title]`, `[Artist]`, `[Album]`, `[Track]`, `[Year]`, `[Genre]`, `[Resolution]`, `[Duration]`, `[Date taken]`. A file without this value keeps its name. The French names work too: `[Titre]`, `[Artiste]`…
+
+## Terminal
+
+A real terminal at the bottom of the window, written for TwinPanel: colours, `vim`, `nano` and `htop` all work in it.
+
+### Opening it
+
+- `F12` opens the panel. If the keyboard is already in the terminal, `F12` hides it: terminals keep running.
+- `Ctrl+F12` or the **+** button opens another terminal in a new tab.
+- The terminal starts in the folder of the active panel.
+- On an SFTP or SCP server, it opens a shell on that server, with the same credentials, jump host and server check as the panel.
+- Drag the separator above the terminal to change its height: TwinPanel remembers it.
+
+### Copy and paste
+
+- `Ctrl+C` copies the selected text. With no selection, it interrupts the program, as in any terminal.
+- `Ctrl+V` always pastes. `Ctrl+Shift+C`, `Ctrl+Shift+V` and `Shift+Insert` work too.
+- Right-click: copies the selection, or pastes if nothing is selected.
+- Double-click: a word. Triple-click: a line.
+- If a program uses the mouse, hold `Shift` to select text.
+- Before pasting several lines into a program that would run them at once, TwinPanel asks for confirmation.
+
+When the keyboard is in the terminal, every key goes to the program running there: `F5` does not copy a file. Only `F12` and `Alt+F4` stay with TwinPanel. Click a list to go back to your files.
+
+### Scrolling back
+
+The mouse wheel or `Shift+PgUp` / `Shift+PgDn` scroll through the last 10,000 lines of each terminal. This text stays in memory and is never written to disk. It disappears on closing.
+
+### Settings
+
+**Options → Terminal**: the program to start (PowerShell by default, among those installed on your PC), the text size, and a box to turn the built-in terminal off completely.
+
+The `Ctrl+Shift+T` command is still there: it opens the terminal of your choice in its own window.
 
 ## Customizing
 

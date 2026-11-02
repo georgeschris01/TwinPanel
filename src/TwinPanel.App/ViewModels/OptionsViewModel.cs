@@ -481,6 +481,31 @@ public partial class OptionsViewModel : ObservableObject
         _ => L.T("Sur ce PC, « Automatique » ouvre : PowerShell (Windows Terminal n'est pas installé)."),
     };
 
+    // ---- Terminal intégré
+    /// <summary>Seulement les programmes installés sur ce PC, plus « Autre programme ».</summary>
+    public static IReadOnlyList<Choice<TwinPanel.Core.Settings.TerminalShell>> IntegratedShells { get; } =
+        [.. TwinPanel.Core.Terminal.TerminalShells.Installed().Select(s => new Choice<TwinPanel.Core.Settings.TerminalShell>(s, s switch
+        {
+            TwinPanel.Core.Settings.TerminalShell.PowerShell => "PowerShell",
+            TwinPanel.Core.Settings.TerminalShell.PowerShell7 => "PowerShell 7",
+            TwinPanel.Core.Settings.TerminalShell.Cmd => L.T("Invite de commandes (cmd)"),
+            TwinPanel.Core.Settings.TerminalShell.Wsl => L.T("Linux (WSL)"),
+            _ => L.T("Autre programme…"),
+        }))];
+    [ObservableProperty] private bool _integratedEnabled = true;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsCustomIntegratedShell))]
+    private Choice<TwinPanel.Core.Settings.TerminalShell> _integratedShell = IntegratedShells[0];
+    [ObservableProperty] private string _integratedShellPath = string.Empty;
+    [ObservableProperty] private decimal? _integratedFontSize = 13;
+    public bool IsCustomIntegratedShell => IntegratedShell.Value == TwinPanel.Core.Settings.TerminalShell.Custom;
+
+    [RelayCommand]
+    private async Task BrowseIntegratedShell()
+    {
+        if (_host is not null && await _host.PickFileAsync(L.T("Programme du terminal"), programs: true) is { } path) IntegratedShellPath = path;
+    }
+
     // ---- Sauvegarde
     [ObservableProperty] private bool _backupIncludesConnections = true;
 
@@ -587,6 +612,10 @@ public partial class OptionsViewModel : ObservableObject
         TerminalKind = TerminalKinds.First(k => k.Value == s.Terminal.Kind);
         TerminalPath = s.Terminal.CustomPath;
         TerminalArguments = s.Terminal.CustomArguments;
+        IntegratedEnabled = s.Terminal.IntegratedEnabled;
+        IntegratedShell = IntegratedShells.FirstOrDefault(k => k.Value == s.Terminal.IntegratedShell) ?? IntegratedShells[0];
+        IntegratedShellPath = s.Terminal.IntegratedShellPath;
+        IntegratedFontSize = (decimal)Math.Clamp(s.Terminal.IntegratedFontSize, 8, 32);
     }
 
     private async Task LoadDriveRowsAsync(IReadOnlyDictionary<string, string> saved)
@@ -670,7 +699,17 @@ public partial class OptionsViewModel : ObservableObject
         s.ButtonBar = ButtonBar.ToList();
         s.StartMenu = StartMenu.ToList();
         s.EditorRules = EditorRules.Select(r => r.ToRule()).Where(r => r.Extensions.Length > 0 && r.Path.Length > 0).ToList();
-        s.Terminal = new TerminalSettings { Kind = TerminalKind.Value, CustomPath = TerminalPath.Trim().Trim('"'), CustomArguments = TerminalArguments.Trim() };
+        s.Terminal = new TerminalSettings
+        {
+            Kind = TerminalKind.Value,
+            CustomPath = TerminalPath.Trim().Trim('"'),
+            CustomArguments = TerminalArguments.Trim(),
+            IntegratedEnabled = IntegratedEnabled,
+            IntegratedShell = IntegratedShell.Value,
+            IntegratedShellPath = IntegratedShellPath.Trim().Trim('"'),
+            IntegratedFontSize = (double)Math.Clamp(IntegratedFontSize ?? 13, 8, 32),
+            IntegratedHeight = s.Terminal.IntegratedHeight,
+        };
     }
 
     /// <summary>« OK » : vérifie, puis écrit dans la copie des réglages. False s'il faut rester dans la fenêtre.</summary>
@@ -698,6 +737,13 @@ public partial class OptionsViewModel : ObservableObject
         if (TerminalKind.Value == TermKind.Custom && string.IsNullOrWhiteSpace(TerminalPath))
         {
             Message = L.T("Indique le programme du terminal (ou choisis un autre terminal).");
+            SelectedPage = 8;
+            return false;
+        }
+
+        if (IntegratedEnabled && IsCustomIntegratedShell && string.IsNullOrWhiteSpace(IntegratedShellPath))
+        {
+            Message = L.T("Indique le programme du terminal intégré (ou choisis-en un autre).");
             SelectedPage = 8;
             return false;
         }

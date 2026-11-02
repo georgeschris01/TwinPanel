@@ -95,6 +95,13 @@ public sealed class RemoteSession : IAsyncDisposable
     /// <summary>La connexion qui sert à parcourir est-elle ouverte ?</summary>
     public bool IsConnected => _browser.IsConnected;
 
+    /// <summary>Ouvre un terminal sur ce serveur, avec les mêmes identifiants et le même rebond que le panneau.</summary>
+    public async Task<SshTerminalConnection> OpenTerminalAsync(int columns, int rows, string? startDirectory, CancellationToken ct)
+    {
+        if (!RemoteProtocols.IsSsh(Profile.Protocol)) throw new RemoteException(L.T("Le terminal intégré ne s'ouvre que sur un serveur SSH (SFTP / SCP)."));
+        return await SshTerminalConnection.ConnectAsync(_ctx, columns, rows, startDirectory, ct).ConfigureAwait(false);
+    }
+
     public async Task<T> UseAsync<T>(Func<IRemoteFileSystem, Task<T>> work, CancellationToken ct)
     {
         try

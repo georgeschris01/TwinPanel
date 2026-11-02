@@ -72,6 +72,8 @@ public static class CommandCatalog
         new("UnpackArchive", L.T("Extraire l'archive"), L.T("Outils"), "Alt+F9"),
         new("TestArchive", L.T("Tester l'archive"), L.T("Outils"), ""),
         new("OpenTerminal", L.T("Ouvrir un terminal ici"), L.T("Outils"), "Ctrl+Shift+T"),
+        new("ToggleTerminal", L.T("Terminal intégré : afficher / masquer"), L.T("Outils"), "F12"),
+        new("NewTerminal", L.T("Nouveau terminal intégré ici"), L.T("Outils"), "Ctrl+F12"),
         new("OpenOptions", "Options", L.T("Outils"), ""),
         new("ToolSettings", L.T("Éditeur et visionneuse"), L.T("Outils"), ""),
         // Connexions
@@ -100,6 +102,7 @@ public static class CommandCatalog
         ("Ctrl+D", L.T("Menu des favoris")),
         ("Ctrl+L", L.T("Modifier le chemin")),
         (L.T("Ctrl+Entrée / Ctrl+Maj+Entrée"), L.T("Nom / chemin complet dans la ligne de commande")),
+        ("Ctrl+C / Ctrl+V", L.T("Dans le terminal : copier la sélection (sans sélection : interrompre) / coller")),
     ];
 
     public static CommandInfo? Find(string? id) => id is null ? null : All.FirstOrDefault(c => c.Id == id);

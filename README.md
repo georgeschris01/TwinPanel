@@ -143,6 +143,7 @@ Tous les raccourcis se changent dans Options → Raccourcis. Dans le programme, 
 | `Ctrl+Q` | Vue rapide |
 | `Ctrl+F8` | Arborescence |
 | `Ctrl+Maj+F1` | Miniatures |
+| `F12` / `Ctrl+F12` | Terminal intégré : afficher ou masquer / nouveau terminal |
 
 ### Marquage
 
@@ -336,6 +337,39 @@ Deux outils facultatifs, à installer soi-même, ajoutent des possibilités : **
 ### Renommer selon les médias
 
 Dans `Ctrl+M`, sur les fichiers du PC : `[Titre]`, `[Artiste]`, `[Album]`, `[Piste]`, `[Année]`, `[Genre]`, `[Résolution]`, `[Durée]`, `[Date de prise de vue]`. Un fichier sans cette valeur garde son nom. Les noms anglais marchent aussi : `[Title]`, `[Artist]`…
+
+## Terminal
+
+Un vrai terminal dans le bas de la fenêtre, écrit pour TwinPanel : les couleurs, `vim`, `nano` et `htop` y fonctionnent.
+
+### L'ouvrir
+
+- `F12` ouvre le panneau. Si le clavier est déjà dans le terminal, `F12` le masque : les terminaux continuent de tourner.
+- `Ctrl+F12` ou le bouton **+** ouvre un autre terminal, dans un nouvel onglet.
+- Le terminal démarre dans le dossier du panneau actif.
+- Sur un serveur SFTP ou SCP, il ouvre un shell sur ce serveur, avec les mêmes identifiants, le même rebond et le même contrôle du serveur que le panneau.
+- Tire la séparation au-dessus du terminal pour changer sa hauteur : TwinPanel s'en souvient.
+
+### Copier et coller
+
+- `Ctrl+C` copie le texte sélectionné. Sans sélection, il interrompt le programme, comme dans tout terminal.
+- `Ctrl+V` colle, toujours. `Ctrl+Maj+C`, `Ctrl+Maj+V` et `Maj+Inser` marchent aussi.
+- Clic droit : copie la sélection, ou colle s'il n'y a rien de sélectionné.
+- Double-clic : un mot. Triple-clic : une ligne.
+- Si un programme utilise la souris, garde `Maj` enfoncée pour sélectionner du texte.
+- Avant de coller plusieurs lignes dans un programme qui les exécuterait aussitôt, TwinPanel demande confirmation.
+
+Quand le clavier est dans le terminal, toutes les touches vont au programme qui y tourne : `F5` ne copie pas de fichier. Seuls `F12` et `Alt+F4` restent à TwinPanel. Clique sur une liste pour revenir aux fichiers.
+
+### Remonter dans le texte
+
+La molette ou `Maj+PgPréc` / `Maj+PgSuiv` remontent dans les 10 000 dernières lignes de chaque terminal. Ce texte reste en mémoire et n'est jamais écrit sur le disque. Il disparaît à la fermeture.
+
+### Réglages
+
+**Options → Terminal** : le programme lancé (PowerShell par défaut, parmi ceux installés sur ton PC), la taille du texte, et une case pour désactiver complètement le terminal intégré.
+
+La commande `Ctrl+Maj+T` reste disponible : elle ouvre le terminal de ton choix dans sa propre fenêtre.
 
 ## Personnaliser
 

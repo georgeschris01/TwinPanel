@@ -1,0 +1,62 @@
+// TwinPanel — © 2026 Georges Christophe (chrypox). Tous droits réservés.
+// Licence TwinPanel 1.0 (gratuit, non commercial, sans modification) : voir le fichier LICENSE.
+using TwinPanel.Core.Settings;
+
+namespace TwinPanel.Core.Terminal;
+
+/// <summary>Programmes qu'on peut lancer dans le terminal intégré : seulement ceux installés sur ce PC.</summary>
+public static class TerminalShells
+{
+    private static string System32 => Environment.GetFolderPath(Environment.SpecialFolder.System);
+
+    /// <summary>Chemin du programme, ou null s'il n'est pas installé.</summary>
+    public static string? Find(TerminalShell shell, Func<string, bool>? exists = null, string? path = null)
+    {
+        exists ??= File.Exists;
+        return shell switch
+        {
+            TerminalShell.PowerShell => First(exists, Path.Combine(System32, "WindowsPowerShell", "v1.0", "powershell.exe")),
+            TerminalShell.PowerShell7 => First(exists, [
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "PowerShell", "7", "pwsh.exe"),
+                .. OnPath("pwsh.exe", path)]),
+            TerminalShell.Cmd => First(exists, Path.Combine(System32, "cmd.exe")),
+            TerminalShell.Wsl => First(exists, Path.Combine(System32, "wsl.exe")),
+            _ => null,
+        };
+    }
+
+    private static string? First(Func<string, bool> exists, params string[] candidates) => candidates.FirstOrDefault(exists);
+
+    private static IEnumerable<string> OnPath(string file, string? path) =>
+        (path ?? Environment.GetEnvironmentVariable("PATH") ?? string.Empty)
+            .Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(d => Path.Combine(d, file));
+
+    /// <summary>Choix à proposer dans les Options.</summary>
+    public static IReadOnlyList<TerminalShell> Installed(Func<string, bool>? exists = null) =>
+        [.. Enum.GetValues<TerminalShell>().Where(s => s == TerminalShell.Custom || Find(s, exists) is not null)];
+
+    /// <summary>
+    /// Ligne de commande à lancer. Si le programme choisi n'existe plus, on prend le premier qui marche
+    /// (PowerShell, puis cmd) plutôt que de laisser un terminal vide.
+    /// </summary>
+    public static string CommandLine(TerminalSettings settings, Func<string, bool>? exists = null)
+    {
+        exists ??= File.Exists;
+        if (settings.IntegratedShell == TerminalShell.Custom)
+        {
+            var custom = settings.IntegratedShellPath.Trim().Trim('"');
+            if (custom.Length > 0 && exists(custom)) return Quote(custom);
+        }
+        else if (Find(settings.IntegratedShell, exists) is { } chosen) return Build(settings.IntegratedShell, chosen);
+
+        foreach (var shell in new[] { TerminalShell.PowerShell, TerminalShell.Cmd })
+            if (Find(shell, exists) is { } fallback) return Build(shell, fallback);
+        return "cmd.exe";
+    }
+
+    private static string Build(TerminalShell shell, string file) =>
+        shell is TerminalShell.PowerShell or TerminalShell.PowerShell7 ? Quote(file) + " -NoLogo" : Quote(file);
+
+    private static string Quote(string file) => file.Contains(' ', StringComparison.Ordinal) ? $"\"{file}\"" : file;
+}

@@ -28,6 +28,7 @@ public static class Tips
         L.T("Ctrl+Q : aperçu du fichier sous le curseur dans l'autre panneau."),
         L.T("Alt+F7 : cherche aussi les doublons, même sur un serveur."),
         L.T("Ctrl+F : gère tes connexions SFTP, FTP et WebDAV. Les serveurs s'utilisent comme des dossiers."),
+        L.T("F12 : un terminal dans le bas de la fenêtre, ouvert dans le dossier du panneau actif, même sur un serveur SSH."),
         L.T("Entrée sur une archive l'ouvre comme un dossier. Zip, 7z et tar sont modifiables."),
         L.T("Ctrl+Maj+S : synchronise deux dossiers, et garde les réglages dans un profil."),
         L.T("Tous les raccourcis se changent dans Options → Raccourcis. F1 ouvre le guide complet."),

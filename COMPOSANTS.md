@@ -107,6 +107,7 @@ Dernière mise à jour : 30/10/2026 (lot 5, archives).
 | Éditeur choisi (VSCodium, Notepad++, …) | F4 si choisi dans Outils → Éditeur et visionneuse. Seuls les éditeurs **réellement installés** sont proposés. | Message clair, ouverture dans le Bloc-notes, proposition de revenir au Bloc-notes. |
 | Visionneuse externe | F3 si choisie. | Retour à la visionneuse intégrée. |
 | `cmd.exe` | Ligne de commande en bas de la fenêtre. | — |
+| PowerShell, PowerShell 7, `cmd.exe`, WSL | Terminal intégré (F12), au choix dans Options → Terminal. Seuls les programmes **réellement installés** sont proposés. | Repli sur PowerShell, puis sur `cmd.exe`. |
 | Application associée par Windows | Entrée sur un fichier, Alt+F3. | Message d'erreur de Windows affiché proprement. |
 
 ---
@@ -124,6 +125,7 @@ Dernière mise à jour : 30/10/2026 (lot 5, archives).
 - **Code** : écrit entièrement pour TwinPanel. On s'inspire du **comportement** de Total Commander (raccourcis, ergonomie), **jamais de son code**.
 - **Couleurs et thème** : définis dans `App.axaml`.
 - **Traduction et guide** : moteur de traduction (`Core/Localization`), textes anglais, lecteur du guide, écrits pour TwinPanel, sans bibliothèque ajoutée.
+- **Terminal intégré** : analyse du flux, écran virtuel, clavier, souris et affichage écrits pour TwinPanel, sans bibliothèque de terminal. Il repose sur ConPTY, la console virtuelle fournie par Windows (Windows 10 version 1809 ou plus récent), et sur SSH.NET pour les serveurs. Le texte défilant reste en mémoire : il n'est jamais écrit sur le disque ni dans un journal.
 - **Client WebDAV, coffre des secrets, gestion des serveurs connus, imports, écriture des clés Ed25519 au format OpenSSH** : écrits pour TwinPanel.
 
 ---
@@ -173,6 +175,7 @@ Les licences des bibliothèques livrées sont **permissives** (MIT, BSD, Apache 
 | `Compare/` | Comparaison et synchronisation de dossiers (côtés PC ou serveur : `SyncSides.cs`, sens réglable), différences de texte, sommes de contrôle (`HashingStream` : empreinte pendant un téléchargement). |
 | `Viewer/` | Détection d'encodage, affichage hexadécimal, `TextDocument` (éditeur : encodage et fins de ligne conservés). |
 | `Tools/ExternalTools.cs` | Éditeurs et visionneuses externes : détection, arguments `%1 %L %N %D`, éditeur intégré. |
+| `Terminal/` | Terminal intégré. `VtParser` (découpe du flux), `TerminalEmulator` (écran, historique, couleurs, second écran), `TerminalKeys` (clavier, souris, collage), `TerminalSession` (écran + connexion), `ConPtyConnection` (programme du PC), `TerminalShells` (programmes installés). Serveurs : `Remote/SshTerminalConnection.cs`. |
 | `Settings/` | Réglages enregistrés en JSON. |
 | `Media/` | Infos médias (`MediaInfoLib`, `MediaReport`, `MediaCache`), photos (`PhotoInfo`), tags (`AudioTags`), outils externes (`MediaTools`, `MkvEdit`, `ExifEdit`). |
 | `Rights/` | Fenêtre Propriétés. `UnixRights.cs` : droits Unix (octal ↔ « rwxr-xr-x », setuid / setgid / sticky), changements partiels (cases changées seulement), utilisateurs et groupes (passwd / group), `RightsApplier` (application récursive, fichiers / dossiers séparés, erreurs listées, taille des dossiers), commandes shell sûres (chmod, chown par numéros). `LocalUnixRights.cs` : disque local sous Linux. `WindowsSecurity.cs` : NTFS (propriétaire, héritage, autorisations), attributs, parcours d'un dossier sans suivre les jonctions. |
@@ -182,7 +185,7 @@ Les licences des bibliothèques livrées sont **permissives** (MIT, BSD, Apache 
 
 | Dossier | Rôle |
 |---|---|
-| `Views/` | Fenêtres : principale, panneau, visionneuse, éditeur, recherche, synchronisation, comparaison, renommage multiple, gestionnaire de connexions, guide (`HelpWindow`). `TExtension.cs` : `{l:T '…'}`, texte traduit dans les fichiers axaml. |
+| `Views/` | Fenêtres : principale, panneau, visionneuse, éditeur, recherche, synchronisation, comparaison, renommage multiple, gestionnaire de connexions, guide (`HelpWindow`), terminal (`TerminalView`, dessin et saisie). `TExtension.cs` : `{l:T '…'}`, texte traduit dans les fichiers axaml. |
 | `ViewModels/` | État et commandes de chaque écran (onglets, marquage, opérations en cours…). |
 | `Services/` | Boîtes de dialogue, file des opérations, lancement des programmes externes, questions de connexion (clé du serveur, certificat, mots de passe), renvoi des fichiers distants édités. |
 | `Converters/` | Icônes et couleurs selon le type de fichier. |

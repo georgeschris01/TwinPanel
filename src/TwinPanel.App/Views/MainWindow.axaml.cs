@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
+using Avalonia.Threading;
 using TwinPanel.App.ViewModels;
 
 namespace TwinPanel.App.Views;
@@ -53,7 +54,9 @@ public partial class MainWindow : Window
                 else Program.RestartAfterExit = false;
                 return;
             }
+            RememberTerminalHeight();
             vm.SaveSettings(Width, Height, WindowState == WindowState.Maximized);
+            vm.Terminal.CloseAll();
         };
         ((MenuFlyout)StartMenuButton.Flyout!).Opening += (_, _) => BuildStartMenu();
         ((MenuFlyout)MainMenuButton.Flyout!).Opening += (_, _) =>
@@ -70,6 +73,7 @@ public partial class MainWindow : Window
                 Close();
             };
             vm.AppearanceChanged += (_, _) => ApplyAppearance();
+            WireTerminal(vm);
             vm.HistoryMenuRequested += (_, _) => RecentFlyout.ShowAt(BackHost);
             vm.TabSetsMenuRequested += (_, _) =>
             {
@@ -97,9 +101,63 @@ public partial class MainWindow : Window
     /// <summary>Raccourcis en vigueur de la liste des dossiers récents.</summary>
     private List<KeyGesture> _historyGestures = [];
 
+    /// <summary>Raccourcis en vigueur pour afficher / masquer le terminal : ils marchent aussi depuis le terminal.</summary>
+    private List<KeyGesture> _terminalGestures = [];
+
+    private void WireTerminal(MainWindowViewModel vm)
+    {
+        TerminalScreen.PassThrough = e => _terminalGestures.Any(g => g.Matches(e));
+        TerminalScreen.ConfirmPaste = text => new TwinPanel.App.Services.DialogService(this).ConfirmAsync(L.T("Coller dans le terminal"),
+            L.F("Ce texte fait {0} lignes : le programme peut exécuter chacune dès le collage.\nColler quand même ?", text.Split('\n').Length));
+        TerminalScreen.FocusChanged += focused => vm.Terminal.HasFocus = focused;
+        TerminalScreen.GridChanged += (columns, rows) =>
+        {
+            vm.Terminal.Columns = columns;
+            vm.Terminal.Rows = rows;
+        };
+        vm.Terminal.FocusFilesRequested += FocusActiveList;
+        vm.Terminal.FocusTerminalRequested += () => Dispatcher.UIThread.Post(() => TerminalScreen.Focus(), DispatcherPriority.Loaded);
+        vm.Terminal.PropertyChanging += (_, e) =>
+        {
+            if (e.PropertyName == nameof(TerminalPanelViewModel.IsOpen) && vm.Terminal.IsOpen) RememberTerminalHeight();
+        };
+        vm.Terminal.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(TerminalPanelViewModel.IsOpen)) LayOutTerminal(vm);
+        };
+    }
+
+    /// <summary>La hauteur du panneau est celle que l'utilisateur a choisie en tirant la séparation.</summary>
+    private void RememberTerminalHeight()
+    {
+        if (Vm is { Terminal.IsOpen: true } vm) vm.Settings.Terminal.IntegratedHeight = WorkArea.RowDefinitions[2].ActualHeight;
+    }
+
+    private void LayOutTerminal(MainWindowViewModel vm)
+    {
+        var row = WorkArea.RowDefinitions[2];
+        if (vm.Terminal.IsOpen)
+        {
+            row.MinHeight = MinTerminalHeight;
+            row.Height = new GridLength(Math.Clamp(vm.Settings.Terminal.IntegratedHeight, MinTerminalHeight, Math.Max(MinTerminalHeight, WorkArea.Bounds.Height - MinFilesHeight)));
+            WorkArea.RowDefinitions[0].MinHeight = MinFilesHeight;
+        }
+        else
+        {
+            row.MinHeight = 0;
+            row.Height = GridLength.Auto;
+            WorkArea.RowDefinitions[0].MinHeight = 0;
+        }
+    }
+
+    private const double MinTerminalHeight = 110;
+    private const double MinFilesHeight = 120;
+
     private void OnPreviewKeyDown(object? sender, KeyEventArgs e)
     {
         if (Vm is not { } vm) return;
+        // Dans le terminal, ces touches sont celles du programme qui y tourne.
+        if (e.Source is TerminalView) return;
 
         // Ici et pas dans les raccourcis de la fenêtre : la liste garde les touches fléchées (Alt+Bas n'y arriverait pas).
         if (_historyGestures.Any(g => g.Matches(e)))
@@ -224,6 +282,7 @@ public partial class MainWindow : Window
         HangWatchdog.Step("Raccourcis : reconstruction");
         KeyBindings.Clear();
         _historyGestures = [];
+        _terminalGestures = [];
         foreach (var info in TwinPanel.App.Services.CommandCatalog.All)
         {
             var command = TwinPanel.App.Services.CommandCatalog.Resolve(vm, info);
@@ -237,7 +296,12 @@ public partial class MainWindow : Window
             foreach (var text in TwinPanel.App.Services.CommandCatalog.GesturesFor(info, vm.Settings.Shortcuts)
                          .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
             {
-                try { KeyBindings.Add(new KeyBinding { Gesture = KeyGesture.Parse(text), Command = command, CommandParameter = info.Parameter! }); }
+                try
+                {
+                    var gesture = KeyGesture.Parse(text);
+                    KeyBindings.Add(new KeyBinding { Gesture = gesture, Command = command, CommandParameter = info.Parameter! });
+                    if (info.Id == "ToggleTerminal") _terminalGestures.Add(gesture);
+                }
                 catch (Exception ex) when (ex is ArgumentException or FormatException or KeyNotFoundException)
                 {
                     vm.StatusMessage = $"Raccourci ignoré (illisible) pour « {info.Label} » : {text}";
