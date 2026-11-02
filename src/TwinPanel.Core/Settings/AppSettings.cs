@@ -233,12 +233,40 @@ public sealed class EditorRule
 
 public enum TerminalKind { Auto, WindowsTerminal, PowerShell, Cmd, Custom }
 
+/// <summary>Programme lancé dans le terminal intégré.</summary>
+public enum TerminalShell { PowerShell, PowerShell7, Cmd, Wsl, Custom }
+
 public sealed class TerminalSettings
 {
     public TerminalKind Kind { get; set; } = TerminalKind.Auto;
     public string CustomPath { get; set; } = string.Empty;
     /// <summary>Arguments du terminal personnalisé ; %P = dossier.</summary>
     public string CustomArguments { get; set; } = string.Empty;
+
+    /// <summary>Terminal intégré. Désactivé : il disparaît des menus et son raccourci ne fait rien.</summary>
+    public bool IntegratedEnabled { get; set; } = true;
+    public TerminalShell IntegratedShell { get; set; } = TerminalShell.PowerShell;
+    public string IntegratedShellPath { get; set; } = string.Empty;
+    public double IntegratedFontSize { get; set; } = 13;
+    public double IntegratedHeight { get; set; } = 260;
+
+    /// <summary>Part de la largeur donnée au côté gauche, en côte à côte.</summary>
+    public double IntegratedSplitRatio { get; set; } = 0.5;
+    public bool CommandsPanelOpen { get; set; }
+    /// <summary>En clair dans les réglages, comme les boutons personnels : jamais de mot de passe ici.</summary>
+    public List<SavedTerminalCommand> SavedCommands { get; set; } = [];
+}
+
+/// <summary>Commande enregistrée du terminal.</summary>
+public sealed class SavedTerminalCommand
+{
+    public string Name { get; set; } = string.Empty;
+    public string Command { get; set; } = string.Empty;
+    /// <summary>Confirmation avant de lancer (rm, reboot…).</summary>
+    public bool AskFirst { get; set; }
+    /// <summary>Réservée à ce serveur ; nulle : proposée partout.</summary>
+    public Guid? ServerId { get; set; }
+    public string ServerName { get; set; } = string.Empty;
 }
 
 /// <summary>Lecture / écriture des réglages en JSON (%APPDATA%\TwinPanel\settings.json).</summary>

@@ -178,6 +178,9 @@ public partial class MainWindowViewModel
         copy.WindowHeight = _settings.WindowHeight;
         copy.WindowMaximized = _settings.WindowMaximized;
         _settings = copy;
+        ApplyTerminalSettings();
+        OnPropertyChanged(nameof(IsTerminalEnabled));
+        _terminalCommands?.Refresh();
         ApplyTheme(_settings.Theme);
         if (ShowHidden != _settings.ShowHidden) ShowHidden = _settings.ShowHidden;
         OnPropertyChanged(nameof(Favorites));

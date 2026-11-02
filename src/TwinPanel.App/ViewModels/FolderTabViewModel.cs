@@ -122,6 +122,8 @@ public partial class FolderTabViewModel : ObservableObject, IDisposable
     // Tailles déjà calculées dans le dossier affiché (clé : chemin ; reprises si la date du dossier n'a pas changé).
     private readonly Dictionary<string, (DateTime Date, long Bytes)> _folderSizes = new(StringComparer.OrdinalIgnoreCase);
     private string _folderSizesPath = string.Empty;
+    private static readonly TimeSpan SizeSortDelay = TimeSpan.FromMilliseconds(400);
+    private bool _sizeSortPending;
 
     /// <summary>Calcule en arrière-plan, un par un, la taille des dossiers affichés (annulé dès qu'on change de dossier).</summary>
     private void StartFolderSizes()
@@ -133,17 +135,16 @@ public partial class FolderTabViewModel : ObservableObject, IDisposable
             _folderSizes.Clear();
             _folderSizesPath = CurrentPath;
         }
-        if (!ComputeFolderSizes || IsInsideArchive) return;
         var todo = new List<FileItemViewModel>();
         foreach (var it in Items)
         {
             if (!it.IsDirectory || it.IsParentLink || it.ComputedSize is not null) continue;
             // Lien / jonction : non suivi (évite les boucles et les doubles comptes).
             if ((it.Entry.Attributes & FileAttributes.ReparsePoint) != 0) continue;
-            if (_folderSizes.TryGetValue(it.FullPath, out var known) && known.Date == it.Entry.LastWriteTime) it.ComputedSize = known.Bytes;
+            if (KnownFolderSize(it.Entry) is { } known) it.ComputedSize = known;
             else todo.Add(it);
         }
-        if (todo.Count == 0) { UpdateSelectionInfo(); return; }
+        if (todo.Count == 0 || !ComputeFolderSizes || IsInsideArchive) { UpdateSelectionInfo(); return; }
         var ct = _folderCts.Token;
         _ = IsRemote ? RemoteFolderSizesAsync(todo, ct) : LocalFolderSizesAsync(todo, ct);
     }
@@ -152,6 +153,41 @@ public partial class FolderTabViewModel : ObservableObject, IDisposable
     {
         item.ComputedSize = bytes;
         _folderSizes[item.FullPath] = (item.Entry.LastWriteTime, bytes);
+        ScheduleSizeSort();
+    }
+
+    private long? KnownFolderSize(FileEntry entry) =>
+        _folderSizes.TryGetValue(entry.FullPath, out var known) && known.Date == entry.LastWriteTime ? known.Bytes : null;
+
+    /// <summary>Tri par taille : les dossiers prennent leur place au fil des calculs, sans à-coup à chaque résultat.</summary>
+    private void ScheduleSizeSort()
+    {
+        if (SortColumn != SortColumn.Size || _sizeSortPending) return;
+        _sizeSortPending = true;
+        DispatcherTimer.RunOnce(() =>
+        {
+            _sizeSortPending = false;
+            MoveItemsToSizeOrder();
+        }, SizeSortDelay);
+    }
+
+    /// <summary>Déplace les lignes sans les recréer : un nouveau tri complet arrêterait les calculs en cours.</summary>
+    private void MoveItemsToSizeOrder()
+    {
+        if (SortColumn != SortColumn.Size) return;
+        var order = new Dictionary<FileEntry, int>();
+        foreach (var entry in EntrySorter.Sort(_rawEntries, SortColumn, SortDescending, KnownFolderSize)) order[entry] = order.Count;
+        var target = Items.OrderBy(i => order.GetValueOrDefault(i.Entry, int.MaxValue)).ToList();
+        if (target.SequenceEqual(Items)) return;
+        var cursor = CurrentItem;
+        ListUpdating?.Invoke();
+        for (int i = 0; i < target.Count; i++)
+        {
+            int from = Items.IndexOf(target[i]);
+            if (from != i) Items.Move(from, i);
+        }
+        if (!ReferenceEquals(CurrentItem, cursor)) CurrentItem = cursor;
+        ListUpdated?.Invoke();
     }
 
     private async Task LocalFolderSizesAsync(List<FileItemViewModel> todo, CancellationToken ct)
@@ -601,7 +637,7 @@ public partial class FolderTabViewModel : ObservableObject, IDisposable
         try
         {
             var r = await FolderSize.CalculateAsync(item.FullPath, _sizeCts.Token);
-            item.ComputedSize = r.Bytes;
+            StoreFolderSize(item, r.Bytes);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { ErrorOccurred?.Invoke(this, ex.Message); }
@@ -729,7 +765,7 @@ public partial class FolderTabViewModel : ObservableObject, IDisposable
     private void ApplySort(string? keepName, bool fullReset, bool keepView = false)
     {
         if (keepView) ListUpdating?.Invoke();
-        var sorted = EntrySorter.Sort(_rawEntries, SortColumn, SortDescending);
+        var sorted = EntrySorter.Sort(_rawEntries, SortColumn, SortDescending, KnownFolderSize);
         // Nom sous le curseur AVANT la mise à jour : quand la ligne courante est remplacée (fichier modifié),
         // la grille déplace sa sélection sur la ligne suivante ; on remet le curseur au bon endroit ensuite.
         keepName ??= CursorKey;

@@ -7,6 +7,7 @@ A free, modern and complete two-panel file manager. Windows for now, Linux next.
 - Two panels, tabs, quick view, folder tree, thumbnails, flat view
 - Copy and move with a transfer queue, resume after a cut, free space check
 - SFTP, SCP, FTP, FTPS and WebDAV servers, used just like folders
+- Built-in terminal on the PC and on SSH servers: tabs, side by side, saved commands, search
 - Editable zip, 7z, tar and tar.gz archives, AES-256 encrypted zip
 - Search, duplicates, comparison, synchronization with profiles
 - Multi-rename, also from media data
@@ -143,6 +144,10 @@ All shortcuts can be changed in Options → Shortcuts. In the program, the list 
 | `Ctrl+Q` | Quick view |
 | `Ctrl+F8` | Folder tree |
 | `Ctrl+Shift+F1` | Thumbnails |
+| `F12` / `Ctrl+F12` | Built-in terminal: show or hide / new terminal |
+| `Ctrl+Shift+F12` | Two terminals side by side |
+| `Alt+F12` | Switch side in the terminal |
+| `Ctrl+Shift+F` | In the terminal: search the text |
 
 ### Marking
 
@@ -224,6 +229,8 @@ Right click on the tab:
 - **Thumbnails** (`Ctrl+Shift+F1`): images and videos on the PC, images on a server (each tab has its own mode).
 - **Flat view** (`Ctrl+B`): all the files from subfolders, on the PC and on a server. `Esc` stops reading.
 
+Sorting by size (`Ctrl+F6`) also orders the folders whose size is known: calculated automatically (**Folder size** option) or with the space bar. Folders stay before files.
+
 ## Marking and working on files
 
 ### Marking
@@ -282,6 +289,7 @@ TwinPanel connects over SFTP, SCP, FTP, FTPS and WebDAV. A server is used like a
 - `Ctrl+F`: connection manager, with entries, groups, SSH keys, identities, known servers and vault.
 - A button in the drive bar opens each saved connection.
 - Connections from FileZilla, WinSCP, PuTTY, OpenSSH and Total Commander can be imported.
+- A server that cannot be reached directly goes through a **jump server**, chosen in its entry. That jump server can itself go through another one, up to 8 in a row. The fingerprint of each server is checked.
 
 ### Security
 
@@ -336,6 +344,61 @@ Two optional tools, to install yourself, add more possibilities: **mkvpropedit**
 ### Renaming from media data
 
 In `Ctrl+M`, on PC files: `[Title]`, `[Artist]`, `[Album]`, `[Track]`, `[Year]`, `[Genre]`, `[Resolution]`, `[Duration]`, `[Date taken]`. A file without this value keeps its name. The French names work too: `[Titre]`, `[Artiste]`…
+
+## Terminal
+
+A real terminal at the bottom of the window, written for TwinPanel: colours, `vim`, `nano` and `htop` all work in it.
+
+### Opening it
+
+- `F12` opens the panel. If the keyboard is already in the terminal, `F12` hides it: terminals keep running.
+- The **Terminal** button in the top bar opens a menu: show or hide, new terminal, duplicate, a program on your PC or one of your SFTP / SCP servers.
+- `Ctrl+F12` opens another terminal in a new tab. The **+** button after the tabs offers your programs and your SFTP / SCP servers.
+- The **⧉** button on a tab duplicates it: same program or same server, in its starting folder. The copy has a number in its tab, such as `server (2)`. Right-clicking a tab also offers **Duplicate**; side by side, you choose which side the copy goes to.
+- The **Side by side** button or `Ctrl+Shift+F12` shows two terminals together, with a separator to drag. Each side has its own tabs and **+** button. If there is only one terminal, the second is a copy of it. Click a side to make it active: it receives the keyboard and saved commands. `Alt+F12` switches side. The width of the separator is remembered. Right-clicking a tab also offers **Move** to the other side. Going back to one side keeps every terminal open.
+- The terminal starts in the folder of the active panel.
+- On an SFTP or SCP server, it opens a shell on that server, with the same credentials, jump host and server check as the panel.
+- Drag the separator above the terminal to change its height: TwinPanel remembers it.
+
+When the keyboard is in the terminal, keys go to the program running there: `F5`, `F8` or `Ctrl+W` do not act on files. Only the terminal's own shortcuts stay active.
+
+### Copy and paste
+
+- `Ctrl+C` copies the selected text. With no selection, it interrupts the program, as in any terminal.
+- `Ctrl+V` always pastes. `Ctrl+Shift+C`, `Ctrl+Shift+V` and `Shift+Insert` work too.
+- Right-click: copies the selection, or pastes if nothing is selected.
+- Double-click: a word. Triple-click: a line.
+- If a program uses the mouse, hold `Shift` to select text.
+- Before pasting several lines into a program that would run them at once, TwinPanel asks for confirmation. Pasted text loses its control characters, and a final line break runs nothing.
+
+When the keyboard is in the terminal, every key goes to the program running there: `F5` does not copy a file. Only `F12` and `Alt+F4` stay with TwinPanel. Click a list to go back to your files.
+
+### Saved commands
+
+The **Commands** button shows or hides a panel to the right of the terminal.
+
+- **Add**: give a name and write the command, exactly as it should be sent.
+- **Run** starts the command in the terminal on display. **Copy** puts it on the clipboard.
+- **Ask before running**: a confirmation, useful for `rm` or `reboot`.
+- **Only on this server**: the command only appears on that server. Otherwise it appears everywhere.
+
+Commands are saved as plain text in your settings: never put a password in them.
+
+### Scrolling back
+
+The mouse wheel or `Shift+PgUp` / `Shift+PgDn` scroll through the last 10,000 lines of each terminal. This text stays in memory and is never written to disk. It disappears on closing.
+
+If a server sends text much faster than the display can follow, TwinPanel skips part of the middle and says so in one line: it stays responsive and `Ctrl+C` acts at once.
+
+### Searching the text
+
+`Ctrl+Shift+F` in a terminal opens a search bar, as does **Search the terminal** in the Terminal button's menu. The word is searched regardless of case, through all the text of that terminal, and the result appears selected. `Enter` goes to older results, `Shift+Enter` to newer ones, `Esc` closes the bar. `Ctrl+C` copies the result once the bar is closed.
+
+### Settings
+
+**Options → Terminal**: the program to start (PowerShell by default, among those installed on your PC), the text size, and a box to turn the built-in terminal off completely.
+
+The `Ctrl+Shift+T` command is still there: it opens the terminal of your choice in its own window.
 
 ## Customizing
 

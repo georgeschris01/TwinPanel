@@ -442,6 +442,54 @@ public class ConnectionStoreTests
         Assert.Contains(other.Profiles, x => x.Name == "chrypox (2)" && !x.SavePassword && x.Id != r.Id);
     }
 
+    private static (ConnectionStore Store, ConnectionProfile[] Line) JumpLine(TempDir t, int count)
+    {
+        var store = new ConnectionStore(t.Path, new FakeProtector());
+        var line = Enumerable.Range(0, count).Select(i => Sample("serveur" + i)).ToArray();
+        foreach (var p in line) store.SaveProfile(p);
+        for (int i = 0; i + 1 < count; i++) line[i].JumpHostId = line[i + 1].Id;
+        return (store, line);
+    }
+
+    [Fact]
+    public void Jump_chain_follows_the_jumps_in_order()
+    {
+        using var t = new TempDir();
+        var (store, line) = JumpLine(t, 3);
+        Assert.Equal([line[1].Id, line[2].Id], store.JumpChain(line[0]).Select(p => p.Id));
+        Assert.Empty(store.JumpChain(line[2]));
+    }
+
+    [Fact]
+    public void Jump_chain_refuses_a_loop()
+    {
+        using var t = new TempDir();
+        var (store, line) = JumpLine(t, 3);
+        line[2].JumpHostId = line[0].Id;
+        Assert.Throws<RemoteException>(() => store.JumpChain(line[0]));
+    }
+
+    [Fact]
+    public void Jump_chain_refuses_a_missing_or_endless_line()
+    {
+        using var t = new TempDir();
+        var (store, line) = JumpLine(t, ConnectionStore.MaxJumps + 2);
+        Assert.Throws<RemoteException>(() => store.JumpChain(line[0]));
+        Assert.Equal(ConnectionStore.MaxJumps, store.JumpChain(line[1]).Count);
+        line[^1].JumpHostId = Guid.NewGuid();
+        Assert.Throws<RemoteException>(() => store.JumpChain(line[^2]));
+    }
+
+    [Fact]
+    public void A_connection_cannot_jump_through_itself_by_a_detour()
+    {
+        using var t = new TempDir();
+        var (store, line) = JumpLine(t, 3);
+        Assert.True(store.CanJumpThrough(line[1], line[0].Id));
+        Assert.False(store.CanJumpThrough(line[0], line[2].Id));
+        Assert.False(store.CanJumpThrough(line[1], line[2].Id));
+    }
+
     [Fact]
     public void Deleting_a_profile_removes_its_secrets_and_jump_references()
     {

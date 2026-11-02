@@ -31,7 +31,37 @@
             </Grid>
           </Border>
         </DataTemplate>
+        <DataTemplate x:Key="TerminalTabItem" x:DataType="vm:TerminalTabViewModel">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <TextBlock Text="{Binding Title}" VerticalAlignment="Center" FontSize="12" />
+            <Button Content="⧉" Padding="5,0" FontSize="11" Background="Transparent" BorderThickness="0" ToolTip.Tip="{l:T 'Dupliquer ce terminal'}"
+                    Command="{Binding $parent[Window].DataContext.DuplicateTerminalCommand}" CommandParameter="{Binding}" />
+            <Button Content="✕" Padding="5,0" FontSize="10" Background="Transparent" BorderThickness="0" ToolTip.Tip="{l:T 'Fermer ce terminal'}"
+                    Command="{Binding $parent[Window].DataContext.Terminal.CloseTabCommand}" CommandParameter="{Binding}" />
+          </StackPanel>
+        </DataTemplate>
+
+    <!-- Barre d'onglets d'un côté du terminal. -->
+    <ItemsPanelTemplate x:Key="TerminalTabsPanel">
+      <StackPanel Orientation="Horizontal" Spacing="2" />
+    </ItemsPanelTemplate>
   </Window.Resources>
+
+  <Window.Styles>
+    <Style Selector="ListBox.terminalTabs">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="ItemsPanel" Value="{StaticResource TerminalTabsPanel}" />
+      <Setter Property="ItemTemplate" Value="{StaticResource TerminalTabItem}" />
+      <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto" />
+      <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Disabled" />
+    </Style>
+    <Style Selector="ListBox.terminalTabs ListBoxItem">
+      <Setter Property="Padding" Value="8,1,2,1" />
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="CornerRadius" Value="6" />
+    </Style>
+  </Window.Styles>
 
   <!-- Raccourcis clavier : créés dans MainWindow.axaml.cs à partir du catalogue des commandes (modifiables dans Options → Raccourcis). -->
 
@@ -100,6 +130,15 @@
         </Button>
         <Button Classes="icon" ToolTip.Tip="{l:T 'Rechercher (Alt+F7)'}" Command="{Binding SearchCommand}">
           <PathIcon Data="{StaticResource IconSearch}" />
+        </Button>
+        <Button x:Name="TerminalButton" Classes="icon" ToolTip.Tip="{l:T 'Terminal : ce PC, serveurs, dupliquer'}" IsVisible="{Binding IsTerminalEnabled}">
+          <PathIcon Data="{StaticResource IconTerminal}" />
+          <Button.Flyout>
+            <!-- Un élément fixe : un menu vide ne s'ouvre pas. Le reste est ajouté à chaque ouverture. -->
+            <MenuFlyout Placement="BottomEdgeAlignedLeft">
+              <MenuItem Header="{l:T 'Nouveau terminal ici'}" Command="{Binding NewTerminalCommand}" />
+            </MenuFlyout>
+          </Button.Flyout>
         </Button>
         <Button x:Name="MainMenuButton" Classes="icon" ToolTip.Tip="{l:T 'Menu (toutes les commandes)'}">
           <PathIcon Data="{StaticResource IconMenu}" />
@@ -226,10 +265,121 @@
     </StackPanel>
 
     <!-- Les deux panneaux -->
-    <Grid ColumnDefinitions="*,8,*" Margin="10,8,10,8">
-      <views:PanelView x:Name="LeftPanel" Grid.Column="0" DataContext="{Binding Left}" />
-      <GridSplitter Grid.Column="1" ResizeDirection="Columns" Background="Transparent" />
-      <views:PanelView x:Name="RightPanel" Grid.Column="2" DataContext="{Binding Right}" />
+    <Grid x:Name="WorkArea" RowDefinitions="*,Auto,Auto" Margin="10,8,10,8">
+      <Grid ColumnDefinitions="*,8,*">
+        <views:PanelView x:Name="LeftPanel" Grid.Column="0" DataContext="{Binding Left}" />
+        <GridSplitter Grid.Column="1" ResizeDirection="Columns" Background="Transparent" />
+        <views:PanelView x:Name="RightPanel" Grid.Column="2" DataContext="{Binding Right}" />
+      </Grid>
+
+      <!-- Terminal intégré -->
+      <GridSplitter Grid.Row="1" Height="6" ResizeDirection="Rows" Background="Transparent" IsVisible="{Binding Terminal.IsOpen}" />
+      <Border Grid.Row="2" IsVisible="{Binding Terminal.IsOpen}" CornerRadius="8" ClipToBounds="True" BorderThickness="1"
+              Background="{DynamicResource PanelBackground}" BorderBrush="{DynamicResource PanelBorder}">
+        <DockPanel>
+          <Grid ColumnDefinitions="*,Auto">
+            <Grid x:Name="TerminalPanes" RowDefinitions="Auto,*,Auto">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" MinWidth="160" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+              </Grid.ColumnDefinitions>
+              <!-- Le + suit les onglets : aligné à gauche, ce groupe ne prend que la place de son contenu. -->
+              <Grid x:Name="LeftStrip" ColumnDefinitions="*,Auto" HorizontalAlignment="Left" Height="30" Margin="4,2">
+                <ListBox x:Name="LeftTabList" Classes="terminalTabs" ItemsSource="{Binding Terminal.LeftTabs}" SelectedItem="{Binding Terminal.LeftTab}" />
+                <Button x:Name="AddLeftButton" Grid.Column="1" Content="+" Padding="9,1" Margin="4,0,0,0" ToolTip.Tip="{l:T 'Nouveau terminal : ce PC ou un serveur'}">
+                  <Button.Flyout>
+                    <!-- Un élément fixe : un menu vide ne s'ouvre pas. Le reste est ajouté à chaque ouverture. -->
+                    <MenuFlyout Placement="BottomEdgeAlignedLeft">
+                      <MenuItem Header="{l:T 'Nouveau terminal ici'}" Command="{Binding NewTerminalCommand}" />
+                    </MenuFlyout>
+                  </Button.Flyout>
+                </Button>
+              </Grid>
+              <GridSplitter x:Name="TerminalSplitter" Grid.Column="1" Grid.RowSpan="2" Width="6" ResizeDirection="Columns" Background="{DynamicResource PanelBorder}" IsVisible="{Binding Terminal.IsSplit}" />
+              <Grid x:Name="RightStrip" Grid.Column="2" ColumnDefinitions="*,Auto" HorizontalAlignment="Left" Height="30" Margin="4,2" IsVisible="{Binding Terminal.IsSplit}">
+                <ListBox x:Name="RightTabList" Classes="terminalTabs" ItemsSource="{Binding Terminal.RightTabs}" SelectedItem="{Binding Terminal.RightTab}" />
+                <Button x:Name="AddRightButton" Grid.Column="1" Content="+" Padding="9,1" Margin="4,0,0,0" ToolTip.Tip="{l:T 'Nouveau terminal : ce PC ou un serveur'}">
+                  <Button.Flyout>
+                    <!-- Un élément fixe : un menu vide ne s'ouvre pas. Le reste est ajouté à chaque ouverture. -->
+                    <MenuFlyout Placement="BottomEdgeAlignedLeft">
+                      <MenuItem Header="{l:T 'Nouveau terminal ici'}" Command="{Binding NewTerminalCommand}" />
+                    </MenuFlyout>
+                  </Button.Flyout>
+                </Button>
+              </Grid>
+              <views:TerminalView x:Name="TerminalScreen" Grid.Row="1" Session="{Binding Terminal.LeftTab.Session}" TerminalFontSize="{Binding Terminal.FontSize}" />
+              <views:TerminalView x:Name="TerminalScreen2" Grid.Row="1" Grid.Column="2" Session="{Binding Terminal.RightTab.Session}" TerminalFontSize="{Binding Terminal.FontSize}" IsVisible="{Binding Terminal.IsSplit}" />
+              <!-- Recherche dans le terminal du côté actif. -->
+              <Grid x:Name="TerminalSearchBar" Grid.Row="2" Grid.ColumnSpan="3" ColumnDefinitions="*,Auto,Auto,Auto,Auto" Margin="4,3" IsVisible="{Binding Terminal.IsSearchOpen}">
+                <TextBox x:Name="TerminalSearchBox" PlaceholderText="{l:T 'Chercher dans le terminal'}" />
+                <TextBlock x:Name="TerminalSearchResult" Grid.Column="1" VerticalAlignment="Center" Margin="10,0" MinWidth="70" FontSize="12" />
+                <Button x:Name="TerminalSearchOlder" Grid.Column="2" Content="↑" Padding="9,1" ToolTip.Tip="{l:T 'Résultat plus ancien (Entrée)'}" />
+                <Button x:Name="TerminalSearchNewer" Grid.Column="3" Content="↓" Padding="9,1" Margin="4,0" ToolTip.Tip="{l:T 'Résultat plus récent (Maj+Entrée)'}" />
+                <Button x:Name="TerminalSearchClose" Grid.Column="4" Content="✕" Padding="9,1" ToolTip.Tip="{l:T 'Fermer la recherche (Échap)'}" />
+              </Grid>
+            </Grid>
+
+            <!-- Commandes enregistrées -->
+            <Border x:Name="CommandsPane" Grid.Column="1" Width="290" Margin="0,30,0,0" BorderThickness="1,0,0,0" BorderBrush="{DynamicResource PanelBorder}"
+                    DataContext="{Binding TerminalCommands}" IsVisible="{Binding IsOpen}">
+              <DockPanel Margin="8,4">
+                <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto">
+                  <TextBlock Text="{l:T 'Commandes'}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                  <Button Grid.Column="1" Content="{l:T 'Ajouter'}" Padding="8,1" FontSize="12" Command="{Binding StartAddCommand}" />
+                </Grid>
+
+                <ScrollViewer Margin="0,6,0,0" VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                <!-- Ajouter ou modifier -->
+                <StackPanel Spacing="4" Margin="0,0,10,0" IsVisible="{Binding IsEditing}">
+                  <TextBox Text="{Binding EditName}" PlaceholderText="{l:T 'Nom (facultatif)'}" />
+                  <TextBox Text="{Binding EditCommand}" PlaceholderText="{l:T 'Commande'}" AcceptsReturn="True" TextWrapping="Wrap" MaxHeight="90" FontFamily="Cascadia Mono, Consolas, Courier New" />
+                  <CheckBox Content="{l:T 'Demander avant de lancer'}" IsChecked="{Binding EditAskFirst}" />
+                  <CheckBox Content="{Binding ServerOnlyLabel}" IsChecked="{Binding EditServerOnly}" IsVisible="{Binding CanLimitToServer}" />
+                  <TextBlock Classes="subtle" TextWrapping="Wrap" FontSize="11" Text="{l:T 'Enregistrée en clair : jamais de mot de passe ici.'}" />
+                  <StackPanel Orientation="Horizontal" Spacing="6">
+                    <Button Content="{l:T 'Enregistrer'}" Padding="10,2" Command="{Binding SaveEditCommand}" />
+                    <Button Content="{l:T 'Annuler'}" Padding="10,2" Command="{Binding CancelEditCommand}" />
+                  </StackPanel>
+                </StackPanel>
+
+                <TextBlock Classes="subtle" Margin="0,2,0,0" TextWrapping="Wrap" IsVisible="{Binding IsEmpty}"
+                           Text="{l:T 'Aucune commande. « Ajouter » en crée une, à lancer ensuite d\'un clic.'}" />
+
+                  <ItemsControl ItemsSource="{Binding Rows}" IsVisible="{Binding !IsEditing}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:TerminalCommandRow">
+                        <Border Padding="0,3,10,5" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource PanelBorder}">
+                          <StackPanel Spacing="2">
+                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="12" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Classes="subtle" Text="{Binding Text}" FontSize="11" FontFamily="Cascadia Mono, Consolas, Courier New" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Text}" />
+                            <TextBlock Classes="subtle" Text="{Binding Scope}" FontSize="11" IsVisible="{Binding HasScope}" />
+                            <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,2,0,0">
+                              <Button Content="{l:T 'Exécuter'}" Padding="8,1" FontSize="12" Command="{Binding $parent[ItemsControl].DataContext.RunCommand}" CommandParameter="{Binding}" />
+                              <Button Content="{l:T 'Copier'}" Padding="8,1" FontSize="12" Command="{Binding $parent[ItemsControl].DataContext.CopyTextCommand}" CommandParameter="{Binding}" />
+                              <Button Content="✎" Padding="6,1" FontSize="12" ToolTip.Tip="{l:T 'Modifier'}" Command="{Binding $parent[ItemsControl].DataContext.StartEditCommand}" CommandParameter="{Binding}" />
+                              <Button Content="✕" Padding="6,1" FontSize="11" ToolTip.Tip="{l:T 'Supprimer'}" Command="{Binding $parent[ItemsControl].DataContext.DeleteCommand}" CommandParameter="{Binding}" />
+                            </StackPanel>
+                          </StackPanel>
+                        </Border>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+                </ScrollViewer>
+              </DockPanel>
+            </Border>
+
+            <!-- Par-dessus le haut du panneau : les barres d'onglets leur laissent la place. -->
+            <StackPanel x:Name="TerminalButtons" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Spacing="4" Margin="0,3,4,0">
+              <ToggleButton Content="{l:T 'Commandes'}" Padding="9,1" FontSize="12" ToolTip.Tip="{l:T 'Afficher ou cacher les commandes enregistrées'}" IsChecked="{Binding TerminalCommands.IsOpen}" />
+              <ToggleButton Content="{l:T 'Côte à côte'}" Padding="9,1" FontSize="12" ToolTip.Tip="{l:T 'Deux terminaux côte à côte (Ctrl+Maj+F12)'}" Command="{Binding ToggleTerminalSplitCommand}" IsChecked="{Binding Terminal.IsSplit, Mode=OneWay}" />
+              <Button Content="—" Padding="9,1" ToolTip.Tip="{l:T 'Masquer (F12) : les terminaux continuent de tourner'}" Command="{Binding Terminal.HideCommand}" />
+            </StackPanel>
+          </Grid>
+        </DockPanel>
+      </Border>
     </Grid>
   </DockPanel>
 </Window>

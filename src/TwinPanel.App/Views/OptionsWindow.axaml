@@ -368,7 +368,24 @@
       <!-- ============ Terminal ============ -->
       <TabItem Header="Terminal">
         <StackPanel Margin="16,0" MaxWidth="640" HorizontalAlignment="Left">
-          <TextBlock Classes="h" Text="{l:T 'Ouvrir un terminal ici (Ctrl+Maj+T)'}" />
+          <TextBlock Classes="h" Text="{l:T 'Terminal intégré (F12)'}" />
+          <TextBlock TextWrapping="Wrap" Text="{l:T 'Un terminal dans le bas de la fenêtre, avec des onglets, sur ce PC ou sur un serveur SFTP / SCP (mêmes identifiants, même rebond que la connexion du panneau).'}" />
+          <CheckBox Margin="0,6,0,0" Content="{l:T 'Activer le terminal intégré'}" IsChecked="{Binding IntegratedEnabled}" />
+          <StackPanel IsEnabled="{Binding IntegratedEnabled}">
+            <TextBlock Classes="label" Text="{l:T 'Programme lancé sur ce PC'}" />
+            <ComboBox ItemsSource="{x:Static vm:OptionsViewModel.IntegratedShells}" SelectedItem="{Binding IntegratedShell}" HorizontalAlignment="Stretch" />
+            <StackPanel IsVisible="{Binding IsCustomIntegratedShell}">
+              <TextBlock Classes="label" Text="{l:T 'Programme'}" />
+              <Grid ColumnDefinitions="*,6,Auto">
+                <TextBox Text="{Binding IntegratedShellPath}" />
+                <Button Grid.Column="2" Content="{l:T 'Parcourir…'}" Command="{Binding BrowseIntegratedShellCommand}" />
+              </Grid>
+            </StackPanel>
+            <TextBlock Classes="label" Text="{l:T 'Taille du texte'}" />
+            <NumericUpDown Value="{Binding IntegratedFontSize}" Minimum="8" Maximum="32" Increment="1" FormatString="0" HorizontalAlignment="Left" Width="120" />
+          </StackPanel>
+
+          <TextBlock Classes="h" Margin="0,18,0,0" Text="{l:T 'Ouvrir un terminal ici (Ctrl+Maj+T)'}" />
           <TextBlock TextWrapping="Wrap" Text="{l:T 'Ouvre un terminal dans le dossier du panneau actif. Sur un serveur SFTP / SCP, ouvre une session ssh vers lui (authentification par OpenSSH et ses propres clés).'}" />
           <TextBlock Classes="label" Text="Terminal" />
           <ComboBox ItemsSource="{x:Static vm:OptionsViewModel.TerminalKinds}" SelectedItem="{Binding TerminalKind}" HorizontalAlignment="Stretch" />

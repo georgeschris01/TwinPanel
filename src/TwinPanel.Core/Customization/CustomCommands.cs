@@ -186,8 +186,9 @@ public static class TerminalCommand
             default:
             {
                 if (string.IsNullOrWhiteSpace(s.CustomPath)) return (OperatingSystem.IsWindows() ? "cmd.exe" : "x-terminal-emulator", []);
-                var args = s.CustomArguments.Replace("%P", folder, StringComparison.OrdinalIgnoreCase)
-                    .Split(' ', StringSplitOptions.RemoveEmptyEntries).ToList();
+                // %P remplacé après le découpage : un dossier avec des espaces reste un seul argument.
+                var args = s.CustomArguments.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(a => a.Replace("%P", folder, StringComparison.OrdinalIgnoreCase)).ToList();
                 if (ssh is not null) args.AddRange(ssh);
                 return (s.CustomPath, args);
             }

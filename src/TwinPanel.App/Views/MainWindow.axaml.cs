@@ -1,9 +1,11 @@
 // TwinPanel — © 2026 Georges Christophe (chrypox). Tous droits réservés.
 // Licence TwinPanel 1.0 (gratuit, non commercial, sans modification) : voir le fichier LICENSE.
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
+using Avalonia.Threading;
 using TwinPanel.App.ViewModels;
 
 namespace TwinPanel.App.Views;
@@ -19,6 +21,11 @@ public partial class MainWindow : Window
         CommandBox.AddHandler(KeyDownEvent, OnCommandBoxKeyDown, RoutingStrategies.Tunnel);
         FavoritesFlyout.Opening += (_, _) => BuildFavoritesMenu();
         ((MenuFlyout)ConnectionsButton.Flyout!).Opening += (_, _) => BuildConnectionsMenu();
+        ((MenuFlyout)TerminalButton.Flyout!).Opening += (_, _) => BuildTerminalMenu();
+        WireTerminalAddButton(AddLeftButton, right: false);
+        WireTerminalAddButton(AddRightButton, right: true);
+        LeftTabList.ContextRequested += OpenTerminalTabMenu;
+        RightTabList.ContextRequested += OpenTerminalTabMenu;
         RecentFlyout.Opening += (_, _) =>
         {
             if (Vm is { } vm) AppMenus.FillRecent(RecentFlyout.Items, vm);
@@ -53,7 +60,9 @@ public partial class MainWindow : Window
                 else Program.RestartAfterExit = false;
                 return;
             }
+            RememberTerminalHeight();
             vm.SaveSettings(Width, Height, WindowState == WindowState.Maximized);
+            vm.Terminal.CloseAll();
         };
         ((MenuFlyout)StartMenuButton.Flyout!).Opening += (_, _) => BuildStartMenu();
         ((MenuFlyout)MainMenuButton.Flyout!).Opening += (_, _) =>
@@ -70,6 +79,7 @@ public partial class MainWindow : Window
                 Close();
             };
             vm.AppearanceChanged += (_, _) => ApplyAppearance();
+            WireTerminal(vm);
             vm.HistoryMenuRequested += (_, _) => RecentFlyout.ShowAt(BackHost);
             vm.TabSetsMenuRequested += (_, _) =>
             {
@@ -97,9 +107,156 @@ public partial class MainWindow : Window
     /// <summary>Raccourcis en vigueur de la liste des dossiers récents.</summary>
     private List<KeyGesture> _historyGestures = [];
 
+    /// <summary>Raccourcis en vigueur pour afficher / masquer le terminal : ils marchent aussi depuis le terminal.</summary>
+    private List<KeyGesture> _terminalGestures = [];
+
+    private void WireTerminal(MainWindowViewModel vm)
+    {
+        foreach (var screen in new[] { TerminalScreen, TerminalScreen2 })
+        {
+            bool right = screen == TerminalScreen2;
+            screen.PassThrough = e => _terminalGestures.Any(g => g.Matches(e));
+            screen.SearchRequested += () => vm.SearchTerminalCommand.Execute(null);
+            screen.ConfirmPaste = text => new TwinPanel.App.Services.DialogService(this).ConfirmAsync(L.T("Coller dans le terminal"),
+                L.F("Ce texte fait {0} lignes : le programme peut exécuter chacune dès le collage.\nColler quand même ?", text.Split('\n').Length));
+            screen.FocusChanged += focused =>
+            {
+                vm.Terminal.HasFocus = TerminalScreen.IsFocused || TerminalScreen2.IsFocused;
+                if (focused) vm.Terminal.ActivatePane(right);
+            };
+            screen.GridChanged += (columns, rows) =>
+            {
+                vm.Terminal.Columns = columns;
+                vm.Terminal.Rows = rows;
+            };
+        }
+        vm.Terminal.FocusFilesRequested += FocusActiveList;
+        vm.Terminal.FocusTerminalRequested += () => Dispatcher.UIThread.Post(() =>
+        {
+            var screen = vm.Terminal.ActiveIsRight ? TerminalScreen2 : TerminalScreen;
+            screen.ScrollToEnd();
+            screen.Focus();
+        }, DispatcherPriority.Loaded);
+        vm.Terminal.CopyRequested += text => _ = Clipboard?.SetTextAsync(text);
+        vm.Terminal.PropertyChanging += (_, e) =>
+        {
+            if (e.PropertyName == nameof(TerminalPanelViewModel.IsOpen) && vm.Terminal.IsOpen) RememberTerminalHeight();
+        };
+        vm.Terminal.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(TerminalPanelViewModel.IsOpen)) LayOutTerminal(vm);
+            // La largeur du second terminal n'existe qu'en côte à côte, sinon il garderait sa moitié.
+            if (e.PropertyName == nameof(TerminalPanelViewModel.IsSplit))
+            {
+                LayOutTerminalSides(vm);
+                PlaceTerminalStrips(vm);
+            }
+            if (e.PropertyName == nameof(TerminalPanelViewModel.Selected) && vm.Terminal.IsSearchOpen) RunTerminalSearch(vm, 0);
+        };
+        WireTerminalSearch(vm);
+        TerminalSplitter.DragCompleted += (_, _) => RememberTerminalSplit(vm);
+        vm.TerminalCommands.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(TerminalCommandsViewModel.IsOpen)) PlaceTerminalStrips(vm);
+        };
+        PlaceTerminalStrips(vm);
+    }
+
+    private void LayOutTerminalSides(MainWindowViewModel vm)
+    {
+        double ratio = Math.Clamp(vm.Settings.Terminal.IntegratedSplitRatio, MinSplitRatio, 1 - MinSplitRatio);
+        var (left, right) = (TerminalPanes.ColumnDefinitions[0], TerminalPanes.ColumnDefinitions[2]);
+        left.Width = new GridLength(vm.Terminal.IsSplit ? ratio : 1, GridUnitType.Star);
+        right.Width = vm.Terminal.IsSplit ? new GridLength(1 - ratio, GridUnitType.Star) : GridLength.Auto;
+        right.MinWidth = vm.Terminal.IsSplit ? left.MinWidth : 0;
+    }
+
+    private const double MinSplitRatio = 0.15;
+
+    private void RememberTerminalSplit(MainWindowViewModel vm)
+    {
+        double left = TerminalPanes.ColumnDefinitions[0].ActualWidth, right = TerminalPanes.ColumnDefinitions[2].ActualWidth;
+        if (left + right > 0) vm.Settings.Terminal.IntegratedSplitRatio = left / (left + right);
+    }
+
+    private void WireTerminalSearch(MainWindowViewModel vm)
+    {
+        vm.Terminal.SearchRequested += () => Dispatcher.UIThread.Post(() =>
+        {
+            TerminalSearchBox.Focus();
+            TerminalSearchBox.SelectAll();
+            RunTerminalSearch(vm, 0);
+        }, DispatcherPriority.Loaded);
+        TerminalSearchBox.TextChanged += (_, _) => RunTerminalSearch(vm, 0);
+        TerminalSearchOlder.Click += (_, _) => RunTerminalSearch(vm, -1);
+        TerminalSearchNewer.Click += (_, _) => RunTerminalSearch(vm, 1);
+        TerminalSearchClose.Click += (_, _) => CloseTerminalSearch(vm);
+        TerminalSearchBox.AddHandler(KeyDownEvent, (_, e) =>
+        {
+            if (e.Key == Key.Escape) CloseTerminalSearch(vm);
+            else if (e.Key == Key.Enter) RunTerminalSearch(vm, e.KeyModifiers.HasFlag(KeyModifiers.Shift) ? 1 : -1);
+            else return;
+            e.Handled = true;
+        }, RoutingStrategies.Tunnel);
+    }
+
+    private void RunTerminalSearch(MainWindowViewModel vm, int step)
+    {
+        var text = TerminalSearchBox.Text ?? string.Empty;
+        var (position, count) = (vm.Terminal.ActiveIsRight ? TerminalScreen2 : TerminalScreen).Find(text, step);
+        TerminalSearchResult.Text = text.Length == 0 ? string.Empty : count == 0 ? L.T("Aucun résultat") : $"{position} / {count}";
+    }
+
+    private void CloseTerminalSearch(MainWindowViewModel vm)
+    {
+        vm.Terminal.IsSearchOpen = false;
+        TerminalScreen.ClearSearch();
+        TerminalScreen2.ClearSearch();
+        vm.Terminal.RequestFocus();
+    }
+
+    /// <summary>Les boutons du panneau sont posés en haut à droite : la dernière barre d'onglets leur laisse la place.</summary>
+    private void PlaceTerminalStrips(MainWindowViewModel vm)
+    {
+        // Le panneau des commandes, quand il est ouvert, a déjà de la place au-dessus de lui.
+        var last = vm.TerminalCommands.IsOpen ? new Thickness(4, 2) : new Thickness(4, 2, TerminalButtonsWidth, 2);
+        LeftStrip.Margin = vm.Terminal.IsSplit ? new Thickness(4, 2) : last;
+        RightStrip.Margin = last;
+    }
+
+    private const double TerminalButtonsWidth = 225;
+
+    /// <summary>La hauteur du panneau est celle que l'utilisateur a choisie en tirant la séparation.</summary>
+    private void RememberTerminalHeight()
+    {
+        if (Vm is { Terminal.IsOpen: true } vm) vm.Settings.Terminal.IntegratedHeight = WorkArea.RowDefinitions[2].ActualHeight;
+    }
+
+    private void LayOutTerminal(MainWindowViewModel vm)
+    {
+        var row = WorkArea.RowDefinitions[2];
+        if (vm.Terminal.IsOpen)
+        {
+            row.MinHeight = MinTerminalHeight;
+            row.Height = new GridLength(Math.Clamp(vm.Settings.Terminal.IntegratedHeight, MinTerminalHeight, Math.Max(MinTerminalHeight, WorkArea.Bounds.Height - MinFilesHeight)));
+            WorkArea.RowDefinitions[0].MinHeight = MinFilesHeight;
+        }
+        else
+        {
+            row.MinHeight = 0;
+            row.Height = GridLength.Auto;
+            WorkArea.RowDefinitions[0].MinHeight = 0;
+        }
+    }
+
+    private const double MinTerminalHeight = 110;
+    private const double MinFilesHeight = 120;
+
     private void OnPreviewKeyDown(object? sender, KeyEventArgs e)
     {
         if (Vm is not { } vm) return;
+        // Dans le terminal, ces touches sont celles du programme qui y tourne ; dans le panneau des commandes, celles du texte.
+        if (e.Source is TerminalView || CommandsPane.IsKeyboardFocusWithin || TerminalSearchBar.IsKeyboardFocusWithin) return;
 
         // Ici et pas dans les raccourcis de la fenêtre : la liste garde les touches fléchées (Alt+Bas n'y arriverait pas).
         if (_historyGestures.Any(g => g.Matches(e)))
@@ -176,6 +333,149 @@ public partial class MainWindow : Window
         items.Add(remove);
     }
 
+    /// <summary>Bouton Terminal : reconstruit à chaque ouverture (serveurs et programmes installés peuvent changer).</summary>
+    private void BuildTerminalMenu()
+    {
+        if (Vm is not { } vm) return;
+        var items = ((MenuFlyout)TerminalButton.Flyout!).Items;
+        items.Clear();
+        items.Add(TerminalItem(vm, "ToggleTerminal", L.T("Afficher / masquer le terminal"), vm.ToggleTerminalPanelCommand));
+        items.Add(TerminalItem(vm, "NewTerminal", L.T("Nouveau terminal ici"), vm.NewTerminalCommand));
+        var duplicate = TerminalItem(vm, "DuplicateTerminal", L.T("Dupliquer ce terminal"), vm.DuplicateTerminalCommand);
+        duplicate.IsEnabled = vm.Terminal.Selected?.Reopen is not null;
+        items.Add(duplicate);
+        var split = TerminalItem(vm, "ToggleTerminalSplit", L.T("Deux terminaux côte à côte"), vm.ToggleTerminalSplitCommand);
+        split.ToggleType = MenuItemToggleType.CheckBox;
+        split.IsChecked = vm.Terminal.IsSplit;
+        items.Add(split);
+        if (vm.Terminal.IsSplit) items.Add(TerminalItem(vm, "SwitchTerminalSide", L.T("Changer de côté"), vm.SwitchTerminalSideCommand));
+        var search = TerminalItem(vm, "SearchTerminal", L.T("Chercher dans le terminal"), vm.SearchTerminalCommand);
+        search.IsEnabled = vm.Terminal.Tabs.Count > 0;
+        items.Add(search);
+        items.Add(new Separator());
+        AddTerminalPlaces(items, vm);
+    }
+
+    /// <summary>Bouton + d'un côté : ouvre ce qu'on y choisit, de ce côté.</summary>
+    private void BuildTerminalAddMenu(Button button, bool right)
+    {
+        if (Vm is not { } vm) return;
+        vm.Terminal.ActivatePane(right);
+        var items = ((MenuFlyout)button.Flyout!).Items;
+        items.Clear();
+        items.Add(TerminalItem(vm, "NewTerminal", L.T("Nouveau terminal ici"), vm.NewTerminalCommand));
+        items.Add(new Separator());
+        AddTerminalPlaces(items, vm);
+
+        // Le menu qui se ferme rend le clavier à l'autre côté : chaque choix redit le sien.
+        foreach (var item in items.OfType<MenuItem>().Where(i => i.Command is not null))
+        {
+            var command = item.Command!;
+            var parameter = item.CommandParameter;
+            item.CommandParameter = null;
+            item.Command = new CommunityToolkit.Mvvm.Input.RelayCommand(() =>
+            {
+                vm.Terminal.ActivatePane(right);
+                command.Execute(parameter);
+            });
+        }
+    }
+
+    private void WireTerminalAddButton(Button button, bool right)
+    {
+        var flyout = (MenuFlyout)button.Flyout!;
+        flyout.Opening += (_, _) => BuildTerminalAddMenu(button, right);
+        flyout.Closed += (_, _) => ReturnToTerminalSide(right);
+    }
+
+    /// <summary>Un menu refermé rend le clavier à l'élément d'avant : on le remet dans le côté choisi.</summary>
+    private void ReturnToTerminalSide(bool right) => Dispatcher.UIThread.Post(() =>
+    {
+        if (Vm is not { } vm || !vm.Terminal.IsOpen) return;
+        if (right && !vm.Terminal.IsSplit) return;
+        vm.Terminal.ActivatePane(right);
+        vm.Terminal.RequestFocus();
+    }, DispatcherPriority.Background);
+
+    private ContextMenu? _terminalTabMenu;
+
+    /// <summary>Clic droit sur un onglet du terminal : en côte à côte, on choisit le côté de la copie.</summary>
+    private void OpenTerminalTabMenu(object? sender, ContextRequestedEventArgs e)
+    {
+        if (Vm is not { } vm || e.Source is not Control { DataContext: TerminalTabViewModel tab } source) return;
+        e.Handled = true;
+        bool? chosen = null;
+        var menu = new ContextMenu();
+
+        void AddChoice(string header, bool right) => menu.Items.Add(new MenuItem
+        {
+            Header = header,
+            IsEnabled = tab.Reopen is not null,
+            Command = new CommunityToolkit.Mvvm.Input.AsyncRelayCommand(() =>
+            {
+                chosen = right;
+                return vm.DuplicateTerminalTo(tab, right);
+            }),
+        });
+
+        if (vm.Terminal.IsSplit)
+        {
+            AddChoice(L.T("Dupliquer à gauche"), right: false);
+            AddChoice(L.T("Dupliquer à droite"), right: true);
+            menu.Items.Add(new Separator());
+            bool isRight = vm.Terminal.RightTabs.Contains(tab);
+            menu.Items.Add(new MenuItem
+            {
+                Header = isRight ? L.T("Déplacer à gauche") : L.T("Déplacer à droite"),
+                IsEnabled = (isRight ? vm.Terminal.RightTabs : vm.Terminal.LeftTabs).Count > 1,
+                Command = new CommunityToolkit.Mvvm.Input.RelayCommand(() =>
+                {
+                    chosen = !isRight;
+                    vm.Terminal.MoveTab(tab);
+                }),
+            });
+        }
+        else
+        {
+            AddChoice(L.T("Dupliquer"), right: false);
+        }
+
+        menu.Closed += (_, _) =>
+        {
+            if (chosen is { } right) ReturnToTerminalSide(right);
+        };
+        _terminalTabMenu = menu;
+        menu.Open(source);
+    }
+
+    private static void AddTerminalPlaces(ItemCollection items, MainWindowViewModel vm)
+    {
+        items.Add(new MenuItem { Header = L.T("Sur ce PC"), IsEnabled = false });
+        foreach (var shell in OptionsViewModel.IntegratedShells)
+        {
+            if (shell.Value == TwinPanel.Core.Settings.TerminalShell.Custom && string.IsNullOrWhiteSpace(vm.Settings.Terminal.IntegratedShellPath)) continue;
+            items.Add(new MenuItem { Header = shell.Label, Command = vm.NewShellTerminalCommand, CommandParameter = shell.Value });
+        }
+
+        items.Add(new Separator());
+        items.Add(new MenuItem { Header = L.T("Sur un serveur"), IsEnabled = false });
+        var servers = vm.TerminalServers;
+        if (servers.Count == 0) items.Add(new MenuItem { Header = L.T("(aucun serveur SFTP / SCP enregistré)"), IsEnabled = false });
+        foreach (var profile in servers)
+        {
+            var header = vm.IsServerConnected(profile) ? L.F("{0}  ● connecté", profile.Name) : profile.Name;
+            items.Add(new MenuItem { Header = header, Command = vm.NewServerTerminalCommand, CommandParameter = profile });
+        }
+    }
+
+    private static MenuItem TerminalItem(MainWindowViewModel vm, string id, string header, System.Windows.Input.ICommand command)
+    {
+        var item = new MenuItem { Header = header, Command = command };
+        if (TwinPanel.App.Services.CommandCatalog.Find(id) is { } info && AppMenus.Gesture(TwinPanel.App.Services.CommandCatalog.GesturesFor(info, vm.Settings.Shortcuts)) is { } gesture)
+            item.InputGesture = gesture;
+        return item;
+    }
+
     /// <summary>Menu des connexions : gestionnaire, connexion rapide, connexions ouvertes, connexions enregistrées.</summary>
     private void BuildConnectionsMenu()
     {
@@ -215,6 +515,29 @@ public partial class MainWindow : Window
         }
     }
 
+    /// <summary>Les seuls raccourcis actifs quand le clavier est dans le terminal.</summary>
+    private static readonly HashSet<string> TerminalShortcuts =
+        ["ToggleTerminal", "NewTerminal", "DuplicateTerminal", "ToggleTerminalSplit", "SwitchTerminalSide", "SearchTerminal"];
+
+    private bool TerminalHasKeyboard => TerminalScreen.IsFocused || TerminalScreen2.IsFocused
+        || CommandsPane.IsKeyboardFocusWithin || TerminalSearchBar.IsKeyboardFocusWithin;
+
+    /// <summary>
+    /// Les raccourcis de la fenêtre passent avant la zone qui a le clavier. Sans ce garde, F8 ou Ctrl+W tapés
+    /// dans un programme du terminal agiraient sur les fichiers. Refusé, le raccourci laisse la touche continuer.
+    /// </summary>
+    private sealed class FilesShortcut(System.Windows.Input.ICommand command, Func<bool> allowed) : System.Windows.Input.ICommand
+    {
+        public event EventHandler? CanExecuteChanged
+        {
+            add => command.CanExecuteChanged += value;
+            remove => command.CanExecuteChanged -= value;
+        }
+
+        public bool CanExecute(object? parameter) => allowed() && command.CanExecute(parameter);
+        public void Execute(object? parameter) => command.Execute(parameter);
+    }
+
     private bool _closeConfirmed;
 
     /// <summary>Raccourcis clavier : ceux du catalogue, ou ceux choisis dans Options → Raccourcis.</summary>
@@ -224,6 +547,7 @@ public partial class MainWindow : Window
         HangWatchdog.Step("Raccourcis : reconstruction");
         KeyBindings.Clear();
         _historyGestures = [];
+        _terminalGestures = [];
         foreach (var info in TwinPanel.App.Services.CommandCatalog.All)
         {
             var command = TwinPanel.App.Services.CommandCatalog.Resolve(vm, info);
@@ -237,7 +561,18 @@ public partial class MainWindow : Window
             foreach (var text in TwinPanel.App.Services.CommandCatalog.GesturesFor(info, vm.Settings.Shortcuts)
                          .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
             {
-                try { KeyBindings.Add(new KeyBinding { Gesture = KeyGesture.Parse(text), Command = command, CommandParameter = info.Parameter! }); }
+                try
+                {
+                    var gesture = KeyGesture.Parse(text);
+                    bool forTerminal = TerminalShortcuts.Contains(info.Id);
+                    KeyBindings.Add(new KeyBinding
+                    {
+                        Gesture = gesture,
+                        Command = forTerminal ? command : new FilesShortcut(command, () => !TerminalHasKeyboard),
+                        CommandParameter = info.Parameter!,
+                    });
+                    if (forTerminal) _terminalGestures.Add(gesture);
+                }
                 catch (Exception ex) when (ex is ArgumentException or FormatException or KeyNotFoundException)
                 {
                     vm.StatusMessage = $"Raccourci ignoré (illisible) pour « {info.Label} » : {text}";

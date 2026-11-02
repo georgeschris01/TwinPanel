@@ -132,7 +132,7 @@ public static class AppMenus
         commands.Items.Add(new Separator());
         Add(commands.Items, Cmd(vm, "CreateChecksums", L.T("Créer des sommes de contrôle…")), Cmd(vm, "VerifyChecksums"));
         commands.Items.Add(new Separator());
-        Add(commands.Items, Cmd(vm, "OpenTerminal"), Cmd(vm, "SameFolderInOther"), Cmd(vm, "OpenInOther"), Cmd(vm, "SwapPanels"));
+        Add(commands.Items, vm.IsTerminalEnabled ? Cmd(vm, "ToggleTerminal") : null, vm.IsTerminalEnabled ? Cmd(vm, "NewTerminal") : null, Cmd(vm, "OpenTerminal"), Cmd(vm, "SameFolderInOther"), Cmd(vm, "OpenInOther"), Cmd(vm, "SwapPanels"));
         items.Add(commands);
 
         var view = Sub(L.T("Affichage"));
@@ -228,7 +228,7 @@ public static class AppMenus
         if (file && (cur!.Name.EndsWith(".md5", StringComparison.OrdinalIgnoreCase) || cur.Name.EndsWith(".sha1", StringComparison.OrdinalIgnoreCase) || cur.Name.EndsWith(".sha256", StringComparison.OrdinalIgnoreCase)))
             Add(more.Items, Cmd(vm, "VerifyChecksums"));
         more.Items.Add(new Separator());
-        Add(more.Items, Cmd(vm, "OpenTerminal"), Cmd(vm, "AddFavorite"));
+        Add(more.Items, vm.IsTerminalEnabled ? Cmd(vm, "NewTerminal") : null, Cmd(vm, "OpenTerminal"), Cmd(vm, "AddFavorite"));
         items.Add(more);
         items.Add(new Separator());
         Add(items, Cmd(vm, "ShowProperties", L.T("Propriétés")));

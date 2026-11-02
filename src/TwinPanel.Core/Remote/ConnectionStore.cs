@@ -54,6 +54,36 @@ public sealed class ConnectionStore
 
     // ---- Connexions
 
+    /// <summary>Serveurs de rebond à la suite, au plus. Au-delà, c'est presque sûrement une erreur de fiche.</summary>
+    public const int MaxJumps = 8;
+
+    /// <summary>Les rebonds de cette connexion, du plus proche d'elle au premier à joindre.</summary>
+    public IReadOnlyList<ConnectionProfile> JumpChain(ConnectionProfile profile)
+    {
+        var chain = new List<ConnectionProfile>();
+        var seen = new HashSet<Guid> { profile.Id };
+        var current = profile;
+        while (current.JumpHostId is { } id)
+        {
+            var next = FindProfile(id) ?? throw new RemoteException(L.T("Le serveur de rebond de cette connexion n'existe plus."));
+            if (!RemoteProtocols.IsSsh(next.Protocol)) throw new RemoteException(L.T("Le serveur de rebond doit être une connexion SSH (SFTP ou SCP)."));
+            chain.Add(next);
+            if (!seen.Add(id)) throw new RemoteException(L.F("Ces connexions passent l'une par l'autre, en boucle : {0}.", string.Join(" → ", chain.Select(p => p.Name))));
+            if (chain.Count > MaxJumps) throw new RemoteException(L.F("Trop de serveurs de rebond à la suite ({0} au plus).", MaxJumps));
+            current = next;
+        }
+        return chain;
+    }
+
+    /// <summary>Cette connexion peut servir de rebond à « user » : pas de boucle, et une chaîne de longueur permise.</summary>
+    public bool CanJumpThrough(ConnectionProfile candidate, Guid? user)
+    {
+        var seen = new HashSet<Guid>();
+        for (var current = candidate; current is not null; current = FindProfile(current.JumpHostId))
+            if (current.Id == user || !seen.Add(current.Id)) return false;
+        return seen.Count <= MaxJumps;
+    }
+
     /// <summary>Ajoute ou remplace (même identifiant) une connexion.</summary>
     public void SaveProfile(ConnectionProfile profile)
     {
