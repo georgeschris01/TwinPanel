@@ -119,6 +119,30 @@ public partial class MainWindowViewModel
         await reopen();
     }
 
+    /// <summary>Clic droit sur un onglet : relance son terminal dans ce même onglet, même si la connexion a été coupée.</summary>
+    public async Task ReconnectTerminal(TerminalTabViewModel tab)
+    {
+        if (tab.Restart is not { } restart || tab.IsRestarting || !TerminalAllowed() || !Terminal.Tabs.Contains(tab)) return;
+        Terminal.SelectTab(tab);
+        bool toServer = tab.ServerId is not null;
+        tab.IsRestarting = true;
+        try
+        {
+            if (tab.Session is { IsClosed: false } && !await _dialogs.ConfirmAsync("Terminal", toServer
+                    ? L.T("Ce terminal est encore connecté. Le reconnecter ferme ce qui s'y exécute. Continuer ?")
+                    : L.T("Ce terminal est encore en marche. Le relancer ferme ce qui s'y exécute. Continuer ?")))
+                return;
+            if (!Terminal.Tabs.Contains(tab)) return;
+            var previous = tab.Session;
+            if (toServer) StatusMessage = L.F("Reconnexion à {0}…", tab.ServerName);
+            await restart();
+            if (tab.Session == previous) return;
+            StatusMessage = toServer ? L.F("Terminal reconnecté à {0}.", tab.ServerName) : L.T("Terminal relancé.");
+            Terminal.RequestFocus();
+        }
+        finally { tab.IsRestarting = false; }
+    }
+
     /// <summary>Deux terminaux côte à côte ; s'il n'y en a qu'un, le second est sa copie.</summary>
     [RelayCommand]
     private async Task ToggleTerminalSplit()
@@ -166,6 +190,13 @@ public partial class MainWindowViewModel
         var tab = Terminal.Add(Path.GetFileName(directory.TrimEnd(Path.DirectorySeparatorChar)) is { Length: > 0 } name ? name : directory);
         tab.CopyNumber = family.Next();
         tab.Reopen = () => OpenLocalTerminalAsync(shell, directory, family);
+        tab.Restart = () => StartLocalTerminalAsync(tab, shell, directory);
+        await StartLocalTerminalAsync(tab, shell, directory);
+    }
+
+    /// <summary>Un échec ferme l'onglet s'il est neuf ; sinon il garde son écran.</summary>
+    private async Task StartLocalTerminalAsync(TerminalTabViewModel tab, TerminalShell shell, string directory)
+    {
         var chosen = new TerminalSettings { IntegratedShell = shell, IntegratedShellPath = _settings.Terminal.IntegratedShellPath };
         try
         {
@@ -173,7 +204,7 @@ public partial class MainWindowViewModel
         }
         catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or IOException or DllNotFoundException or EntryPointNotFoundException or PlatformNotSupportedException)
         {
-            Terminal.CloseTab(tab);
+            if (tab.Session is null) Terminal.CloseTab(tab);
             await _dialogs.ShowErrorAsync("Terminal", L.F("Le terminal n'a pas pu démarrer : {0}", ex.Message));
         }
     }
@@ -193,15 +224,22 @@ public partial class MainWindowViewModel
         tab.ServerName = profile.Name;
         tab.CopyNumber = family.Next();
         tab.Reopen = () => OpenServerTerminalAsync(profile, directory, family);
-        var cancellation = tab.Cancellation.Token;
+        tab.Restart = () => StartServerTerminalAsync(tab, profile, directory);
         _terminalCommands?.Refresh();
+        await StartServerTerminalAsync(tab, profile, directory);
+    }
+
+    /// <summary>Un échec ferme l'onglet s'il est neuf ; sinon il garde son écran.</summary>
+    private async Task StartServerTerminalAsync(TerminalTabViewModel tab, ConnectionProfile profile, string? directory)
+    {
+        var cancellation = tab.Cancellation.Token;
         try
         {
             // Rend la connexion déjà ouverte, ou en ouvre une avec les questions habituelles.
             var session = await Task.Run(() => _remote.ConnectAsync(profile, _connections, _prompts!, cancellation), cancellation);
             if (session is null)
             {
-                Terminal.CloseTab(tab);
+                if (tab.Session is null) Terminal.CloseTab(tab);
                 return;
             }
             var connection = await session.OpenTerminalAsync(Terminal.Columns, Terminal.Rows, directory, cancellation);
@@ -214,11 +252,11 @@ public partial class MainWindowViewModel
         }
         catch (OperationCanceledException)
         {
-            Terminal.CloseTab(tab);
+            if (tab.Session is null) Terminal.CloseTab(tab);
         }
         catch (Exception ex) when (ex is RemoteException or IOException or InvalidOperationException or UnauthorizedAccessException)
         {
-            Terminal.CloseTab(tab);
+            if (tab.Session is null) Terminal.CloseTab(tab);
             await _dialogs.ShowErrorAsync("Terminal", ex.Message);
         }
     }
