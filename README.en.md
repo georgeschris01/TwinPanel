@@ -7,6 +7,7 @@ A free, modern and complete two-panel file manager. Windows for now, Linux next.
 - Two panels, tabs, quick view, folder tree, thumbnails, flat view
 - Copy and move with a transfer queue, resume after a cut, free space check
 - SFTP, SCP, FTP, FTPS and WebDAV servers, used just like folders
+- Built-in terminal on the PC and on SSH servers: tabs, side by side, saved commands, search
 - Editable zip, 7z, tar and tar.gz archives, AES-256 encrypted zip
 - Search, duplicates, comparison, synchronization with profiles
 - Multi-rename, also from media data

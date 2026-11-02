@@ -7,6 +7,7 @@ Gestionnaire de fichiers à deux panneaux, gratuit, moderne et complet. Windows 
 - Deux panneaux, onglets, vue rapide, arborescence, miniatures, vue à plat
 - Copie et déplacement avec file de transferts, reprise après coupure, contrôle de la place libre
 - Serveurs SFTP, SCP, FTP, FTPS et WebDAV, utilisés comme des dossiers
+- Terminal intégré sur le PC et sur les serveurs SSH : onglets, côte à côte, commandes enregistrées, recherche
 - Archives zip, 7z, tar, tar.gz modifiables, zip chiffré AES-256
 - Recherche, doublons, comparaison, synchronisation avec profils
 - Renommage multiple, aussi selon les médias

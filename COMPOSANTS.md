@@ -3,7 +3,7 @@
 Tout ce que TwinPanel utilise et qui ne vient pas de nous, ainsi que le plan de nos propres modules.
 **À mettre à jour à chaque ajout, retrait ou changement de version** (le journal note aussi chaque changement).
 
-Dernière mise à jour : 30/10/2026 (lot 5, archives).
+Dernière mise à jour : 02/11/2026 (version 0.8.4, terminal intégré).
 
 ---
 
@@ -30,7 +30,7 @@ Dernière mise à jour : 30/10/2026 (lot 5, archives).
 | **CommunityToolkit.Mvvm** | 8.4.0 | MIT | Génère automatiquement le code répétitif des écrans (propriétés, commandes). | Standard de la .NET Foundation, sans dépendance. |
 | **SharpCompress** | 0.48.1 | MIT | **Lecture** des archives zip, 7z, rar, gz seul, bz2, xz (afficher, extraire, tester). Les .tar / .tar.gz sont lus par .NET (plus fiable). | Seule bibliothèque libre et mûre qui lit 7z et rar en .NET. Version ≥ 0.48.0 obligatoire : corrige la faille « zip slip » CVE-2026-44788. |
 | **SharpZipLib** | 1.4.2 | MIT | **Écriture** des zip chiffrés en AES-256 (création, modification d'un zip chiffré). |
-| **SSH.NET** | 2026.0.0 | MIT | Connexions **SFTP** et **SCP** (lot 6) : authentification par mot de passe, clé ou « clavier interactif », proxy, serveur de rebond, vérification de la clé du serveur. | Bibliothèque SSH libre la plus utilisée en .NET. Version 2026.0.0 obligatoire : toutes les précédentes ont des failles (dont CVE-2026-48798 et CVE-2026-85756 sur SCP). |
+| **SSH.NET** | 2026.0.0 | MIT | Connexions **SFTP** et **SCP** (lot 6) et terminal sur les serveurs : authentification par mot de passe, clé ou « clavier interactif », proxy, serveurs de rebond (8 à la suite au plus), vérification de la clé de chaque serveur. | Bibliothèque SSH libre la plus utilisée en .NET. Version 2026.0.0 obligatoire : toutes les précédentes ont des failles (dont CVE-2026-48798 et CVE-2026-85756 sur SCP). |
 | **FluentFTP** | 55.1.0 | MIT | Connexions **FTP** et **FTPS** (explicite / implicite), mode passif / actif, proxy. | Référence du FTP en .NET, sans aucune dépendance. 55.1.0 : le certificat est aussi vérifié sur les connexions de données (faille corrigée). |
 | System.Security.Cryptography.ProtectedData | 10.0.0 | MIT (Microsoft) | Chiffrement des mots de passe enregistrés avec le compte Windows (**DPAPI**). | Fourni par Microsoft, c'est la méthode standard de Windows. |
 | **MediaInfo.Core.Native** | 26.10.0 | BSD-2 (MediaArea) | Bibliothèque native MediaInfo (libmediainfo, avec libcurl, libssh2, OpenSSL et Brotli) : codecs, pistes, langues, HDR / Dolby Vision. Appelée directement par `Core/Media/MediaInfoLib.cs`. | Référence de l'analyse des médias, utilisée par la plupart des lecteurs. |

@@ -1623,6 +1623,8 @@
  "Terminal intégré : chercher dans le texte": "Built-in terminal: search the text",
  "Terminal intégré : changer de côté": "Built-in terminal: switch side",
  "Changer de côté": "Switch side",
+ "Ctrl+Maj+F12 : deux terminaux côte à côte. Le bouton + de chaque côté propose tes programmes et tes serveurs.": "Ctrl+Shift+F12: two terminals side by side. The + button on each side offers your programs and servers.",
+ "Dans le terminal, Ctrl+Maj+F cherche dans tout le texte, et le panneau Commandes lance tes commandes d'un clic.": "In the terminal, Ctrl+Shift+F searches all the text, and the Commands panel runs your commands in one click.",
  "Le nom de ce dossier contient des caractères de contrôle : le terminal s'ouvre dans le dossier personnel.": "This folder's name contains control characters: the terminal opens in the home folder.",
  "Ctrl+Maj+F": "Ctrl+Shift+F",
  "Dans le terminal : chercher dans le texte": "In the terminal: search the text",
