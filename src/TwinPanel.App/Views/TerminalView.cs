@@ -32,7 +32,10 @@ public sealed class TerminalView : Control
     private const int TextCacheLimit = 5000;
     private const string WordBreaks = " \t\"'`()[]{}<>|;,";
 
-    private static readonly FontFamily Font = new("Cascadia Mono, Consolas, Courier New");
+    // Toujours une police à chasse fixe : le curseur et la sélection se placent par colonnes. Si la police ne l'était pas, ils s'éloigneraient du texte.
+    private static readonly FontFamily Font = new(OperatingSystem.IsWindows()
+        ? "Cascadia Mono, Consolas, Courier New"
+        : "DejaVu Sans Mono, Liberation Mono, Noto Mono, Hack, monospace");
     private static readonly Typeface Regular = new(Font);
     private static readonly Typeface Bold = new(Font, weight: FontWeight.Bold);
     private static readonly Typeface Italic = new(Font, FontStyle.Italic);

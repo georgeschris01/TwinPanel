@@ -162,9 +162,11 @@
                   <DataTemplate>
                     <StackPanel Orientation="Horizontal">
                       <TextBlock Classes="sep subtle" Text="›" VerticalAlignment="Center" Margin="2,0" />
-                      <Button Content="{Binding Name}"
-                              Command="{Binding $parent[ItemsControl].DataContext.GoToSegmentCommand}"
-                              CommandParameter="{Binding}" />
+                      <!-- TextBlock : dans un texte direct, Avalonia prendrait « _ » pour une touche de raccourci. -->
+                      <Button Command="{Binding $parent[ItemsControl].DataContext.GoToSegmentCommand}"
+                              CommandParameter="{Binding}">
+                        <TextBlock Text="{Binding Name}" />
+                      </Button>
                     </StackPanel>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>

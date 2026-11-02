@@ -14,7 +14,7 @@ namespace TwinPanel.App.Services;
 /// Vraies icônes de Windows (celles de l'Explorateur), lues par Windows lui-même (SHGetFileInfo) sur un fil à part
 /// (les extensions du Shell veulent un fil « STA »), converties en images et gardées en mémoire.
 /// Par type de fichier (rapide, sans lire le disque) ; .exe, raccourcis, .ico… : l'icône du fichier lui-même.
-/// Sous Linux / macOS : rien (les icônes dessinées de TwinPanel restent affichées).
+/// Sous Linux : celles du thème du bureau, voir <see cref="LinuxShellIcons"/>.
 /// </summary>
 public static class ShellIcons
 {
@@ -30,7 +30,10 @@ public static class ShellIcons
     private static Thread? _worker;
     private static int _perFileCount;
 
-    public static bool IsSupported => OperatingSystem.IsWindows();
+    public static bool IsSupported => OperatingSystem.IsWindows() || LinuxShellIcons.IsAvailable;
+
+    /// <summary>Nom de l'option dans les menus.</summary>
+    public static string OptionName => OperatingSystem.IsWindows() ? L.T("Vraies icônes de Windows") : L.T("Vraies icônes du système");
 
     /// <summary>Clé de cache et façon de lire l'icône d'un élément (local : fichier réel pour .exe / .lnk / .ico…).</summary>
     public static (string Key, string Path, bool ByType) Describe(string fullPath, string name, bool isDirectory, bool isLocal)
@@ -84,6 +87,7 @@ public static class ShellIcons
             try
             {
                 if (OperatingSystem.IsWindows()) icon = Load(job.Path, job.IsDirectory, job.ByType, job.Large);
+                else icon = LinuxShellIcons.Load(job.Path, job.IsDirectory);
             }
             catch (Exception ex) when (ex is not OutOfMemoryException) { icon = null; }
 

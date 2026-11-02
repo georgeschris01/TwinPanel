@@ -17,7 +17,7 @@ public partial class MultiRenameViewModel : ObservableObject
 {
     private readonly IReadOnlyList<FileEntry> _entries;
     /// <summary>Valeurs déjà lues : chaque fichier n'est ouvert qu'une fois, quel que soit le nombre de frappes.</summary>
-    private readonly Dictionary<string, IReadOnlyDictionary<string, string>> _media = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, IReadOnlyDictionary<string, string>> _media = new(PathText.Comparer);
     private readonly CancellationTokenSource _closing = new();
     private bool _loadingMedia;
 

@@ -45,7 +45,7 @@ public sealed class RecentFolders(string filePath, int capacity = RecentFolders.
 
     /// <summary>Le PC ne distingue pas les majuscules ; un serveur, si.</summary>
     public static bool IsSame(string a, string b) =>
-        string.Equals(a, b, SavedRemoteTab.TryDecode(a, out _, out _) ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase);
+        string.Equals(a, b, SavedRemoteTab.TryDecode(a, out _, out _) ? StringComparison.Ordinal : PathText.Comparison);
 
     /// <summary>Lit la liste ; fichier absent ou abîmé : liste vide (rien d'important n'est perdu).</summary>
     public void Load()

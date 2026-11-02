@@ -544,14 +544,48 @@ public class TerminalShellsTests
     private static string Cmd => Path.Combine(System32, "cmd.exe");
     private static string Ps => Path.Combine(System32, "WindowsPowerShell", "v1.0", "powershell.exe");
 
+    [Theory]
+    [InlineData("/usr/bin/zsh", "/usr/bin/zsh")]
+    [InlineData("/absent/fish", "/bin/bash")]
+    [InlineData("zsh", "/bin/bash")]
+    [InlineData("", "/bin/bash")]
+    public void The_shell_of_the_account_comes_first_under_linux(string configured, string expected)
+    {
+        string[] present = ["/usr/bin/zsh", "/bin/bash", "/bin/sh"];
+        Assert.Equal(expected, TerminalShells.LoginShell(present.Contains, configured));
+    }
+
     [Fact]
+    public void Under_linux_a_setting_from_windows_gives_the_usual_shell()
+    {
+        var settings = new TerminalSettings { IntegratedShell = TerminalShell.PowerShell };
+        Assert.Equal("/bin/sh", TerminalShells.LinuxProgram(settings, f => f == "/bin/sh", configured: ""));
+    }
+
+    [Fact]
+    public void Under_linux_a_custom_program_is_used_if_it_exists()
+    {
+        var settings = new TerminalSettings { IntegratedShell = TerminalShell.Custom, IntegratedShellPath = "/opt/mon shell" };
+        Assert.Equal("/opt/mon shell", TerminalShells.LinuxProgram(settings, _ => true, configured: "/bin/bash"));
+        Assert.Equal("/bin/bash", TerminalShells.LinuxProgram(settings, f => f == "/bin/bash", configured: "/bin/bash"));
+    }
+
+    [Fact]
+    public void Without_any_shell_the_error_is_clear() =>
+        Assert.Throws<IOException>(() => TerminalShells.LinuxProgram(new TerminalSettings(), _ => false, configured: ""));
+
+    [LinuxFact]
+    public void Under_linux_only_the_shell_of_the_account_is_offered() =>
+        Assert.Equal([TerminalShell.UserShell, TerminalShell.Custom], TerminalShells.Installed(f => f == "/bin/sh"));
+
+    [WindowsFact]
     public void Only_installed_programs_are_offered()
     {
         var offered = TerminalShells.Installed(f => f == Cmd);
         Assert.Equal([TerminalShell.Cmd, TerminalShell.Custom], offered);
     }
 
-    [Fact]
+    [WindowsFact]
     public void A_program_that_disappeared_falls_back_on_one_that_works()
     {
         var settings = new TerminalSettings { IntegratedShell = TerminalShell.Wsl };

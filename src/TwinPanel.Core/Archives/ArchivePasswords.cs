@@ -21,8 +21,8 @@ public sealed class ArchivePasswordException(string archive, bool wrong, Excepti
 public static class ArchivePasswords
 {
     private const int CheckedBytes = 1 << 20;
-    private static readonly ConcurrentDictionary<string, string> Known = new(StringComparer.OrdinalIgnoreCase);
-    private static readonly ConcurrentDictionary<string, byte> DecryptedCopies = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly ConcurrentDictionary<string, string> Known = new(PathText.Comparer);
+    private static readonly ConcurrentDictionary<string, byte> DecryptedCopies = new(PathText.Comparer);
 
     public static string? Get(string archivePath) => Known.TryGetValue(Path.GetFullPath(archivePath), out var password) ? password : null;
 

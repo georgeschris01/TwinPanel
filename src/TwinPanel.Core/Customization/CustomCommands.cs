@@ -185,7 +185,8 @@ public static class TerminalCommand
             }
             default:
             {
-                if (string.IsNullOrWhiteSpace(s.CustomPath)) return (OperatingSystem.IsWindows() ? "cmd.exe" : "x-terminal-emulator", []);
+                if (string.IsNullOrWhiteSpace(s.CustomPath))
+                    return OperatingSystem.IsWindows() ? ("cmd.exe", []) : ("x-terminal-emulator", ssh is null ? [] : ["-e", .. ssh]);
                 // %P remplacé après le découpage : un dossier avec des espaces reste un seul argument.
                 var args = s.CustomArguments.Split(' ', StringSplitOptions.RemoveEmptyEntries)
                     .Select(a => a.Replace("%P", folder, StringComparison.OrdinalIgnoreCase)).ToList();

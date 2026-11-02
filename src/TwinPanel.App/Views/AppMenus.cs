@@ -45,6 +45,9 @@ public static class AppMenus
         foreach (var e in entries) if (e is not null) items.Add(e);
     }
 
+    /// <summary>Nom choisi par l'utilisateur dans un menu : « _ » y désigne une touche de raccourci, doublé il s'affiche tel quel.</summary>
+    public static string Literal(string text) => text.Replace("_", "__");
+
     private static MenuItem Sub(string header) => new() { Header = header };
 
     /// <summary>Liste des dossiers récents (Alt+Bas, clic droit sur Précédent, menu ≡).</summary>
@@ -157,7 +160,7 @@ public static class AppMenus
         Col(L.T("Langues audio"), a.ShowAudioLanguagesColumn, "MediaAudioLanguages");
         columns.Items.Add(new Separator());
         Col(L.T("Taille des dossiers (automatique)"), a.ShowFolderSizes, "FolderSizes");
-        if (TwinPanel.App.Services.ShellIcons.IsSupported) Col(L.T("Vraies icônes de Windows"), a.UseShellIcons, "ShellIcons");
+        if (TwinPanel.App.Services.ShellIcons.IsSupported) Col(TwinPanel.App.Services.ShellIcons.OptionName, a.UseShellIcons, "ShellIcons");
         columns.Items.Add(new MenuItem { Header = L.T("Ordre des colonnes par défaut"), IsEnabled = a.ColumnOrder.Count > 0, Command = new Relay(() => vm.SetColumnOrder([])) });
         view.Items.Add(columns);
         view.Items.Add(new Separator());

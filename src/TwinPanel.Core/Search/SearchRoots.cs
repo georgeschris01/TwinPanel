@@ -9,11 +9,15 @@ public static class SearchRoots
     public static IReadOnlyList<string> Split(string text) =>
         text.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Select(r => r.Trim('"').Trim()).Where(r => r.Length > 0)
-            .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            .Distinct(PathText.Comparer).ToList();
 
     /// <summary>Tous les disques prêts (C:\;D:\;…).</summary>
     public static string AllDrives()
     {
+        // Sous Linux, partir de « / » parcourrait aussi /proc et /sys, qui ne sont pas des fichiers.
+        if (OperatingSystem.IsLinux())
+            return string.Join(';', LocalDisks.Usable().Select(d => d.Name).Where(n => n != "/").Prepend(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)));
+
         var roots = new List<string>();
         foreach (var d in DriveInfo.GetDrives())
         {

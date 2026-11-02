@@ -234,7 +234,7 @@ public sealed class EditorRule
 public enum TerminalKind { Auto, WindowsTerminal, PowerShell, Cmd, Custom }
 
 /// <summary>Programme lancé dans le terminal intégré.</summary>
-public enum TerminalShell { PowerShell, PowerShell7, Cmd, Wsl, Custom }
+public enum TerminalShell { PowerShell, PowerShell7, Cmd, Wsl, Custom, UserShell }
 
 public sealed class TerminalSettings
 {

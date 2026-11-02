@@ -76,6 +76,66 @@ public class SecretVaultTests
     }
 
     [Fact]
+    public void A_vault_tied_to_a_keyring_that_left_gives_a_clear_error_and_loses_nothing()
+    {
+        using var t = new TempDir();
+        var path = Path.Combine(t.Path, "s.dat");
+        new SecretVault(path, new FakeProtector()).Set("x", "secret");
+        var before = File.ReadAllText(path);
+
+        var without = new SecretVault(path, new FakeProtector(available: false));
+        Assert.Throws<VaultKeyringException>(() => without.Get("x"));
+        Assert.Throws<VaultKeyringException>(() => without.Set("y", "autre"));
+        Assert.Equal(before, File.ReadAllText(path));
+
+        Assert.Equal("secret", new SecretVault(path, new FakeProtector()).Get("x"));
+    }
+
+    [Fact]
+    public void A_keyring_that_arrives_does_not_break_a_master_password_vault()
+    {
+        using var t = new TempDir();
+        var path = Path.Combine(t.Path, "s.dat");
+        var first = new SecretVault(path, new FakeProtector(available: false));
+        first.SetMasterPassword("m");
+        first.Set("x", "secret");
+
+        var later = new SecretVault(path, new FakeProtector());
+        Assert.False(later.UsesAccountProtection);
+        Assert.True(later.Unlock("m"));
+        Assert.Equal("secret", later.Get("x"));
+    }
+
+    [Fact]
+    public void Changing_the_master_password_adopts_a_keyring_now_present()
+    {
+        using var t = new TempDir();
+        var path = Path.Combine(t.Path, "s.dat");
+        var first = new SecretVault(path, new FakeProtector(available: false));
+        first.SetMasterPassword("m");
+        first.Set("x", "secret");
+
+        var later = new SecretVault(path, new FakeProtector());
+        Assert.True(later.Unlock("m"));
+        later.SetMasterPassword("n");
+        Assert.True(later.UsesAccountProtection);
+
+        var again = new SecretVault(path, new FakeProtector());
+        Assert.True(again.Unlock("n"));
+        Assert.Equal("secret", again.Get("x"));
+    }
+
+    [Fact]
+    public void An_older_vault_keeps_working()
+    {
+        using var t = new TempDir();
+        var path = Path.Combine(t.Path, "s.dat");
+        new SecretVault(path, new FakeProtector()).Set("x", "secret");
+        File.WriteAllText(path, File.ReadAllText(path).Replace("\"UsesAccountProtection\": true", "\"Absent\": true", StringComparison.Ordinal));
+        Assert.Equal("secret", new SecretVault(path, new FakeProtector()).Get("x"));
+    }
+
+    [Fact]
     public void Removing_an_owner_removes_all_its_secrets()
     {
         using var t = new TempDir();
@@ -984,7 +1044,13 @@ public class RemoteSearchTests
         Assert.Equal("notes.txt", Assert.Single(shallow).Name);
     }
 
-    [Fact]
+    [LinuxFact]
+    public void Under_linux_search_roots_keep_their_case()
+    {
+        Assert.Equal(new[] { "/home/moi", "/home/Moi" }, Search.SearchRoots.Split("/home/moi;/home/Moi;/home/moi"));
+    }
+
+    [WindowsFact]
     public void Several_roots_are_split_and_deduplicated()
     {
         Assert.Equal(new[] { @"C:\", @"D:\Photos", "sftp://chrypox/home" },

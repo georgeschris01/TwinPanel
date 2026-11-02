@@ -76,7 +76,7 @@
               <CheckBox Content="{l:T 'Langues audio'}" IsChecked="{Binding ShowAudioLanguagesColumn}" Margin="0,0,16,0" />
             </WrapPanel>
             <CheckBox Content="{l:T 'Taille des dossiers (calcul automatique en arrière-plan, PC et serveurs)'}" IsChecked="{Binding ShowFolderSizes}" Margin="0,6,0,0" />
-            <CheckBox Content="{l:T 'Vraies icônes de Windows (celles de l\'Explorateur) au lieu des icônes colorées'}" IsChecked="{Binding UseShellIcons}" Margin="0,6,0,0" />
+            <CheckBox Content="{Binding ShellIconsLabel}" IsChecked="{Binding UseShellIcons}" IsVisible="{Binding ShellIconsAvailable}" Margin="0,6,0,0" />
             <TextBlock Classes="subtle" TextWrapping="Wrap" Margin="0,2,0,0"
                        Text="{l:T 'Ordre des colonnes : glisser un titre (Nom, Ext, Taille…) à la souris ; clic droit sur les titres pour revenir à l\'ordre par défaut.'}" />
             <TextBlock Classes="label" Text="{l:T 'Beaucoup d\'onglets'}" />
@@ -203,7 +203,7 @@
       <TabItem Header="{l:T 'Comportement'}">
         <StackPanel Margin="16,0" Spacing="10" MaxWidth="640" HorizontalAlignment="Left">
           <TextBlock Classes="h" Text="{l:T 'Comportement'}" />
-          <CheckBox Content="{l:T 'F8 envoie à la corbeille de Windows (sinon suppression définitive)'}" IsChecked="{Binding UseRecycleBin}" />
+          <CheckBox Content="{l:T 'F8 envoie à la corbeille (sinon suppression définitive)'}" IsChecked="{Binding UseRecycleBin}" />
           <CheckBox Content="{l:T 'Demander confirmation avant d\'envoyer à la corbeille'}" IsChecked="{Binding ConfirmDelete}" />
           <TextBlock Classes="subtle" TextWrapping="Wrap" Text="{l:T 'Une suppression définitive (sans corbeille, ou sur un serveur) est toujours confirmée.'}" />
           <CheckBox Content="{l:T 'Entrée sur une archive l\'ouvre comme un dossier (sinon : application associée)'}" IsChecked="{Binding OpenArchivesWithEnter}" />

@@ -224,7 +224,7 @@ public sealed class DialogService(Window owner) : IDialogService
         dialog.Content = Layout(
             new TextBlock { Text = fileCount == 1 ? L.T("Imprimer le fichier sur :") : L.F("Imprimer {0} fichiers sur :", fileCount) },
             combo,
-            new TextBlock { Text = L.T("Textes : Bloc-notes ; images : Paint ; autres fichiers : leur application."), Classes = { "subtle" }, TextWrapping = TextWrapping.Wrap, MaxWidth = 380 },
+            new TextBlock { Text = OperatingSystem.IsWindows() ? L.T("Textes : Bloc-notes ; images : Paint ; autres fichiers : leur application.") : L.T("Textes, PDF et images : imprimés par le système."), Classes = { "subtle" }, TextWrapping = TextWrapping.Wrap, MaxWidth = 380 },
             Buttons(ok, cancel));
         dialog.Opened += (_, _) => combo.Focus();
         await dialog.ShowDialog(owner);
@@ -442,7 +442,7 @@ public sealed class DialogService(Window owner) : IDialogService
         var other = new EditorChoice(null, L.T("Autre programme…"));
         choices.Add(other);
 
-        var editorPath = new TextBox { Text = settings.EditorPath, PlaceholderText = L.T("Chemin du programme (.exe)"), MinWidth = 440 };
+        var editorPath = new TextBox { Text = settings.EditorPath, PlaceholderText = OperatingSystem.IsWindows() ? L.T("Chemin du programme (.exe)") : L.T("Chemin du programme"), MinWidth = 440 };
         var editorArgs = new TextBox { Text = settings.EditorArguments, MinWidth = 440 };
         var combo = new ComboBox { ItemsSource = choices, HorizontalAlignment = HorizontalAlignment.Stretch };
         combo.SelectedItem = string.IsNullOrWhiteSpace(settings.EditorPath)
@@ -464,7 +464,7 @@ public sealed class DialogService(Window owner) : IDialogService
 
         // --- Visionneuse (F3)
         var useExternalViewer = new CheckBox { Content = L.T("Utiliser une visionneuse externe pour F3"), IsChecked = !string.IsNullOrWhiteSpace(settings.ViewerPath) };
-        var viewerPath = new TextBox { Text = settings.ViewerPath, PlaceholderText = L.T("Chemin du programme (.exe)"), MinWidth = 440 };
+        var viewerPath = new TextBox { Text = settings.ViewerPath, PlaceholderText = OperatingSystem.IsWindows() ? L.T("Chemin du programme (.exe)") : L.T("Chemin du programme"), MinWidth = 440 };
         var viewerArgs = new TextBox { Text = settings.ViewerArguments, MinWidth = 440 };
         void SyncViewerEnabled() => viewerPath.IsEnabled = viewerArgs.IsEnabled = useExternalViewer.IsChecked == true;
         useExternalViewer.IsCheckedChanged += (_, _) => SyncViewerEnabled();
@@ -513,7 +513,7 @@ public sealed class DialogService(Window owner) : IDialogService
             useExternalViewer,
             Row(viewerPath, browseViewer),
             viewerArgs,
-            new TextBlock { Text = L.T("Sans visionneuse externe, F3 ouvre la visionneuse intégrée. Alt+F3 ouvre toujours avec l'application associée de Windows."), Classes = { "subtle" }, TextWrapping = TextWrapping.Wrap, MaxWidth = 560 },
+            new TextBlock { Text = L.T("Sans visionneuse externe, F3 ouvre la visionneuse intégrée. Alt+F3 ouvre toujours avec l'application associée par le système."), Classes = { "subtle" }, TextWrapping = TextWrapping.Wrap, MaxWidth = 560 },
             error,
             Buttons(ok, cancel));
         await dialog.ShowDialog(owner);

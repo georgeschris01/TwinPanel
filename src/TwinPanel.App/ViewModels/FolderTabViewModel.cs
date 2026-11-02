@@ -120,7 +120,7 @@ public partial class FolderTabViewModel : ObservableObject, IDisposable
 
     private CancellationTokenSource _folderCts = new();
     // Tailles déjà calculées dans le dossier affiché (clé : chemin ; reprises si la date du dossier n'a pas changé).
-    private readonly Dictionary<string, (DateTime Date, long Bytes)> _folderSizes = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, (DateTime Date, long Bytes)> _folderSizes = new(PathText.Comparer);
     private string _folderSizesPath = string.Empty;
     private static readonly TimeSpan SizeSortDelay = TimeSpan.FromMilliseconds(400);
     private bool _sizeSortPending;
@@ -130,7 +130,7 @@ public partial class FolderTabViewModel : ObservableObject, IDisposable
     {
         _folderCts.Cancel();
         _folderCts = new CancellationTokenSource();
-        if (!string.Equals(_folderSizesPath, CurrentPath, StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(_folderSizesPath, CurrentPath, PathText.Comparison))
         {
             _folderSizes.Clear();
             _folderSizesPath = CurrentPath;
@@ -317,7 +317,7 @@ public partial class FolderTabViewModel : ObservableObject, IDisposable
         var cts = _flatCts = new CancellationTokenSource();
         var ct = cts.Token;
         var version = ++_flatVersion;
-        var marked = new HashSet<string>(MarkedItems.Select(i => i.FullPath), StringComparer.OrdinalIgnoreCase);
+        var marked = new HashSet<string>(MarkedItems.Select(i => i.FullPath), PathText.Comparer);
         var root = CurrentPath;
         bool showHidden = ShowHidden;
         int limit = FlatLimit;
@@ -392,7 +392,7 @@ public partial class FolderTabViewModel : ObservableObject, IDisposable
     private string? CursorKey => IsFlat ? CurrentItem?.FullPath : CurrentItem?.Name;
 
     private bool IsCursorKey(FileItemViewModel item, string key) =>
-        string.Equals(IsFlat ? item.FullPath : item.Name, key, StringComparison.OrdinalIgnoreCase);
+        string.Equals(IsFlat ? item.FullPath : item.Name, key, PathText.Comparison);
 
     private FileItemViewModel MakeItem(FileEntry e) =>
         new(e) { FolderText = IsFlat ? FlatListing.RelativeFolder(CurrentPath, e.FullPath) : string.Empty };
@@ -697,7 +697,7 @@ public partial class FolderTabViewModel : ObservableObject, IDisposable
 
         // Onglet verrouillé : un autre dossier s'ouvre dans un nouvel onglet ; celui-ci ne bouge pas.
         if (LockMode == TwinPanel.Core.Settings.TabLock.Locked && CurrentPath.Length > 0
-            && !string.Equals(normalized, CurrentPath, StringComparison.OrdinalIgnoreCase))
+            && !string.Equals(normalized, CurrentPath, PathText.Comparison))
         {
             LockedNavigation?.Invoke(this, normalized);
             return recordHistory; // précédent / suivant : faux, pour que l'historique soit remis en place
@@ -706,7 +706,7 @@ public partial class FolderTabViewModel : ObservableObject, IDisposable
         if (IsFlat)
         {
             // Même dossier (Ctrl+R, fichier créé ou renommé) : on relit tout. Autre dossier : la vue à plat s'arrête.
-            if (string.Equals(normalized, CurrentPath, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(normalized, CurrentPath, PathText.Comparison))
             {
                 _ = ScanFlatAsync(FlatCursor(selectName));
                 return true;
@@ -723,7 +723,7 @@ public partial class FolderTabViewModel : ObservableObject, IDisposable
             var entries = await source.ListAsync(normalized, ShowHidden, cts.Token);
             if (version != _loadVersion) return false; // une navigation plus récente a pris la main
 
-            bool samePath = string.Equals(normalized, CurrentPath, StringComparison.OrdinalIgnoreCase);
+            bool samePath = string.Equals(normalized, CurrentPath, PathText.Comparison);
             if (!samePath)
             {
                 // Changement de dossier : on arrête les calculs de taille en cours.
@@ -773,7 +773,7 @@ public partial class FolderTabViewModel : ObservableObject, IDisposable
         if (fullReset)
         {
             // Les marques suivent le chemin : un tri ou une relecture ne les perd pas.
-            var marked = new HashSet<string>(MarkedItems.Select(i => i.FullPath), StringComparer.OrdinalIgnoreCase);
+            var marked = new HashSet<string>(MarkedItems.Select(i => i.FullPath), PathText.Comparer);
             Items.Clear();
             foreach (var e in sorted)
             {
@@ -805,7 +805,7 @@ public partial class FolderTabViewModel : ObservableObject, IDisposable
     /// </summary>
     private void SyncItems(IReadOnlyList<FileEntry> target)
     {
-        var markedPaths = new HashSet<string>(MarkedItems.Select(i => i.FullPath), StringComparer.OrdinalIgnoreCase);
+        var markedPaths = new HashSet<string>(MarkedItems.Select(i => i.FullPath), PathText.Comparer);
         var wanted = new HashSet<FileEntry>(target);
         for (int i = Items.Count - 1; i >= 0; i--)
             if (!wanted.Contains(Items[i].Entry)) Items.RemoveAt(i);

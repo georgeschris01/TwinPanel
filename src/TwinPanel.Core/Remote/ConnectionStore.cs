@@ -23,10 +23,20 @@ public sealed class ConnectionStore
     public ConnectionStore(string directory, IUserDataProtector? protector = null, string? openSshKnownHosts = null)
     {
         Directory = directory;
+        MakePrivate(directory);
         _path = System.IO.Path.Combine(directory, "connections.json");
         Vault = new SecretVault(System.IO.Path.Combine(directory, "secrets.dat"), protector);
         KnownHosts = new KnownHosts(System.IO.Path.Combine(directory, "known_hosts.json"), openSshKnownHosts);
         Load();
+    }
+
+    /// <summary>Sous Linux, un nouveau dossier est lisible par tous les comptes du PC : la liste des serveurs n'a pas à l'être.</summary>
+    private static void MakePrivate(string directory)
+    {
+        if (OperatingSystem.IsWindows()) return;
+        const UnixFileMode OwnerOnly = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute;
+        System.IO.Directory.CreateDirectory(directory, OwnerOnly);
+        System.IO.File.SetUnixFileMode(directory, OwnerOnly);
     }
 
     /// <summary>%APPDATA%\TwinPanel (même dossier que settings.json).</summary>

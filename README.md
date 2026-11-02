@@ -2,7 +2,7 @@
 
 **Français** · [English](README.en.md)
 
-Gestionnaire de fichiers à deux panneaux, gratuit, moderne et complet. Windows pour l'instant, Linux ensuite. Interface en français et en anglais.
+Gestionnaire de fichiers à deux panneaux, gratuit, moderne et complet. Pour Windows, et pour Linux en version bêta. Interface en français et en anglais.
 
 - Deux panneaux, onglets, vue rapide, arborescence, miniatures, vue à plat
 - Copie et déplacement avec file de transferts, reprise après coupure, contrôle de la place libre
@@ -13,7 +13,21 @@ Gestionnaire de fichiers à deux panneaux, gratuit, moderne et complet. Windows 
 - Renommage multiple, aussi selon les médias
 - Thème clair ou sombre, raccourcis, couleurs et barre de boutons personnalisables
 
-**[Télécharger TwinPanel](../../releases/latest)** (installateur pour Windows).
+![TwinPanel sous Windows](docs/screenshots/windows-fr.png)
+
+## Télécharger
+
+**[TwinPanel pour Windows](../../releases/latest)** (installateur).
+
+**[TwinPanel pour Linux, version bêta](../../releases/tag/linux-v0.1.3-beta)** : paquet `.deb` pour Debian et ses dérivés, ou AppImage. Bêta testée uniquement sur Debian 13 avec KDE : des défauts peuvent rester.
+
+```
+sudo apt install ./twinpanel_*_amd64.deb
+```
+
+Avec l'AppImage : `chmod +x TwinPanel-*.AppImage`, puis lancez le fichier.
+
+![TwinPanel sous Linux](docs/screenshots/linux-fr.png)
 
 > **Message « Windows a protégé votre ordinateur » :** TwinPanel est gratuit et n'est pas signé, car un certificat de signature est payant chaque année. Windows affiche donc ce message tant que le programme n'est pas assez connu. Cliquez sur **Informations complémentaires**, puis sur **Exécuter quand même**. Vérifiez que le fichier vient bien de cette page ; son empreinte SHA-256 est donnée avec chaque version.
 
@@ -93,7 +107,7 @@ Le clic sur le nom se désactive dans Options → Comportement.
 
 Maintenez le bouton gauche sur un élément et déplacez la souris. Si l'élément est marqué, tous les éléments marqués partent avec lui.
 
-Vous pouvez le lâcher sur un dossier, sur l'autre panneau, sur un onglet, sur un bouton de lecteur ou de connexion, ou dans l'Explorateur de Windows. Depuis l'Explorateur, le chemin inverse marche aussi.
+Vous pouvez le lâcher sur un dossier, sur l'autre panneau, sur un onglet, sur un bouton de lecteur ou de connexion, ou dans l'Explorateur de Windows. Depuis l'Explorateur, le chemin inverse marche aussi. Sous Linux en session Wayland, on ne peut pas lâcher dans une autre application ; depuis une autre application vers TwinPanel, le glissement reste possible.
 
 | Au lâcher | Résultat |
 |---|---|
@@ -248,8 +262,8 @@ Marquez avec `Inser`, `Espace`, `Maj+flèches`, le clic droit, ou selon un masqu
 ### Voir, éditer, supprimer
 
 - `F3` ouvre la visionneuse intégrée : texte, hexa, image, infos média.
-- `F4` ouvre l'éditeur choisi, le Bloc-notes par défaut. Un éditeur intégré est aussi disponible, et chaque extension peut avoir son éditeur (Options → Éditeurs).
-- `F8` envoie à la corbeille de Windows. Sur un serveur ou dans une archive, la suppression est définitive et toujours confirmée.
+- `F4` ouvre l'éditeur choisi, par défaut le Bloc-notes sous Windows et l'éditeur du système sous Linux. Un éditeur intégré est aussi disponible, et chaque extension peut avoir son éditeur (Options → Éditeurs).
+- `F8` envoie à la corbeille du système. Sur un serveur ou dans une archive, la suppression est définitive et toujours confirmée.
 
 ### Renommage multiple
 
@@ -293,7 +307,7 @@ TwinPanel se connecte en SFTP, SCP, FTP, FTPS et WebDAV. Un serveur s'utilise co
 
 ### Sécurité
 
-Les mots de passe enregistrés sont chiffrés dans un coffre lié à votre compte Windows, avec un mot de passe maître facultatif. L'export des connexions ne contient aucun secret.
+Les mots de passe enregistrés sont chiffrés dans un coffre lié à votre compte Windows, ou au trousseau du bureau sous Linux, avec un mot de passe maître facultatif. L'export des connexions ne contient aucun secret.
 
 À la première connexion SSH, comparez l'empreinte du serveur avant de l'accepter. Si elle change ensuite, TwinPanel bloque la connexion et vous prévient.
 
@@ -396,7 +410,7 @@ Si un serveur envoie du texte beaucoup plus vite que l'affichage, TwinPanel saut
 
 ### Réglages
 
-**Options → Terminal** : le programme lancé (PowerShell par défaut, parmi ceux installés sur ton PC), la taille du texte, et une case pour désactiver complètement le terminal intégré.
+**Options → Terminal** : le programme lancé (PowerShell par défaut sous Windows, votre shell habituel sous Linux, parmi ceux installés sur votre PC), la taille du texte, et une case pour désactiver complètement le terminal intégré.
 
 La commande `Ctrl+Maj+T` reste disponible : elle ouvre le terminal de ton choix dans sa propre fenêtre.
 
@@ -423,7 +437,7 @@ Paramètres des boutons et du menu : `%P` dossier actif, `%N` nom de l'élément
 
 ### Comment changer la langue ?
 
-Options → Affichage → Langue. TwinPanel propose de redémarrer. Au premier lancement, il suit la langue de Windows.
+Options → Affichage → Langue. TwinPanel propose de redémarrer. Au premier lancement, il suit la langue du système.
 
 ### Je ne retrouve pas une fonction.
 
@@ -431,11 +445,11 @@ Le bouton **≡** contient toutes les commandes. Options → Raccourcis permet a
 
 ### Comment annuler une suppression ?
 
-Sous Windows, `F8` envoie à la corbeille : restaurez le fichier depuis celle-ci. Sur un serveur ou dans une archive, il n'y a pas de corbeille. `Ctrl+Z` annule seulement le dernier renommage multiple.
+`F8` envoie à la corbeille du système : restaurez le fichier depuis celle-ci. Sur un serveur ou dans une archive, il n'y a pas de corbeille. `Ctrl+Z` annule seulement le dernier renommage multiple.
 
 ### Où sont mes réglages ?
 
-Dans `%APPDATA%\TwinPanel`. Une mise à jour n'y touche pas.
+Dans `%APPDATA%\TwinPanel` sous Windows, dans `~/.config/TwinPanel` sous Linux. Une mise à jour n'y touche pas.
 
 ### Comment passer sur un autre PC ?
 
@@ -443,11 +457,11 @@ Options → Sauvegarde crée un seul fichier avec tous les réglages, et la list
 
 ### Mes mots de passe sont-ils en sécurité ?
 
-Ils sont chiffrés, jamais écrits en clair, et seul votre compte Windows sur ce PC peut les lire. Un mot de passe maître ajoute une deuxième protection.
+Ils sont chiffrés, jamais écrits en clair, et seul votre compte sur ce PC peut les lire. Sous Linux, la clé est gardée dans le trousseau du bureau ; sans trousseau, TwinPanel demande un mot de passe maître. Un mot de passe maître ajoute une deuxième protection.
 
 ### J'ai oublié mon mot de passe maître.
 
-Il ne peut pas être récupéré : les mots de passe et les clés du coffre sont perdus. Vos connexions restent. Pour repartir d'un coffre vide, fermez TwinPanel et supprimez `secrets.dat` dans `%APPDATA%\TwinPanel`.
+Il ne peut pas être récupéré : les mots de passe et les clés du coffre sont perdus. Vos connexions restent. Pour repartir d'un coffre vide, fermez TwinPanel et supprimez `secrets.dat` dans le dossier des réglages.
 
 ### J'ai modifié un fichier d'un serveur, mais le serveur n'a pas changé.
 
@@ -459,7 +473,11 @@ rar, gz, bz2 et xz sont en lecture seule, comme les 7z chiffrés. Extrayez le co
 
 ### F4 n'ouvre pas le bon éditeur.
 
-Choisissez-le dans ≡ → Outils → Éditeur et visionneuse, ou par extension dans Options → Éditeurs. Si l'éditeur choisi n'existe plus, TwinPanel le signale et utilise le Bloc-notes.
+Choisissez-le dans ≡ → Outils → Éditeur et visionneuse, ou par extension dans Options → Éditeurs. Si l'éditeur choisi n'existe plus, TwinPanel le signale et utilise l'éditeur par défaut.
+
+### Que change la version Linux ?
+
+Elle est en bêta et fait le même travail. Les vraies icônes viennent du thème du bureau (Options → Affichage), le terminal lance votre shell habituel, et la ligne de commande en bas de la fenêtre n'affiche pas le résultat : utilisez le terminal intégré pour le voir.
 
 ### Comment afficher les fichiers cachés ?
 

@@ -299,9 +299,9 @@ public partial class OptionsViewModel : ObservableObject
     // ---- Affichage
     /// <summary>Les noms des langues restent écrits dans leur propre langue, pour qu'on retrouve toujours la sienne.</summary>
     public static IReadOnlyList<Choice<string>> Languages { get; } =
-        [new(string.Empty, L.T("Automatique (langue de Windows)")), new(L.French, "Français"), new(L.English, "English")];
+        [new(string.Empty, L.T("Automatique (langue du système)")), new(L.French, "Français"), new(L.English, "English")];
 
-    public static IReadOnlyList<Choice<string>> Themes { get; } = [new("System", L.T("Comme Windows")), new("Light", L.T("Clair")), new("Dark", L.T("Sombre"))];
+    public static IReadOnlyList<Choice<string>> Themes { get; } = [new("System", L.T("Comme le système")), new("Light", L.T("Clair")), new("Dark", L.T("Sombre"))];
     public static IReadOnlyList<Choice<double>> RowHeights { get; } = [new(22, L.T("Compacte")), new(28, L.T("Normale")), new(34, L.T("Aérée"))];
     public static IReadOnlyList<Choice<SizeMode>> SizeDisplays { get; } =
         [new(SizeMode.Auto, L.T("Automatique (o, Ko, Mo, Go)")), new(SizeMode.Bytes, L.T("En octets (1 234 567 o)")), new(SizeMode.Kilobytes, L.T("En Ko (1 206 Ko)"))];
@@ -461,7 +461,9 @@ public partial class OptionsViewModel : ObservableObject
         : string.IsNullOrWhiteSpace(_settings.EditorName) ? _settings.EditorPath : _settings.EditorName;
 
     // ---- Terminal
-    public static IReadOnlyList<Choice<TermKind>> TerminalKinds { get; } =
+    public static IReadOnlyList<Choice<TermKind>> TerminalKinds { get; } = !OperatingSystem.IsWindows()
+    ? [new(TermKind.Auto, L.T("Automatique (terminal par défaut du système)")), new(TermKind.Custom, L.T("Autre programme…"))]
+    :
     [
         new(TermKind.Auto, L.T("Automatique (Windows Terminal s'il est installé, sinon PowerShell)")),
         new(TermKind.WindowsTerminal, "Windows Terminal"),
@@ -478,8 +480,15 @@ public partial class OptionsViewModel : ObservableObject
     public string ResolvedTerminal => TerminalCommand.Resolve(new TerminalSettings { Kind = TermKind.Auto }) switch
     {
         TermKind.WindowsTerminal => L.T("Sur ce PC, « Automatique » ouvre : Windows Terminal."),
+        TermKind.Custom => L.T("Sur ce PC, « Automatique » ouvre : le terminal par défaut du système."),
         _ => L.T("Sur ce PC, « Automatique » ouvre : PowerShell (Windows Terminal n'est pas installé)."),
     };
+
+    /// <summary>Sous Linux, l'option n'est proposée que si le bureau a un thème d'icônes.</summary>
+    public bool ShellIconsAvailable => TwinPanel.App.Services.ShellIcons.IsSupported;
+    public string ShellIconsLabel => OperatingSystem.IsWindows()
+        ? L.T("Vraies icônes de Windows (celles de l'Explorateur) au lieu des icônes colorées")
+        : L.T("Vraies icônes du système (celles du thème du bureau) au lieu des icônes colorées");
 
     // ---- Terminal intégré
     /// <summary>Seulement les programmes installés sur ce PC, plus « Autre programme ».</summary>
@@ -490,6 +499,7 @@ public partial class OptionsViewModel : ObservableObject
             TwinPanel.Core.Settings.TerminalShell.PowerShell7 => "PowerShell 7",
             TwinPanel.Core.Settings.TerminalShell.Cmd => L.T("Invite de commandes (cmd)"),
             TwinPanel.Core.Settings.TerminalShell.Wsl => L.T("Linux (WSL)"),
+            TwinPanel.Core.Settings.TerminalShell.UserShell => L.F("Mon shell ({0})", Path.GetFileName(TwinPanel.Core.Terminal.TerminalShells.LoginShell())),
             _ => L.T("Autre programme…"),
         }))];
     [ObservableProperty] private bool _integratedEnabled = true;

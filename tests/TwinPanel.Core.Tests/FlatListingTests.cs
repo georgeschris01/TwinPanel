@@ -91,14 +91,21 @@ public class FlatListingTests
     public void Relative_folder(string root, string path, string expected) =>
         Assert.Equal(expected, FlatListing.RelativeFolder(root, path));
 
-    [Fact]
+    [LinuxFact]
+    public void Under_linux_names_that_differ_by_case_are_different_files()
+    {
+        Assert.Empty(FlatListing.DuplicateNames(["a.txt", "A.TXT"]));
+        Assert.Single(FlatListing.SplitUniqueNames(["a", "A"], n => n));
+    }
+
+    [WindowsFact]
     public void Duplicate_names_ignore_case()
     {
         Assert.Equal(["a.txt"], FlatListing.DuplicateNames(["a.txt", "b.txt", "A.TXT"]));
         Assert.Empty(FlatListing.DuplicateNames(["a.txt", "b.txt"]));
     }
 
-    [Fact]
+    [WindowsFact]
     public void Split_gives_groups_with_unique_names()
     {
         var groups = FlatListing.SplitUniqueNames(["a", "b", "A", "a"], n => n);
@@ -113,18 +120,30 @@ public class FlatListingTests
     {
         using var dir = new TempDir();
         dir.File("racine.txt");
-        dir.File(@"a\un.txt");
-        dir.File(@"a\b\deux.txt");
+        dir.File("a/un.txt");
+        dir.File("a/b/deux.txt");
         var names = (await ListLocal(dir.Path, showHidden: false)).Select(e => e.Name).Order();
         Assert.Equal(["deux.txt", "racine.txt", "un.txt"], names);
     }
 
-    [Fact]
+    [LinuxFact]
+    public async Task Under_linux_a_leading_dot_means_hidden()
+    {
+        using var dir = new TempDir();
+        dir.File("visible.txt");
+        dir.File(".cache/dedans.txt");
+        dir.File(".masque.txt");
+
+        Assert.Equal(["visible.txt"], (await ListLocal(dir.Path, false)).Select(e => e.Name));
+        Assert.Equal(3, (await ListLocal(dir.Path, true)).Count);
+    }
+
+    [WindowsFact]
     public async Task Local_hidden_folders_are_not_entered_unless_asked()
     {
         using var dir = new TempDir();
         dir.File("visible.txt");
-        dir.File(@"cache\dedans.txt");
+        dir.File("cache/dedans.txt");
         File.SetAttributes(dir.Dir("cache"), FileAttributes.Hidden | FileAttributes.Directory);
         File.SetAttributes(dir.File("masque.txt"), FileAttributes.Hidden);
 

@@ -2,7 +2,7 @@
 
 [Français](README.md) · **English**
 
-A free, modern and complete two-panel file manager. Windows for now, Linux next. Interface in English and French.
+A free, modern and complete two-panel file manager. For Windows, and for Linux as a beta. Interface in English and French.
 
 - Two panels, tabs, quick view, folder tree, thumbnails, flat view
 - Copy and move with a transfer queue, resume after a cut, free space check
@@ -13,7 +13,21 @@ A free, modern and complete two-panel file manager. Windows for now, Linux next.
 - Multi-rename, also from media data
 - Light or dark theme, customizable shortcuts, colors and button bar
 
-**[Download TwinPanel](../../releases/latest)** (Windows installer).
+![TwinPanel on Windows](docs/screenshots/windows-en.png)
+
+## Download
+
+**[TwinPanel for Windows](../../releases/latest)** (installer).
+
+**[TwinPanel for Linux, beta version](../../releases/tag/linux-v0.1.3-beta)**: `.deb` package for Debian and its derivatives, or AppImage. This beta has only been tested on Debian 13 with KDE: some defects may remain.
+
+```
+sudo apt install ./twinpanel_*_amd64.deb
+```
+
+With the AppImage: `chmod +x TwinPanel-*.AppImage`, then run the file.
+
+![TwinPanel on Linux](docs/screenshots/linux-en.png)
 
 > **“Windows protected your PC” message:** TwinPanel is free and not signed, because a signing certificate must be paid for every year. Windows therefore shows this message until the program is well enough known. Click **More info**, then **Run anyway**. Make sure the file comes from this page; its SHA-256 checksum is given with each version.
 
@@ -93,7 +107,7 @@ Click on the name can be turned off in Options → Behavior.
 
 Hold the left button on an item and move the mouse. If the item is marked, all marked items go with it.
 
-You can drop it on a folder, on the other panel, on a tab, on a drive or connection button, or in Windows File Explorer. The reverse direction from File Explorer works too.
+You can drop it on a folder, on the other panel, on a tab, on a drive or connection button, or in Windows File Explorer. The reverse direction from File Explorer works too. On Linux in a Wayland session, you cannot drop into another application; dragging from another application into TwinPanel remains possible.
 
 | When dropping | Result |
 |---|---|
@@ -248,8 +262,8 @@ Mark with `Ins`, `Space`, `Shift+arrows`, the right click, or by mask with `Num+
 ### View, edit, delete
 
 - `F3` opens the built-in viewer: text, hex, image, media info.
-- `F4` opens the chosen editor, Notepad by default. A built-in editor is also available, and each extension can have its own editor (Options → Editors).
-- `F8` sends to the Windows recycle bin. On a server or in an archive, deletion is permanent and always confirmed.
+- `F4` opens the chosen editor, by default Notepad on Windows and the system editor on Linux. A built-in editor is also available, and each extension can have its own editor (Options → Editors).
+- `F8` sends to the system trash. On a server or in an archive, deletion is permanent and always confirmed.
 
 ### Multi-rename
 
@@ -293,7 +307,7 @@ TwinPanel connects over SFTP, SCP, FTP, FTPS and WebDAV. A server is used like a
 
 ### Security
 
-Saved passwords are encrypted in a vault tied to your Windows account, with an optional master password. Exported connections contain no secret.
+Saved passwords are encrypted in a vault tied to your Windows account, or to the desktop keyring on Linux, with an optional master password. Exported connections contain no secret.
 
 At the first SSH connection, compare the server fingerprint before accepting it. If it changes later, TwinPanel blocks the connection and warns you.
 
@@ -396,7 +410,7 @@ If a server sends text much faster than the display can follow, TwinPanel skips 
 
 ### Settings
 
-**Options → Terminal**: the program to start (PowerShell by default, among those installed on your PC), the text size, and a box to turn the built-in terminal off completely.
+**Options → Terminal**: the program to start (PowerShell by default on Windows, your usual shell on Linux, among those installed on your PC), the text size, and a box to turn the built-in terminal off completely.
 
 The `Ctrl+Shift+T` command is still there: it opens the terminal of your choice in its own window.
 
@@ -423,7 +437,7 @@ Parameters for buttons and the menu: `%P` active folder, `%N` item name, `%F` it
 
 ### How do I change the language?
 
-Options → View → Language. TwinPanel offers to restart. At the first launch, it follows the Windows language.
+Options → View → Language. TwinPanel offers to restart. At the first launch, it follows the system language.
 
 ### I cannot find a feature.
 
@@ -431,11 +445,11 @@ The **≡** button contains all the commands. Options → Shortcuts also lets yo
 
 ### How do I undo a deletion?
 
-On Windows, `F8` sends to the recycle bin: restore the file from there. On a server or in an archive, there is no recycle bin. `Ctrl+Z` only undoes the last multi-rename.
+`F8` sends to the system trash: restore the file from there. On a server or in an archive, there is no recycle bin. `Ctrl+Z` only undoes the last multi-rename.
 
 ### Where are my settings?
 
-In `%APPDATA%\TwinPanel`. An update does not touch them.
+In `%APPDATA%\TwinPanel` on Windows, in `~/.config/TwinPanel` on Linux. An update does not touch them.
 
 ### How do I move to another PC?
 
@@ -443,11 +457,11 @@ Options → Backup creates a single file with all the settings, and the list of 
 
 ### Are my passwords safe?
 
-They are encrypted, never written in clear text, and only your Windows account on this PC can read them. A master password adds a second protection.
+They are encrypted, never written in clear text, and only your account on this PC can read them. On Linux, the key is kept in the desktop keyring; without a keyring, TwinPanel asks for a master password. A master password adds a second protection.
 
 ### I forgot my master password.
 
-It cannot be recovered: the passwords and keys in the vault are lost. Your connections remain. To start again with an empty vault, close TwinPanel and delete `secrets.dat` in `%APPDATA%\TwinPanel`.
+It cannot be recovered: the passwords and keys in the vault are lost. Your connections remain. To start again with an empty vault, close TwinPanel and delete `secrets.dat` in the settings folder.
 
 ### I changed a file from a server, but the server did not change.
 
@@ -459,7 +473,11 @@ rar, gz, bz2 and xz are read-only, as are encrypted 7z files. Extract the conten
 
 ### F4 does not open the right editor.
 
-Choose it in ≡ → Tools → Editor and viewer, or by extension in Options → Editors. If the chosen editor no longer exists, TwinPanel says so and uses Notepad.
+Choose it in ≡ → Tools → Editor and viewer, or by extension in Options → Editors. If the chosen editor no longer exists, TwinPanel says so and uses the default editor.
+
+### What is different in the Linux version?
+
+It is a beta and does the same work. Real icons come from the desktop theme (Options → Display), the terminal starts your usual shell, and the command line at the bottom of the window does not show the result: use the built-in terminal to see it.
 
 ### How do I show hidden files?
 

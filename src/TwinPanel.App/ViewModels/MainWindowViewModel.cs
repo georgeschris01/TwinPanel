@@ -238,7 +238,7 @@ public partial class MainWindowViewModel : ObservableObject
     private async Task AddFavorite()
     {
         var path = ActivePanel.Current.CurrentPath;
-        if (_settings.Favorites.Any(f => string.Equals(f.Path, path, StringComparison.OrdinalIgnoreCase)))
+        if (_settings.Favorites.Any(f => string.Equals(f.Path, path, PathText.Comparison)))
         {
             StatusMessage = L.T("Ce dossier est déjà dans les favoris.");
             return;
@@ -264,6 +264,11 @@ public partial class MainWindowViewModel : ObservableObject
 
     // ---- Ligne de commande ------------------------------------------------------------------
 
+    /// <summary>Sous Linux, la commande est lancée sans fenêtre : pas de console à garder ouverte.</summary>
+    public string CommandLineHint => OperatingSystem.IsWindows()
+        ? L.T("Commande (Entrée : exécuter, Maj+Entrée : garder la console ouverte)")
+        : L.T("Commande (Entrée : exécuter)");
+
     /// <summary>
     /// "cd chemin" change de dossier dans le panneau actif ; toute autre commande est passée à cmd.exe
     /// dans le dossier actif. keepOpen (Maj+Entrée) garde la fenêtre de console ouverte.
@@ -283,8 +288,10 @@ public partial class MainWindowViewModel : ObservableObject
         {
             var target = cmd.Length > 2 ? cmd[2..].Trim().Trim('"') : string.Empty;
             if (target.Length == 0) { StatusMessage = cwd; CommandLine = string.Empty; return; }
-            if (target.StartsWith("/d ", StringComparison.OrdinalIgnoreCase)) target = target[3..].Trim().Trim('"');
+            if (OperatingSystem.IsWindows() && target.StartsWith("/d ", StringComparison.OrdinalIgnoreCase)) target = target[3..].Trim().Trim('"');
             target = Environment.ExpandEnvironmentVariables(target);
+            if (!OperatingSystem.IsWindows() && (target == "~" || target.StartsWith("~/", StringComparison.Ordinal)))
+                target = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), target[1..].TrimStart('/'));
             if (!Path.IsPathRooted(target)) target = Path.Combine(cwd, target);
             if (await ActivePanel.Current.NavigateAsync(target)) CommandLine = string.Empty;
             return;
@@ -624,7 +631,7 @@ public partial class MainWindowViewModel : ObservableObject
         if (items.Count == 0) return;
 
         var what = items.Count == 1 ? $"« {items[0].Name} »" : L.F("{0} éléments", items.Count);
-        var recycle = OperatingSystem.IsWindows() && _settings.Behavior.UseRecycleBin;
+        var recycle = (OperatingSystem.IsWindows() || OperatingSystem.IsLinux()) && _settings.Behavior.UseRecycleBin;
         var msg = recycle ? L.F("Envoyer {0} à la corbeille ?", what) : L.F("Supprimer DÉFINITIVEMENT {0} ?", what);
         // Options → Comportement : la confirmation peut être retirée pour la corbeille, jamais pour une suppression définitive.
         if ((_settings.Behavior.ConfirmDelete || !recycle) && !await _dialogs.ConfirmAsync(L.T("Supprimer"), msg)) return;
@@ -688,8 +695,8 @@ public partial class MainWindowViewModel : ObservableObject
     private static int MarkDifferences(FolderTabViewModel tab, FolderTabViewModel other)
     {
         var otherByName = other.Items.Where(i => !i.IsParentLink)
-            .GroupBy(i => i.Name, StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+            .GroupBy(i => i.Name, PathText.Comparer)
+            .ToDictionary(g => g.Key, g => g.First(), PathText.Comparer);
         int n = 0;
         foreach (var item in tab.Items)
         {
@@ -749,7 +756,7 @@ public partial class MainWindowViewModel : ObservableObject
         else if (ActivePanel.Current.CurrentItem is { IsDirectory: false } cur)
         {
             ea = cur.Entry;
-            var twin = OtherPanel.Current.Items.FirstOrDefault(i => !i.IsDirectory && string.Equals(i.Name, cur.Name, StringComparison.OrdinalIgnoreCase));
+            var twin = OtherPanel.Current.Items.FirstOrDefault(i => !i.IsDirectory && string.Equals(i.Name, cur.Name, PathText.Comparison));
             eb = twin?.Entry ?? (OtherPanel.Current.CurrentItem is { IsDirectory: false } o ? o.Entry : null);
         }
         // Fichiers d'un serveur : comparés depuis une copie temporaire sur le PC.
@@ -1164,7 +1171,8 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     private Task ShowAbout()
     {
-        var version = typeof(MainWindowViewModel).Assembly.GetName().Version?.ToString(3) ?? "?";
+        // Le numéro complet, pour que « beta » reste visible ; ce qui suit « + » est la référence du commit.
+        var version = (System.Reflection.CustomAttributeExtensions.GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>(typeof(MainWindowViewModel).Assembly)?.InformationalVersion ?? "?").Split('+')[0];
         return _dialogs.ShowAboutAsync($"TwinPanel {version}",
             L.T("Gestionnaire de fichiers à deux panneaux, gratuit.\nCréé par chrypox, avec l'aide de l'IA Claude Code."),
             [$".NET {Environment.Version} — {Environment.OSVersion.VersionString}", L.F("Réglages : {0}", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "TwinPanel"))]);
@@ -1216,9 +1224,12 @@ public partial class MainWindowViewModel : ObservableObject
     {
         var files = ActivePanel.Current.TargetEntries.Where(e => !e.IsDirectory).ToList();
         if (files.Count == 0) { await _dialogs.ShowErrorAsync(L.T("Imprimer"), L.T("Choisis un ou plusieurs fichiers (les dossiers ne s'impriment pas).")); return; }
-        if (!OperatingSystem.IsWindows()) { await _dialogs.ShowErrorAsync(L.T("Imprimer"), L.T("L'impression n'est disponible que sous Windows pour l'instant.")); return; }
-        var (printers, defaultPrinter) = PrintService.Printers();
-        if (printers.Count == 0) { await _dialogs.ShowErrorAsync(L.T("Imprimer"), L.T("Aucune imprimante n'est installée dans Windows.")); return; }
+        var (printers, defaultPrinter) = OperatingSystem.IsWindows() ? PrintService.Printers() : await Task.Run(TwinPanel.Core.Tools.LinuxPrinters.List);
+        if (printers.Count == 0)
+        {
+            await _dialogs.ShowErrorAsync(L.T("Imprimer"), OperatingSystem.IsWindows() ? L.T("Aucune imprimante n'est installée dans Windows.") : L.T("Aucune imprimante n'est installée."));
+            return;
+        }
         if (await _dialogs.ChoosePrinterAsync(printers, defaultPrinter, files.Count) is not { } printer) return;
 
         int printed = 0;
@@ -1230,7 +1241,9 @@ public partial class MainWindowViewModel : ObservableObject
             if (ActivePanel.Current.IsRemote) path = await DownloadTempAsync(f, quiet: true);       // serveur : copie temporaire
             else if (ActivePanel.Current.IsInsideArchive) path = await MaterializeAsync(f.FullPath, quiet: true);
             if (path is null) { failed.Add(f.Name); continue; }
-            switch (PrintService.Print(path, printer))
+            var outcome = OperatingSystem.IsWindows() ? PrintService.Print(path, printer)
+                : await Task.Run(() => TwinPanel.Core.Tools.LinuxPrinters.Send(path, printer)) ? PrintOutcome.Printed : PrintOutcome.Failed;
+            switch (outcome)
             {
                 case PrintOutcome.Printed: printed++; break;
                 case PrintOutcome.OpenedForManualPrint: opened.Add(f.Name); break;
