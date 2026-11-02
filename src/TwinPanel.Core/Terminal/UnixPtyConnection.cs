@@ -92,10 +92,18 @@ public sealed class UnixPtyConnection : ITerminalConnection
                     Native.sigemptyset(signals);
                     Check(Native.posix_spawnattr_setsigmask(attributes, signals));
 
-                    string?[] argv = [_program, .. _arguments, null];
-                    string?[] environment = [.. Variables(Environment.GetEnvironmentVariables()), null];
-                    Check(Native.posix_spawn(out int process, _program, actions, attributes, argv, environment));
-                    return process;
+                    nint[] argv = TextList([_program, .. _arguments]);
+                    nint[] environment = TextList(Variables(Environment.GetEnvironmentVariables()));
+                    try
+                    {
+                        Check(Native.posix_spawn(out int process, _program, actions, attributes, argv, environment));
+                        return process;
+                    }
+                    finally
+                    {
+                        FreeTextList(argv);
+                        FreeTextList(environment);
+                    }
                 }
                 finally { Native.posix_spawnattr_destroy(attributes); }
             }
@@ -107,6 +115,14 @@ public sealed class UnixPtyConnection : ITerminalConnection
             Marshal.FreeHGlobal(attributes);
             Marshal.FreeHGlobal(actions);
         }
+    }
+
+    /// <summary>Liste de textes UTF-8 terminée par un pointeur nul, comme la bibliothèque C l'attend.</summary>
+    private static nint[] TextList(IEnumerable<string> texts) => [.. texts.Select(Marshal.StringToCoTaskMemUTF8), 0];
+
+    private static void FreeTextList(nint[] list)
+    {
+        foreach (var text in list) Marshal.FreeCoTaskMem(text);
     }
 
     /// <summary>Variables du programme lancé : celles de TwinPanel, sauf ce qui décrit le terminal.</summary>
@@ -283,8 +299,6 @@ public sealed class UnixPtyConnection : ITerminalConnection
         [DllImport(C)] public static extern int posix_spawnattr_setsigmask(nint attributes, nint set);
 
         [DllImport(C)]
-        public static extern int posix_spawn(out int process, [MarshalAs(UnmanagedType.LPUTF8Str)] string path, nint actions, nint attributes,
-            [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPUTF8Str)] string?[] arguments,
-            [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPUTF8Str)] string?[] environment);
+        public static extern int posix_spawn(out int process, [MarshalAs(UnmanagedType.LPUTF8Str)] string path, nint actions, nint attributes, nint[] arguments, nint[] environment);
     }
 }

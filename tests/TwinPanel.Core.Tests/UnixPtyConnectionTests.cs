@@ -16,6 +16,23 @@ public sealed class LinuxFactAttribute : FactAttribute
     }
 }
 
+/// <summary>Un test d'un comportement propre à Windows (chemins en « \\ », majuscules ignorées) : ailleurs il est ignoré.</summary>
+public sealed class WindowsFactAttribute : FactAttribute
+{
+    public WindowsFactAttribute()
+    {
+        if (!OperatingSystem.IsWindows()) Skip = "Windows seulement";
+    }
+}
+
+public sealed class WindowsTheoryAttribute : TheoryAttribute
+{
+    public WindowsTheoryAttribute()
+    {
+        if (!OperatingSystem.IsWindows()) Skip = "Windows seulement";
+    }
+}
+
 public class UnixPtyConnectionTests
 {
     private const int Patience = 10_000;

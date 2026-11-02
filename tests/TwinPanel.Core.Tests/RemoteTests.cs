@@ -1044,7 +1044,13 @@ public class RemoteSearchTests
         Assert.Equal("notes.txt", Assert.Single(shallow).Name);
     }
 
-    [Fact]
+    [LinuxFact]
+    public void Under_linux_search_roots_keep_their_case()
+    {
+        Assert.Equal(new[] { "/home/moi", "/home/Moi" }, Search.SearchRoots.Split("/home/moi;/home/Moi;/home/moi"));
+    }
+
+    [WindowsFact]
     public void Several_roots_are_split_and_deduplicated()
     {
         Assert.Equal(new[] { @"C:\", @"D:\Photos", "sftp://chrypox/home" },

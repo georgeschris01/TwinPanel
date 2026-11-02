@@ -77,7 +77,18 @@ public class RecentFoldersTests
     private static RecentFolders Make(TempDir dir, int capacity = RecentFolders.DefaultCapacity) =>
         new(Path.Combine(dir.Path, "sous-dossier", "history.json"), capacity);
 
-    [Fact]
+    [LinuxFact]
+    public void Under_linux_case_makes_two_recent_folders()
+    {
+        using var dir = new TempDir();
+        var r = Make(dir);
+        r.Visit("/a");
+        r.Visit("/A");
+        r.Visit("/a");
+        Assert.Equal(["/a", "/A"], r.Items);
+    }
+
+    [WindowsFact]
     public void Most_recent_comes_first_without_duplicates()
     {
         using var dir = new TempDir();

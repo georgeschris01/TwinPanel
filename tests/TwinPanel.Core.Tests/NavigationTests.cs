@@ -85,7 +85,15 @@ public class NavigationHistoryTests
         Assert.Equal(["A", "B", "D"], h.Items);
     }
 
-    [Fact]
+    [LinuxFact]
+    public void Under_linux_two_paths_that_differ_by_case_are_two_folders()
+    {
+        var h = new NavigationHistory();
+        h.Push("/A"); h.Push("/a");
+        Assert.Equal(2, h.Items.Count);
+    }
+
+    [WindowsFact]
     public void Same_path_twice_is_recorded_once()
     {
         var h = new NavigationHistory();

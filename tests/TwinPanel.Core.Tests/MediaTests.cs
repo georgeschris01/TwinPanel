@@ -73,7 +73,7 @@ public class InstalledProgramsTests
     [InlineData("", null)]
     public void Exe_from_display_icon(string icon, string? expected) => Assert.Equal(expected, TwinPanel.Core.Tools.InstalledPrograms.ExeFromIcon(icon));
 
-    [Theory]
+    [WindowsTheory]
     [InlineData("C:\\X\\unins000.exe", true)]
     [InlineData("C:\\X\\Uninstall.exe", true)]
     [InlineData("C:\\X\\sublime_text.exe", false)]

@@ -43,7 +43,7 @@ public class ArchivePasswordTests
         await ArchiveService.ExtractAsync(archive, [""], "", dest, ConflictPolicy.Overwrite);
         var found = new Dictionary<string, string>();
         foreach (var item in ArchiveIndex.Load(archive).All)
-            found[item.Key] = item.IsDirectory ? "/" : File.ReadAllText(Path.Combine(dest, item.Key.Replace('/', '\\')));
+            found[item.Key] = item.IsDirectory ? "/" : File.ReadAllText(Path.Combine(dest, item.Key.Replace('/', Path.DirectorySeparatorChar)));
         return found;
     }
 

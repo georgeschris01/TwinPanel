@@ -42,7 +42,7 @@ public static class TerminalShells
     {
         exists ??= File.Exists;
         configured ??= Environment.GetEnvironmentVariable("SHELL");
-        return new[] { configured, "/bin/bash", "/bin/sh" }.FirstOrDefault(s => s is not null && Path.IsPathFullyQualified(s) && exists(s));
+        return new[] { configured, "/bin/bash", "/bin/sh" }.FirstOrDefault(s => s is not null && s.StartsWith('/') && exists(s));
     }
 
     /// <summary>Programme à lancer sous Linux. Un réglage venu d'ailleurs ou un programme disparu donne le shell habituel.</summary>
