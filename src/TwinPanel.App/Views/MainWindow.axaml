@@ -31,7 +31,37 @@
             </Grid>
           </Border>
         </DataTemplate>
+        <DataTemplate x:Key="TerminalTabItem" x:DataType="vm:TerminalTabViewModel">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <TextBlock Text="{Binding Title}" VerticalAlignment="Center" FontSize="12" />
+            <Button Content="⧉" Padding="5,0" FontSize="11" Background="Transparent" BorderThickness="0" ToolTip.Tip="{l:T 'Dupliquer ce terminal'}"
+                    Command="{Binding $parent[Window].DataContext.DuplicateTerminalCommand}" CommandParameter="{Binding}" />
+            <Button Content="✕" Padding="5,0" FontSize="10" Background="Transparent" BorderThickness="0" ToolTip.Tip="{l:T 'Fermer ce terminal'}"
+                    Command="{Binding $parent[Window].DataContext.Terminal.CloseTabCommand}" CommandParameter="{Binding}" />
+          </StackPanel>
+        </DataTemplate>
+
+    <!-- Barre d'onglets d'un côté du terminal. -->
+    <ItemsPanelTemplate x:Key="TerminalTabsPanel">
+      <StackPanel Orientation="Horizontal" Spacing="2" />
+    </ItemsPanelTemplate>
   </Window.Resources>
+
+  <Window.Styles>
+    <Style Selector="ListBox.terminalTabs">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="ItemsPanel" Value="{StaticResource TerminalTabsPanel}" />
+      <Setter Property="ItemTemplate" Value="{StaticResource TerminalTabItem}" />
+      <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto" />
+      <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Disabled" />
+    </Style>
+    <Style Selector="ListBox.terminalTabs ListBoxItem">
+      <Setter Property="Padding" Value="8,1,2,1" />
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="CornerRadius" Value="6" />
+    </Style>
+  </Window.Styles>
 
   <!-- Raccourcis clavier : créés dans MainWindow.axaml.cs à partir du catalogue des commandes (modifiables dans Options → Raccourcis). -->
 
@@ -247,47 +277,38 @@
       <Border Grid.Row="2" IsVisible="{Binding Terminal.IsOpen}" CornerRadius="8" ClipToBounds="True" BorderThickness="1"
               Background="{DynamicResource PanelBackground}" BorderBrush="{DynamicResource PanelBorder}">
         <DockPanel>
-          <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto,Auto,Auto,Auto" Margin="4,2">
-            <ListBox ItemsSource="{Binding Terminal.Tabs}" SelectedItem="{Binding Terminal.Selected}" Background="Transparent" Padding="0"
-                     ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Disabled">
-              <ListBox.ItemsPanel>
-                <ItemsPanelTemplate>
-                  <StackPanel Orientation="Horizontal" Spacing="2" />
-                </ItemsPanelTemplate>
-              </ListBox.ItemsPanel>
-              <ListBox.Styles>
-                <Style Selector="ListBoxItem">
-                  <Setter Property="Padding" Value="8,1,2,1" />
-                  <Setter Property="MinHeight" Value="0" />
-                  <Setter Property="CornerRadius" Value="6" />
-                </Style>
-              </ListBox.Styles>
-              <ListBox.ItemTemplate>
-                <DataTemplate x:DataType="vm:TerminalTabViewModel">
-                  <StackPanel Orientation="Horizontal" Spacing="6">
-                    <TextBlock Text="{Binding Title}" VerticalAlignment="Center" FontSize="12" />
-                    <Button Content="⧉" Padding="5,0" FontSize="11" Background="Transparent" BorderThickness="0" ToolTip.Tip="{l:T 'Dupliquer ce terminal'}"
-                            Command="{Binding $parent[Window].DataContext.DuplicateTerminalCommand}" CommandParameter="{Binding}" />
-                    <Button Content="✕" Padding="5,0" FontSize="10" Background="Transparent" BorderThickness="0" ToolTip.Tip="{l:T 'Fermer ce terminal'}"
-                            Command="{Binding $parent[Window].DataContext.Terminal.CloseTabCommand}" CommandParameter="{Binding}" />
-                  </StackPanel>
-                </DataTemplate>
-              </ListBox.ItemTemplate>
-            </ListBox>
-            <ToggleButton Grid.Column="1" Content="{l:T 'Commandes'}" Padding="9,1" Margin="4,0,0,0" FontSize="12" ToolTip.Tip="{l:T 'Afficher ou cacher les commandes enregistrées'}" IsChecked="{Binding TerminalCommands.IsOpen}" />
-            <ToggleButton Grid.Column="2" Content="{l:T 'Côte à côte'}" Padding="9,1" Margin="4,0,0,0" FontSize="12" ToolTip.Tip="{l:T 'Deux terminaux côte à côte (Ctrl+Maj+F12)'}" Command="{Binding ToggleTerminalSplitCommand}" IsChecked="{Binding Terminal.IsSplit, Mode=OneWay}" />
-            <Button Grid.Column="3" Content="+" Padding="9,1" Margin="4,0,0,0" ToolTip.Tip="{l:T 'Nouveau terminal dans le dossier du panneau actif (Ctrl+F12)'}" Command="{Binding NewTerminalCommand}" />
-            <Button Grid.Column="4" Content="—" Padding="9,1" Margin="4,0,0,0" ToolTip.Tip="{l:T 'Masquer (F12) : les terminaux continuent de tourner'}" Command="{Binding Terminal.HideCommand}" />
-          </Grid>
           <Grid ColumnDefinitions="*,Auto">
-            <Grid x:Name="TerminalPanes" ColumnDefinitions="*,Auto,Auto">
-              <views:TerminalView x:Name="TerminalScreen" Session="{Binding Terminal.LeftTab.Session}" TerminalFontSize="{Binding Terminal.FontSize}" />
-              <GridSplitter Grid.Column="1" Width="6" ResizeDirection="Columns" Background="{DynamicResource PanelBorder}" IsVisible="{Binding Terminal.IsSplit}" />
-              <views:TerminalView x:Name="TerminalScreen2" Grid.Column="2" Session="{Binding Terminal.RightTab.Session}" TerminalFontSize="{Binding Terminal.FontSize}" IsVisible="{Binding Terminal.IsSplit}" />
+            <Grid x:Name="TerminalPanes" RowDefinitions="Auto,*" ColumnDefinitions="*,Auto,Auto">
+              <!-- Le + suit les onglets : aligné à gauche, ce groupe ne prend que la place de son contenu. -->
+              <Grid x:Name="LeftStrip" ColumnDefinitions="*,Auto" HorizontalAlignment="Left" Height="30" Margin="4,2">
+                <ListBox Classes="terminalTabs" ItemsSource="{Binding Terminal.LeftTabs}" SelectedItem="{Binding Terminal.LeftTab}" />
+                <Button x:Name="AddLeftButton" Grid.Column="1" Content="+" Padding="9,1" Margin="4,0,0,0" ToolTip.Tip="{l:T 'Nouveau terminal : ce PC ou un serveur'}">
+                  <Button.Flyout>
+                    <!-- Un élément fixe : un menu vide ne s'ouvre pas. Le reste est ajouté à chaque ouverture. -->
+                    <MenuFlyout Placement="BottomEdgeAlignedLeft">
+                      <MenuItem Header="{l:T 'Nouveau terminal ici'}" Command="{Binding NewTerminalCommand}" />
+                    </MenuFlyout>
+                  </Button.Flyout>
+                </Button>
+              </Grid>
+              <GridSplitter Grid.Column="1" Grid.RowSpan="2" Width="6" ResizeDirection="Columns" Background="{DynamicResource PanelBorder}" IsVisible="{Binding Terminal.IsSplit}" />
+              <Grid x:Name="RightStrip" Grid.Column="2" ColumnDefinitions="*,Auto" HorizontalAlignment="Left" Height="30" Margin="4,2" IsVisible="{Binding Terminal.IsSplit}">
+                <ListBox Classes="terminalTabs" ItemsSource="{Binding Terminal.RightTabs}" SelectedItem="{Binding Terminal.RightTab}" />
+                <Button x:Name="AddRightButton" Grid.Column="1" Content="+" Padding="9,1" Margin="4,0,0,0" ToolTip.Tip="{l:T 'Nouveau terminal : ce PC ou un serveur'}">
+                  <Button.Flyout>
+                    <!-- Un élément fixe : un menu vide ne s'ouvre pas. Le reste est ajouté à chaque ouverture. -->
+                    <MenuFlyout Placement="BottomEdgeAlignedLeft">
+                      <MenuItem Header="{l:T 'Nouveau terminal ici'}" Command="{Binding NewTerminalCommand}" />
+                    </MenuFlyout>
+                  </Button.Flyout>
+                </Button>
+              </Grid>
+              <views:TerminalView x:Name="TerminalScreen" Grid.Row="1" Session="{Binding Terminal.LeftTab.Session}" TerminalFontSize="{Binding Terminal.FontSize}" />
+              <views:TerminalView x:Name="TerminalScreen2" Grid.Row="1" Grid.Column="2" Session="{Binding Terminal.RightTab.Session}" TerminalFontSize="{Binding Terminal.FontSize}" IsVisible="{Binding Terminal.IsSplit}" />
             </Grid>
 
             <!-- Commandes enregistrées -->
-            <Border x:Name="CommandsPane" Grid.Column="1" Width="290" BorderThickness="1,0,0,0" BorderBrush="{DynamicResource PanelBorder}"
+            <Border x:Name="CommandsPane" Grid.Column="1" Width="290" Margin="0,30,0,0" BorderThickness="1,0,0,0" BorderBrush="{DynamicResource PanelBorder}"
                     DataContext="{Binding TerminalCommands}" IsVisible="{Binding IsOpen}">
               <DockPanel Margin="8,4">
                 <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto">
@@ -336,6 +357,13 @@
                 </ScrollViewer>
               </DockPanel>
             </Border>
+
+            <!-- Par-dessus le haut du panneau : les barres d'onglets leur laissent la place. -->
+            <StackPanel x:Name="TerminalButtons" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Spacing="4" Margin="0,3,4,0">
+              <ToggleButton Content="{l:T 'Commandes'}" Padding="9,1" FontSize="12" ToolTip.Tip="{l:T 'Afficher ou cacher les commandes enregistrées'}" IsChecked="{Binding TerminalCommands.IsOpen}" />
+              <ToggleButton Content="{l:T 'Côte à côte'}" Padding="9,1" FontSize="12" ToolTip.Tip="{l:T 'Deux terminaux côte à côte (Ctrl+Maj+F12)'}" Command="{Binding ToggleTerminalSplitCommand}" IsChecked="{Binding Terminal.IsSplit, Mode=OneWay}" />
+              <Button Content="—" Padding="9,1" ToolTip.Tip="{l:T 'Masquer (F12) : les terminaux continuent de tourner'}" Command="{Binding Terminal.HideCommand}" />
+            </StackPanel>
           </Grid>
         </DockPanel>
       </Border>

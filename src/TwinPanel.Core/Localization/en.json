@@ -1602,7 +1602,7 @@
  "Coller dans le terminal": "Paste into the terminal",
  "Ce texte fait {0} lignes : le programme peut exécuter chacune dès le collage.\nColler quand même ?": "This text has {0} lines: the program may run each one as soon as it is pasted.\nPaste anyway?",
  "Fermer ce terminal": "Close this terminal",
- "Nouveau terminal dans le dossier du panneau actif (Ctrl+F12)": "New terminal in the folder of the active panel (Ctrl+F12)",
+ "Nouveau terminal : ce PC ou un serveur": "New terminal: this PC or a server",
  "Masquer (F12) : les terminaux continuent de tourner": "Hide (F12): terminals keep running",
  "Linux (WSL)": "Linux (WSL)",
  "Indique le programme du terminal intégré (ou choisis-en un autre).": "Enter the program for the built-in terminal (or choose another one).",

@@ -107,7 +107,11 @@ public partial class MainWindowViewModel
     [RelayCommand]
     private async Task DuplicateTerminal(TerminalTabViewModel? tab)
     {
-        if ((tab ?? Terminal.Selected)?.Reopen is { } reopen && TerminalAllowed()) await reopen();
+        var source = tab ?? Terminal.Selected;
+        if (source?.Reopen is not { } reopen || !TerminalAllowed()) return;
+        // La copie s'ouvre du même côté que l'original.
+        Terminal.Activate(source);
+        await reopen();
     }
 
     /// <summary>Deux terminaux côte à côte ; s'il n'y en a qu'un, le second est sa copie.</summary>

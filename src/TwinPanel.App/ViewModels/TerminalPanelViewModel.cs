@@ -92,71 +92,36 @@ public sealed partial class TerminalTabViewModel(string name) : ObservableObject
     }
 }
 
-/// <summary>Le panneau du bas : ses onglets, et s'il est affiché.</summary>
+/// <summary>Le panneau du bas : les onglets de chaque côté, et s'il est affiché.</summary>
 public sealed partial class TerminalPanelViewModel : ObservableObject
 {
-    public ObservableCollection<TerminalTabViewModel> Tabs { get; } = [];
+    public ObservableCollection<TerminalTabViewModel> LeftTabs { get; } = [];
 
-    [ObservableProperty] private TerminalTabViewModel? _selected;
+    /// <summary>Vide hors côte à côte.</summary>
+    public ObservableCollection<TerminalTabViewModel> RightTabs { get; } = [];
+
+    /// <summary>Tous les terminaux, des deux côtés.</summary>
+    public IReadOnlyList<TerminalTabViewModel> Tabs => [.. LeftTabs, .. RightTabs];
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Selected))]
+    private TerminalTabViewModel? _leftTab;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Selected))]
+    private TerminalTabViewModel? _rightTab;
+
+    /// <summary>Le côté actif est celui de droite : il reçoit le clavier, les commandes et les nouveaux terminaux.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Selected))]
+    private bool _activeIsRight;
+
+    [ObservableProperty] private bool _isSplit;
     [ObservableProperty] private bool _isOpen;
     [ObservableProperty] private double _fontSize = 13;
 
-    /// <summary>Terminal montré à gauche, ou seul.</summary>
-    [ObservableProperty] private TerminalTabViewModel? _leftTab;
-
-    /// <summary>Terminal montré à droite, en côte à côte.</summary>
-    [ObservableProperty] private TerminalTabViewModel? _rightTab;
-
-    [ObservableProperty] private bool _isSplit;
-
-    /// <summary>Le côté actif est celui de droite : il reçoit le clavier et les commandes.</summary>
-    public bool ActiveIsRight { get; private set; }
-
-    /// <summary>Passe en côte à côte. Faux s'il manque un second terminal : à l'appelant d'en ouvrir un.</summary>
-    public bool Split()
-    {
-        LeftTab = Selected;
-        ActiveIsRight = true;
-        IsSplit = true;
-        RightTab = Tabs.FirstOrDefault(t => t != Selected);
-        if (RightTab is null) return false;
-        Selected = RightTab;
-        return true;
-    }
-
-    /// <summary>Retour à un seul terminal : celui qui est actif. L'autre reste dans son onglet.</summary>
-    public void Unsplit()
-    {
-        IsSplit = false;
-        RightTab = null;
-        LeftTab = Selected;
-        ActiveIsRight = false;
-        RequestFocus();
-    }
-
-    /// <summary>Un clic dans un côté le rend actif.</summary>
-    public void ActivatePane(bool right)
-    {
-        ActiveIsRight = right;
-        if ((right ? RightTab : LeftTab) is { } tab && tab != Selected) Selected = tab;
-    }
-
-    private void PlaceInPane(TerminalTabViewModel tab)
-    {
-        if (!IsSplit)
-        {
-            LeftTab = tab;
-            ActiveIsRight = false;
-        }
-        else if (tab == LeftTab) ActiveIsRight = false;
-        else if (tab == RightTab) ActiveIsRight = true;
-        else if (RightTab is null || ActiveIsRight)
-        {
-            RightTab = tab;
-            ActiveIsRight = true;
-        }
-        else LeftTab = tab;
-    }
+    /// <summary>Le terminal du côté actif.</summary>
+    public TerminalTabViewModel? Selected => ActiveIsRight ? RightTab : LeftTab;
 
     /// <summary>Le clavier est dans le terminal.</summary>
     public bool HasFocus { get; set; }
@@ -171,12 +136,21 @@ public sealed partial class TerminalPanelViewModel : ObservableObject
 
     public void RequestCopy(string text) => CopyRequested?.Invoke(text);
 
+    /// <summary>Nouvel onglet, du côté actif.</summary>
     public TerminalTabViewModel Add(string name)
     {
         var tab = new TerminalTabViewModel(name);
         tab.Ended += () => CloseTab(tab);
-        Tabs.Add(tab);
-        Selected = tab;
+        if (IsSplit && ActiveIsRight)
+        {
+            RightTabs.Add(tab);
+            RightTab = tab;
+        }
+        else
+        {
+            LeftTabs.Add(tab);
+            LeftTab = tab;
+        }
         Show();
         return tab;
     }
@@ -197,59 +171,97 @@ public sealed partial class TerminalPanelViewModel : ObservableObject
         FocusFilesRequested?.Invoke();
     }
 
+    /// <summary>Passe en côte à côte : un autre terminal va à droite. Faux s'il n'y en a pas : à l'appelant d'en ouvrir un.</summary>
+    public bool Split()
+    {
+        IsSplit = true;
+        ActiveIsRight = true;
+        var other = LeftTabs.FirstOrDefault(t => t != LeftTab);
+        if (other is null) return false;
+        LeftTabs.Remove(other);
+        RightTabs.Add(other);
+        RightTab = other;
+        return true;
+    }
+
+    /// <summary>Retour à un seul côté : tous les terminaux reviennent à gauche, aucun n'est fermé.</summary>
+    public void Unsplit()
+    {
+        var active = Selected;
+        var moved = RightTabs.ToList();
+        RightTabs.Clear();
+        RightTab = null;
+        foreach (var tab in moved) LeftTabs.Add(tab);
+        IsSplit = false;
+        ActiveIsRight = false;
+        LeftTab = active ?? LeftTab ?? LeftTabs.FirstOrDefault();
+        RequestFocus();
+    }
+
+    /// <summary>Un clic dans un côté, ou sur son bouton +, le rend actif.</summary>
+    public void ActivatePane(bool right) => ActiveIsRight = right;
+
+    /// <summary>Rend actif le côté de cet onglet, et l'y affiche.</summary>
+    public void Activate(TerminalTabViewModel tab)
+    {
+        if (RightTabs.Contains(tab)) RightTab = tab;
+        else LeftTab = tab;
+    }
+
     [RelayCommand]
     public void CloseTab(TerminalTabViewModel? tab)
     {
         if (tab is null) return;
-        int index = Tabs.IndexOf(tab);
+        bool right = RightTabs.Contains(tab);
+        var list = right ? RightTabs : LeftTabs;
+        int index = list.IndexOf(tab);
         if (index < 0) return;
         // La liste vide sa sélection dès la suppression : on regarde avant.
-        bool wasSelected = Selected == tab;
-        Tabs.RemoveAt(index);
+        bool wasShown = (right ? RightTab : LeftTab) == tab;
+        list.RemoveAt(index);
         tab.Close();
-        if (LeftTab == tab) LeftTab = null;
-        if (RightTab == tab) RightTab = null;
-        if (Tabs.Count == 0)
+
+        if (LeftTabs.Count + RightTabs.Count == 0)
         {
-            Selected = null;
+            LeftTab = RightTab = null;
             IsSplit = false;
+            ActiveIsRight = false;
             Hide();
             return;
         }
-        if (IsSplit)
+        if (IsSplit && list.Count == 0)
         {
-            // Le côté libéré reprend un autre terminal ; s'il n'y en a plus, il ne reste qu'un seul côté.
-            LeftTab ??= Tabs.FirstOrDefault(t => t != RightTab);
-            RightTab ??= Tabs.FirstOrDefault(t => t != LeftTab);
-            if (LeftTab is null || RightTab is null)
-            {
-                var kept = LeftTab ?? RightTab;
-                IsSplit = false;
-                RightTab = null;
-                ActiveIsRight = false;
-                LeftTab = kept;
-                Selected = kept;
-                return;
-            }
-            if (wasSelected) Selected = ActiveIsRight ? RightTab : LeftTab;
+            if (right) RightTab = null;
+            else LeftTab = null;
+            Unsplit();
             return;
         }
-        if (wasSelected) Selected = Tabs[Math.Min(index, Tabs.Count - 1)];
+        if (!wasShown) return;
+        var next = list[Math.Min(index, list.Count - 1)];
+        if (right) RightTab = next;
+        else LeftTab = next;
     }
 
-    partial void OnSelectedChanged(TerminalTabViewModel? value)
+    partial void OnLeftTabChanged(TerminalTabViewModel? value)
     {
         if (value is null) return;
-        PlaceInPane(value);
+        ActiveIsRight = false;
+        if (IsOpen) FocusTerminalRequested?.Invoke();
+    }
+
+    partial void OnRightTabChanged(TerminalTabViewModel? value)
+    {
+        if (value is null) return;
+        ActiveIsRight = true;
         if (IsOpen) FocusTerminalRequested?.Invoke();
     }
 
     /// <summary>En quittant, ou quand le terminal intégré est désactivé.</summary>
     public void CloseAll()
     {
-        foreach (var tab in Tabs.ToList()) tab.Close();
-        Tabs.Clear();
-        Selected = null;
+        foreach (var tab in Tabs) tab.Close();
+        LeftTabs.Clear();
+        RightTabs.Clear();
         LeftTab = RightTab = null;
         IsSplit = false;
         ActiveIsRight = false;

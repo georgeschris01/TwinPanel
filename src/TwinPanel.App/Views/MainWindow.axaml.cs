@@ -1,5 +1,6 @@
 // TwinPanel — © 2026 Georges Christophe (chrypox). Tous droits réservés.
 // Licence TwinPanel 1.0 (gratuit, non commercial, sans modification) : voir le fichier LICENSE.
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Input.Platform;
@@ -21,6 +22,8 @@ public partial class MainWindow : Window
         FavoritesFlyout.Opening += (_, _) => BuildFavoritesMenu();
         ((MenuFlyout)ConnectionsButton.Flyout!).Opening += (_, _) => BuildConnectionsMenu();
         ((MenuFlyout)TerminalButton.Flyout!).Opening += (_, _) => BuildTerminalMenu();
+        WireTerminalAddButton(AddLeftButton, right: false);
+        WireTerminalAddButton(AddRightButton, right: true);
         RecentFlyout.Opening += (_, _) =>
         {
             if (Vm is { } vm) AppMenus.FillRecent(RecentFlyout.Items, vm);
@@ -144,9 +147,26 @@ public partial class MainWindow : Window
             {
                 TerminalPanes.ColumnDefinitions[0].Width = new GridLength(1, GridUnitType.Star);
                 TerminalPanes.ColumnDefinitions[2].Width = vm.Terminal.IsSplit ? new GridLength(1, GridUnitType.Star) : GridLength.Auto;
+                PlaceTerminalStrips(vm);
             }
         };
+        vm.TerminalCommands.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(TerminalCommandsViewModel.IsOpen)) PlaceTerminalStrips(vm);
+        };
+        PlaceTerminalStrips(vm);
     }
+
+    /// <summary>Les boutons du panneau sont posés en haut à droite : la dernière barre d'onglets leur laisse la place.</summary>
+    private void PlaceTerminalStrips(MainWindowViewModel vm)
+    {
+        // Le panneau des commandes, quand il est ouvert, a déjà de la place au-dessus de lui.
+        var last = vm.TerminalCommands.IsOpen ? new Thickness(4, 2) : new Thickness(4, 2, TerminalButtonsWidth, 2);
+        LeftStrip.Margin = vm.Terminal.IsSplit ? new Thickness(4, 2) : last;
+        RightStrip.Margin = last;
+    }
+
+    private const double TerminalButtonsWidth = 225;
 
     /// <summary>La hauteur du panneau est celle que l'utilisateur a choisie en tirant la séparation.</summary>
     private void RememberTerminalHeight()
@@ -270,8 +290,50 @@ public partial class MainWindow : Window
         split.ToggleType = MenuItemToggleType.CheckBox;
         split.IsChecked = vm.Terminal.IsSplit;
         items.Add(split);
-
         items.Add(new Separator());
+        AddTerminalPlaces(items, vm);
+    }
+
+    /// <summary>Bouton + d'un côté : ouvre ce qu'on y choisit, de ce côté.</summary>
+    private void BuildTerminalAddMenu(Button button, bool right)
+    {
+        if (Vm is not { } vm) return;
+        vm.Terminal.ActivatePane(right);
+        var items = ((MenuFlyout)button.Flyout!).Items;
+        items.Clear();
+        items.Add(TerminalItem(vm, "NewTerminal", L.T("Nouveau terminal ici"), vm.NewTerminalCommand));
+        items.Add(new Separator());
+        AddTerminalPlaces(items, vm);
+
+        // Le menu qui se ferme rend le clavier à l'autre côté : chaque choix redit le sien.
+        foreach (var item in items.OfType<MenuItem>().Where(i => i.Command is not null))
+        {
+            var command = item.Command!;
+            var parameter = item.CommandParameter;
+            item.CommandParameter = null;
+            item.Command = new CommunityToolkit.Mvvm.Input.RelayCommand(() =>
+            {
+                vm.Terminal.ActivatePane(right);
+                command.Execute(parameter);
+            });
+        }
+    }
+
+    private void WireTerminalAddButton(Button button, bool right)
+    {
+        var flyout = (MenuFlyout)button.Flyout!;
+        flyout.Opening += (_, _) => BuildTerminalAddMenu(button, right);
+        flyout.Closed += (_, _) => Dispatcher.UIThread.Post(() =>
+        {
+            if (Vm is not { } vm || !vm.Terminal.IsOpen) return;
+            if (right && !vm.Terminal.IsSplit) return;
+            vm.Terminal.ActivatePane(right);
+            vm.Terminal.RequestFocus();
+        }, DispatcherPriority.Background);
+    }
+
+    private static void AddTerminalPlaces(ItemCollection items, MainWindowViewModel vm)
+    {
         items.Add(new MenuItem { Header = L.T("Sur ce PC"), IsEnabled = false });
         foreach (var shell in OptionsViewModel.IntegratedShells)
         {
