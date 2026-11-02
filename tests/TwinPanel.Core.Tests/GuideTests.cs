@@ -56,11 +56,16 @@ public class GuideTests
     }
 
     [Fact]
-    public void Le_programme_imité_n_est_cité_que_pour_l_import_des_connexions()
+    public void Dans_le_guide_affiche_le_programme_imité_n_est_cité_que_pour_l_import_des_connexions()
     {
         foreach (var file in new[] { "README.md", "README.en.md" })
         {
-            var lines = RootFile(file).Split('\n').Where(l => l.Contains("Total Commander", StringComparison.Ordinal)).ToList();
+            // L'histoire du projet, avant le guide, reste sur GitHub : seul le guide s'affiche dans le programme.
+            var text = RootFile(file);
+            int start = text.IndexOf("<!-- guide -->", StringComparison.Ordinal);
+            int end = text.IndexOf("<!-- /guide -->", StringComparison.Ordinal);
+            Assert.True(start >= 0 && end > start);
+            var lines = text[start..end].Split('\n').Where(l => l.Contains("Total Commander", StringComparison.Ordinal)).ToList();
             var line = Assert.Single(lines);
             Assert.Contains("FileZilla", line, StringComparison.Ordinal);
         }
