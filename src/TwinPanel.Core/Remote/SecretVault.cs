@@ -21,7 +21,7 @@ public static class SecretIds
     public static string IdentityPassword(Guid identity) => $"idpwd:{identity:N}";
 }
 
-/// <summary>Chiffrement lié au compte Windows (DPAPI). Ailleurs, indisponible : le mot de passe maître devient obligatoire.</summary>
+/// <summary>Chiffrement lié au compte de l'utilisateur : DPAPI sous Windows, trousseau sous Linux. S'il est indisponible, le mot de passe maître devient obligatoire.</summary>
 public interface IUserDataProtector
 {
     bool IsAvailable { get; }
@@ -49,7 +49,8 @@ public sealed class WindowsDataProtector : IUserDataProtector
 /// <summary>
 /// Coffre des secrets (mots de passe, phrases de passe, clés privées), séparé de la liste des connexions.
 /// Couche 1 (optionnelle) : AES-256-GCM avec une clé tirée du mot de passe maître (PBKDF2-SHA256, 600 000 tours).
-/// Couche 2 : DPAPI de Windows (seul le même compte Windows sur le même PC peut déchiffrer).
+/// Couche 2 : le compte de l'utilisateur, avec DPAPI sous Windows ou le trousseau sous Linux.
+/// Le fichier retient si cette couche a servi : le trousseau peut apparaître ou disparaître d'une session à l'autre.
 /// Rien n'est jamais écrit en clair ; le fichier est réécrit d'un bloc (fichier temporaire puis remplacement).
 /// </summary>
 public sealed class SecretVault
@@ -67,7 +68,7 @@ public sealed class SecretVault
     public SecretVault(string path, IUserDataProtector? protector = null)
     {
         _path = path;
-        _protector = protector ?? new WindowsDataProtector();
+        _protector = protector ?? (OperatingSystem.IsLinux() ? new LinuxKeyringProtector() : new WindowsDataProtector());
         Load();
     }
 
@@ -75,8 +76,10 @@ public sealed class SecretVault
     public bool HasMasterPassword => _file.Master is not null;
     /// <summary>Vrai si les secrets sont lisibles maintenant.</summary>
     public bool IsUnlocked { get { lock (_gate) { CheckAutoLock(); return _file.Master is null || _masterKey is not null; } } }
-    /// <summary>Le coffre peut-il fonctionner sans mot de passe maître (DPAPI disponible) ?</summary>
+    /// <summary>Le coffre peut-il fonctionner sans mot de passe maître ?</summary>
     public bool CanWorkWithoutMaster => _protector.IsAvailable;
+    /// <summary>Les secrets sont aussi protégés par le compte de l'utilisateur.</summary>
+    public bool UsesAccountProtection { get { lock (_gate) return Layered; } }
     /// <summary>Verrouillage automatique après ce délai sans utilisation (0 : jamais).</summary>
     public int AutoLockMinutes { get => _file.AutoLockMinutes; set { lock (_gate) { _file.AutoLockMinutes = Math.Max(0, value); Save(); } } }
 
@@ -186,7 +189,8 @@ public sealed class SecretVault
                         Check = Convert.ToBase64String(AesSeal(_masterKey, CheckPlain)),
                     };
                 }
-                // 3. Tout rechiffrer.
+                // 3. Tout rechiffrer, avec la protection du compte si elle est là maintenant.
+                _file.UsesAccountProtection = _protector.IsAvailable;
                 _file.Items = plain.ToDictionary(kv => kv.Key, kv => Convert.ToBase64String(Encrypt(kv.Value)));
                 Save();
             }
@@ -207,8 +211,19 @@ public sealed class SecretVault
         _lastUseUtc = DateTime.UtcNow;
     }
 
+    /// <summary>La couche du compte a-t-elle servi pour ce coffre ? Un coffre vide peut choisir à nouveau.</summary>
+    private bool Layered
+    {
+        get
+        {
+            if (_file.Items.Count == 0) _file.UsesAccountProtection = null;
+            return _file.UsesAccountProtection ??= _protector.IsAvailable;
+        }
+    }
+
     private byte[] Encrypt(byte[] plain)
     {
+        bool layered = Layered;
         byte[] inner;
         if (_file.Master is not null)
         {
@@ -217,18 +232,19 @@ public sealed class SecretVault
         }
         else
         {
-            if (!_protector.IsAvailable) throw new InvalidOperationException(L.T("Sur ce système, il faut un mot de passe maître pour enregistrer des secrets."));
+            if (!layered) throw new InvalidOperationException(L.T("Sur ce système, il faut un mot de passe maître pour enregistrer des secrets."));
             inner = (byte[])plain.Clone();
         }
-        if (!_protector.IsAvailable) return inner; // déjà chiffré par le mot de passe maître (cas sans DPAPI)
-        try { return _protector.Protect(inner); }
+        if (!layered) return inner; // déjà chiffré par le mot de passe maître
+        try { return _protector.IsAvailable ? _protector.Protect(inner) : throw new VaultKeyringException(); }
         finally { CryptographicOperations.ZeroMemory(inner); }
     }
 
     private byte[] Decrypt(byte[] stored)
     {
         if (_file.Master is not null && _masterKey is null) throw new VaultLockedException();
-        var inner = _protector.IsAvailable ? _protector.Unprotect(stored) : stored;
+        byte[] inner = stored;
+        if (Layered) inner = _protector.IsAvailable ? _protector.Unprotect(stored) : throw new VaultKeyringException();
         if (_file.Master is null) return inner;
         try { return AesOpen(_masterKey!, inner); }
         finally { CryptographicOperations.ZeroMemory(inner); }
@@ -238,7 +254,7 @@ public sealed class SecretVault
         Rfc2898DeriveBytes.Pbkdf2(password, salt, iterations, HashAlgorithmName.SHA256, 32);
 
     /// <summary>nonce (12) + tag (16) + données chiffrées.</summary>
-    private static byte[] AesSeal(byte[] key, byte[] plain)
+    internal static byte[] AesSeal(byte[] key, byte[] plain)
     {
         var output = new byte[12 + 16 + plain.Length];
         var nonce = output.AsSpan(0, 12);
@@ -248,7 +264,7 @@ public sealed class SecretVault
         return output;
     }
 
-    private static byte[] AesOpen(byte[] key, byte[] sealedData)
+    internal static byte[] AesOpen(byte[] key, byte[] sealedData)
     {
         if (sealedData.Length < 28) throw new CryptographicException(L.T("Donnée chiffrée trop courte."));
         var plain = new byte[sealedData.Length - 28];
@@ -279,7 +295,12 @@ public sealed class SecretVault
     {
         Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
         var tmp = _path + ".tmp";
-        File.WriteAllText(tmp, JsonSerializer.Serialize(_file, new JsonSerializerOptions { WriteIndented = true }));
+        File.Delete(tmp);
+        var text = JsonSerializer.Serialize(_file, new JsonSerializerOptions { WriteIndented = true });
+        // Chiffré ou non, ce fichier n'a pas à être lisible par les autres comptes du PC.
+        var options = new FileStreamOptions { Mode = FileMode.CreateNew, Access = FileAccess.Write };
+        if (!OperatingSystem.IsWindows()) options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+        using (var writer = new StreamWriter(tmp, Encoding.UTF8, options)) writer.Write(text);
         File.Move(tmp, _path, overwrite: true);
     }
 
@@ -288,6 +309,8 @@ public sealed class SecretVault
         public int Version { get; set; } = 1;
         public MasterInfo? Master { get; set; }
         public int AutoLockMinutes { get; set; } = 15;
+        /// <summary>Absent dans un coffre plus ancien : la couche du compte y servait dès qu'elle était disponible.</summary>
+        public bool? UsesAccountProtection { get; set; }
         public Dictionary<string, string> Items { get; set; } = [];
     }
 

@@ -760,11 +760,27 @@ public partial class ConnectionManagerViewModel : ObservableObject
         var v = _store.Vault;
         HasMaster = v.HasMasterPassword;
         AutoLockMinutes = v.AutoLockMinutes;
-        VaultStatus = !v.HasMasterPassword
-            ? L.T("Les secrets sont chiffrés par Windows (DPAPI) : seul ton compte Windows, sur ce PC, peut les lire. Aucun mot de passe maître.")
-            : v.IsUnlocked
-                ? L.T("Double protection : Windows + mot de passe maître (AES-256-GCM, PBKDF2 600 000 tours). Le coffre est ouvert.")
-                : L.T("Double protection : Windows + mot de passe maître. Le coffre est verrouillé.");
+        VaultStatus = OperatingSystem.IsLinux() ? LinuxVaultStatus(v)
+            : !v.HasMasterPassword
+                ? L.T("Les secrets sont chiffrés par Windows (DPAPI) : seul ton compte Windows, sur ce PC, peut les lire. Aucun mot de passe maître.")
+                : v.IsUnlocked
+                    ? L.T("Double protection : Windows + mot de passe maître (AES-256-GCM, PBKDF2 600 000 tours). Le coffre est ouvert.")
+                    : L.T("Double protection : Windows + mot de passe maître. Le coffre est verrouillé.");
+    }
+
+    private static string LinuxVaultStatus(SecretVault v)
+    {
+        if (!v.HasMasterPassword)
+            return v.CanWorkWithoutMaster
+                ? L.T("Les secrets sont chiffrés avec une clé gardée dans le trousseau de Linux : seul ton compte peut les lire. Aucun mot de passe maître.")
+                : L.T("Aucun trousseau n'est disponible sur ce système : choisis un mot de passe maître pour pouvoir enregistrer des secrets.");
+        if (v.UsesAccountProtection)
+            return v.IsUnlocked
+                ? L.T("Double protection : trousseau de Linux + mot de passe maître (AES-256-GCM, PBKDF2 600 000 tours). Le coffre est ouvert.")
+                : L.T("Double protection : trousseau de Linux + mot de passe maître. Le coffre est verrouillé.");
+        return v.IsUnlocked
+            ? L.T("Secrets protégés par le mot de passe maître (AES-256-GCM, PBKDF2 600 000 tours). Le coffre est ouvert.")
+            : L.T("Secrets protégés par le mot de passe maître. Le coffre est verrouillé.");
     }
 
     partial void OnAutoLockMinutesChanged(decimal? value)
