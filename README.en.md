@@ -144,6 +144,7 @@ All shortcuts can be changed in Options → Shortcuts. In the program, the list 
 | `Ctrl+F8` | Folder tree |
 | `Ctrl+Shift+F1` | Thumbnails |
 | `F12` / `Ctrl+F12` | Built-in terminal: show or hide / new terminal |
+| `Ctrl+Shift+F12` | Two terminals side by side |
 
 ### Marking
 
@@ -347,7 +348,8 @@ A real terminal at the bottom of the window, written for TwinPanel: colours, `vi
 - `F12` opens the panel. If the keyboard is already in the terminal, `F12` hides it: terminals keep running.
 - The **Terminal** button in the top bar opens a menu: show or hide, new terminal, duplicate, a program on your PC or one of your SFTP / SCP servers.
 - `Ctrl+F12` or the **+** button opens another terminal in a new tab.
-- The **⧉** button on a tab duplicates it: same program or same server, in its starting folder.
+- The **⧉** button on a tab duplicates it: same program or same server, in its starting folder. The copy has a number in its tab, such as `server (2)`.
+- The **Side by side** button or `Ctrl+Shift+F12` shows two terminals together, with a separator to drag. If there is only one, the second is a copy of it. Click a side to make it active: it receives the keyboard and saved commands, and clicking a tab shows it there.
 - The terminal starts in the folder of the active panel.
 - On an SFTP or SCP server, it opens a shell on that server, with the same credentials, jump host and server check as the panel.
 - Drag the separator above the terminal to change its height: TwinPanel remembers it.

@@ -247,7 +247,7 @@
       <Border Grid.Row="2" IsVisible="{Binding Terminal.IsOpen}" CornerRadius="8" ClipToBounds="True" BorderThickness="1"
               Background="{DynamicResource PanelBackground}" BorderBrush="{DynamicResource PanelBorder}">
         <DockPanel>
-          <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto,Auto,Auto" Margin="4,2">
+          <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto,Auto,Auto,Auto" Margin="4,2">
             <ListBox ItemsSource="{Binding Terminal.Tabs}" SelectedItem="{Binding Terminal.Selected}" Background="Transparent" Padding="0"
                      ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Disabled">
               <ListBox.ItemsPanel>
@@ -275,11 +275,16 @@
               </ListBox.ItemTemplate>
             </ListBox>
             <ToggleButton Grid.Column="1" Content="{l:T 'Commandes'}" Padding="9,1" Margin="4,0,0,0" FontSize="12" ToolTip.Tip="{l:T 'Afficher ou cacher les commandes enregistrées'}" IsChecked="{Binding TerminalCommands.IsOpen}" />
-            <Button Grid.Column="2" Content="+" Padding="9,1" Margin="4,0,0,0" ToolTip.Tip="{l:T 'Nouveau terminal dans le dossier du panneau actif (Ctrl+F12)'}" Command="{Binding NewTerminalCommand}" />
-            <Button Grid.Column="3" Content="—" Padding="9,1" Margin="4,0,0,0" ToolTip.Tip="{l:T 'Masquer (F12) : les terminaux continuent de tourner'}" Command="{Binding Terminal.HideCommand}" />
+            <ToggleButton Grid.Column="2" Content="{l:T 'Côte à côte'}" Padding="9,1" Margin="4,0,0,0" FontSize="12" ToolTip.Tip="{l:T 'Deux terminaux côte à côte (Ctrl+Maj+F12)'}" Command="{Binding ToggleTerminalSplitCommand}" IsChecked="{Binding Terminal.IsSplit, Mode=OneWay}" />
+            <Button Grid.Column="3" Content="+" Padding="9,1" Margin="4,0,0,0" ToolTip.Tip="{l:T 'Nouveau terminal dans le dossier du panneau actif (Ctrl+F12)'}" Command="{Binding NewTerminalCommand}" />
+            <Button Grid.Column="4" Content="—" Padding="9,1" Margin="4,0,0,0" ToolTip.Tip="{l:T 'Masquer (F12) : les terminaux continuent de tourner'}" Command="{Binding Terminal.HideCommand}" />
           </Grid>
           <Grid ColumnDefinitions="*,Auto">
-            <views:TerminalView x:Name="TerminalScreen" Session="{Binding Terminal.Selected.Session}" TerminalFontSize="{Binding Terminal.FontSize}" />
+            <Grid x:Name="TerminalPanes" ColumnDefinitions="*,Auto,Auto">
+              <views:TerminalView x:Name="TerminalScreen" Session="{Binding Terminal.LeftTab.Session}" TerminalFontSize="{Binding Terminal.FontSize}" />
+              <GridSplitter Grid.Column="1" Width="6" ResizeDirection="Columns" Background="{DynamicResource PanelBorder}" IsVisible="{Binding Terminal.IsSplit}" />
+              <views:TerminalView x:Name="TerminalScreen2" Grid.Column="2" Session="{Binding Terminal.RightTab.Session}" TerminalFontSize="{Binding Terminal.FontSize}" IsVisible="{Binding Terminal.IsSplit}" />
+            </Grid>
 
             <!-- Commandes enregistrées -->
             <Border x:Name="CommandsPane" Grid.Column="1" Width="290" BorderThickness="1,0,0,0" BorderBrush="{DynamicResource PanelBorder}"

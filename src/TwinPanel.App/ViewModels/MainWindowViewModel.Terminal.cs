@@ -110,6 +110,23 @@ public partial class MainWindowViewModel
         if ((tab ?? Terminal.Selected)?.Reopen is { } reopen && TerminalAllowed()) await reopen();
     }
 
+    /// <summary>Deux terminaux côte à côte ; s'il n'y en a qu'un, le second est sa copie.</summary>
+    [RelayCommand]
+    private async Task ToggleTerminalSplit()
+    {
+        if (!TerminalAllowed()) return;
+        if (Terminal.IsSplit)
+        {
+            Terminal.Unsplit();
+            return;
+        }
+        if (Terminal.Tabs.Count == 0) await NewTerminal();
+        Terminal.Show();
+        if (Terminal.Selected is not { } tab || Terminal.Split()) return;
+        if (tab.Reopen is { } reopen) await reopen();
+        else Terminal.Unsplit();
+    }
+
     private string ActiveLocalFolder()
     {
         var folder = ActivePanel.Current;
@@ -118,8 +135,9 @@ public partial class MainWindowViewModel
             : Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
     }
 
-    private async Task OpenLocalTerminalAsync(TerminalShell shell, string directory)
+    private async Task OpenLocalTerminalAsync(TerminalShell shell, string directory, TerminalFamily? family = null)
     {
+        family ??= new TerminalFamily();
         ApplyTerminalSettings();
         if (!OperatingSystem.IsWindows())
         {
@@ -127,7 +145,8 @@ public partial class MainWindowViewModel
             return;
         }
         var tab = Terminal.Add(Path.GetFileName(directory.TrimEnd(Path.DirectorySeparatorChar)) is { Length: > 0 } name ? name : directory);
-        tab.Reopen = () => OpenLocalTerminalAsync(shell, directory);
+        tab.CopyNumber = family.Next();
+        tab.Reopen = () => OpenLocalTerminalAsync(shell, directory, family);
         var chosen = new TerminalSettings { IntegratedShell = shell, IntegratedShellPath = _settings.Terminal.IntegratedShellPath };
         try
         {
@@ -140,14 +159,16 @@ public partial class MainWindowViewModel
         }
     }
 
-    private async Task OpenServerTerminalAsync(ConnectionProfile profile, string? directory)
+    private async Task OpenServerTerminalAsync(ConnectionProfile profile, string? directory, TerminalFamily? family = null)
     {
+        family ??= new TerminalFamily();
         ApplyTerminalSettings();
         if (_remote is null) return;
         var tab = Terminal.Add(profile.Name);
         tab.ServerId = profile.Id;
         tab.ServerName = profile.Name;
-        tab.Reopen = () => OpenServerTerminalAsync(profile, directory);
+        tab.CopyNumber = family.Next();
+        tab.Reopen = () => OpenServerTerminalAsync(profile, directory, family);
         var cancellation = tab.Cancellation.Token;
         _terminalCommands?.Refresh();
         try

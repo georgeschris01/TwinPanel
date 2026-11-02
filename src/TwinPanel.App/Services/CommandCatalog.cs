@@ -75,6 +75,7 @@ public static class CommandCatalog
         new("ToggleTerminal", L.T("Terminal intégré : afficher / masquer"), L.T("Outils"), "F12"),
         new("NewTerminal", L.T("Nouveau terminal intégré ici"), L.T("Outils"), "Ctrl+F12"),
         new("DuplicateTerminal", L.T("Dupliquer le terminal intégré"), L.T("Outils"), ""),
+        new("ToggleTerminalSplit", L.T("Deux terminaux côte à côte"), L.T("Outils"), "Ctrl+Shift+F12"),
         new("OpenOptions", "Options", L.T("Outils"), ""),
         new("ToolSettings", L.T("Éditeur et visionneuse"), L.T("Outils"), ""),
         // Connexions

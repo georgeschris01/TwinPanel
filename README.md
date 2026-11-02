@@ -144,6 +144,7 @@ Tous les raccourcis se changent dans Options → Raccourcis. Dans le programme, 
 | `Ctrl+F8` | Arborescence |
 | `Ctrl+Maj+F1` | Miniatures |
 | `F12` / `Ctrl+F12` | Terminal intégré : afficher ou masquer / nouveau terminal |
+| `Ctrl+Maj+F12` | Deux terminaux côte à côte |
 
 ### Marquage
 
@@ -347,7 +348,8 @@ Un vrai terminal dans le bas de la fenêtre, écrit pour TwinPanel : les couleur
 - `F12` ouvre le panneau. Si le clavier est déjà dans le terminal, `F12` le masque : les terminaux continuent de tourner.
 - Le bouton **Terminal** de la barre du haut déroule un menu : afficher ou masquer, nouveau terminal, dupliquer, un programme de ton PC ou un de tes serveurs SFTP / SCP.
 - `Ctrl+F12` ou le bouton **+** ouvre un autre terminal, dans un nouvel onglet.
-- Le bouton **⧉** d'un onglet le duplique : même programme ou même serveur, dans son dossier de départ.
+- Le bouton **⧉** d'un onglet le duplique : même programme ou même serveur, dans son dossier de départ. La copie porte un numéro dans son onglet, par exemple `serveur (2)`.
+- Le bouton **Côte à côte** ou `Ctrl+Maj+F12` montre deux terminaux ensemble, avec une séparation à tirer. S'il n'y en a qu'un, le second est sa copie. Clique dans un côté pour le rendre actif : il reçoit le clavier et les commandes enregistrées, et un clic sur un onglet s'y affiche.
 - Le terminal démarre dans le dossier du panneau actif.
 - Sur un serveur SFTP ou SCP, il ouvre un shell sur ce serveur, avec les mêmes identifiants, le même rebond et le même contrôle du serveur que le panneau.
 - Tire la séparation au-dessus du terminal pour changer sa hauteur : TwinPanel s'en souvient.

@@ -8,14 +8,37 @@ using TwinPanel.Core.Terminal;
 
 namespace TwinPanel.App.ViewModels;
 
+/// <summary>Un terminal et ses copies : elles se numérotent dans leur onglet.</summary>
+public sealed class TerminalFamily
+{
+    private int _count;
+    public int Next() => ++_count;
+}
+
 /// <summary>Un onglet du panneau : un terminal, sur ce PC ou sur un serveur.</summary>
 public sealed partial class TerminalTabViewModel(string name) : ObservableObject
 {
     private const int MaxTitle = 32;
     private const int HistoryLines = 10_000;
 
+    private string _name = name;
+    private int _copyNumber = 1;
+
     [ObservableProperty] private string _title = name;
     [ObservableProperty] private TerminalSession? _session;
+
+    /// <summary>Rang parmi les copies : à partir de 2, il s'affiche dans l'onglet, même si le programme change le titre.</summary>
+    public int CopyNumber
+    {
+        get => _copyNumber;
+        set
+        {
+            _copyNumber = value;
+            ShowTitle();
+        }
+    }
+
+    private void ShowTitle() => Title = _copyNumber > 1 ? $"{_name} ({_copyNumber})" : _name;
 
     /// <summary>Rouvre le même programme ou le même serveur (Dupliquer).</summary>
     public Func<Task>? Reopen { get; set; }
@@ -55,7 +78,8 @@ public sealed partial class TerminalTabViewModel(string name) : ObservableObject
         lock (session.Gate) title = session.Screen.Title;
         // Windows met le chemin du programme comme titre : le nom du dossier dit bien plus.
         if (title.Length == 0 || title.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) return;
-        Title = title.Length > MaxTitle ? "…" + title[^(MaxTitle - 1)..] : title;
+        _name = title.Length > MaxTitle ? "…" + title[^(MaxTitle - 1)..] : title;
+        ShowTitle();
     }
 
     public void Close()
@@ -76,6 +100,63 @@ public sealed partial class TerminalPanelViewModel : ObservableObject
     [ObservableProperty] private TerminalTabViewModel? _selected;
     [ObservableProperty] private bool _isOpen;
     [ObservableProperty] private double _fontSize = 13;
+
+    /// <summary>Terminal montré à gauche, ou seul.</summary>
+    [ObservableProperty] private TerminalTabViewModel? _leftTab;
+
+    /// <summary>Terminal montré à droite, en côte à côte.</summary>
+    [ObservableProperty] private TerminalTabViewModel? _rightTab;
+
+    [ObservableProperty] private bool _isSplit;
+
+    /// <summary>Le côté actif est celui de droite : il reçoit le clavier et les commandes.</summary>
+    public bool ActiveIsRight { get; private set; }
+
+    /// <summary>Passe en côte à côte. Faux s'il manque un second terminal : à l'appelant d'en ouvrir un.</summary>
+    public bool Split()
+    {
+        LeftTab = Selected;
+        ActiveIsRight = true;
+        IsSplit = true;
+        RightTab = Tabs.FirstOrDefault(t => t != Selected);
+        if (RightTab is null) return false;
+        Selected = RightTab;
+        return true;
+    }
+
+    /// <summary>Retour à un seul terminal : celui qui est actif. L'autre reste dans son onglet.</summary>
+    public void Unsplit()
+    {
+        IsSplit = false;
+        RightTab = null;
+        LeftTab = Selected;
+        ActiveIsRight = false;
+        RequestFocus();
+    }
+
+    /// <summary>Un clic dans un côté le rend actif.</summary>
+    public void ActivatePane(bool right)
+    {
+        ActiveIsRight = right;
+        if ((right ? RightTab : LeftTab) is { } tab && tab != Selected) Selected = tab;
+    }
+
+    private void PlaceInPane(TerminalTabViewModel tab)
+    {
+        if (!IsSplit)
+        {
+            LeftTab = tab;
+            ActiveIsRight = false;
+        }
+        else if (tab == LeftTab) ActiveIsRight = false;
+        else if (tab == RightTab) ActiveIsRight = true;
+        else if (RightTab is null || ActiveIsRight)
+        {
+            RightTab = tab;
+            ActiveIsRight = true;
+        }
+        else LeftTab = tab;
+    }
 
     /// <summary>Le clavier est dans le terminal.</summary>
     public bool HasFocus { get; set; }
@@ -126,10 +207,31 @@ public sealed partial class TerminalPanelViewModel : ObservableObject
         bool wasSelected = Selected == tab;
         Tabs.RemoveAt(index);
         tab.Close();
+        if (LeftTab == tab) LeftTab = null;
+        if (RightTab == tab) RightTab = null;
         if (Tabs.Count == 0)
         {
             Selected = null;
+            IsSplit = false;
             Hide();
+            return;
+        }
+        if (IsSplit)
+        {
+            // Le côté libéré reprend un autre terminal ; s'il n'y en a plus, il ne reste qu'un seul côté.
+            LeftTab ??= Tabs.FirstOrDefault(t => t != RightTab);
+            RightTab ??= Tabs.FirstOrDefault(t => t != LeftTab);
+            if (LeftTab is null || RightTab is null)
+            {
+                var kept = LeftTab ?? RightTab;
+                IsSplit = false;
+                RightTab = null;
+                ActiveIsRight = false;
+                LeftTab = kept;
+                Selected = kept;
+                return;
+            }
+            if (wasSelected) Selected = ActiveIsRight ? RightTab : LeftTab;
             return;
         }
         if (wasSelected) Selected = Tabs[Math.Min(index, Tabs.Count - 1)];
@@ -137,7 +239,9 @@ public sealed partial class TerminalPanelViewModel : ObservableObject
 
     partial void OnSelectedChanged(TerminalTabViewModel? value)
     {
-        if (value is not null && IsOpen) FocusTerminalRequested?.Invoke();
+        if (value is null) return;
+        PlaceInPane(value);
+        if (IsOpen) FocusTerminalRequested?.Invoke();
     }
 
     /// <summary>En quittant, ou quand le terminal intégré est désactivé.</summary>
@@ -146,6 +250,9 @@ public sealed partial class TerminalPanelViewModel : ObservableObject
         foreach (var tab in Tabs.ToList()) tab.Close();
         Tabs.Clear();
         Selected = null;
+        LeftTab = RightTab = null;
+        IsSplit = false;
+        ActiveIsRight = false;
         IsOpen = false;
         HasFocus = false;
     }

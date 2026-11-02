@@ -1634,5 +1634,8 @@
  "Supprimer « {0} » ?": "Delete “{0}”?",
  "Aucun terminal en marche pour lancer cette commande.": "No terminal running to start this command.",
  "Lancer la commande": "Run the command",
- "Lancer cette commande ?\n\n{0}": "Run this command?\n\n{0}"
+ "Lancer cette commande ?\n\n{0}": "Run this command?\n\n{0}",
+ "Deux terminaux côte à côte": "Two terminals side by side",
+ "Deux terminaux côte à côte (Ctrl+Maj+F12)": "Two terminals side by side (Ctrl+Shift+F12)",
+ "Côte à côte": "Side by side"
 }

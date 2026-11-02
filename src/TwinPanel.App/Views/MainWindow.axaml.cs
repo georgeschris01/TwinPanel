@@ -107,20 +107,29 @@ public partial class MainWindow : Window
 
     private void WireTerminal(MainWindowViewModel vm)
     {
-        TerminalScreen.PassThrough = e => _terminalGestures.Any(g => g.Matches(e));
-        TerminalScreen.ConfirmPaste = text => new TwinPanel.App.Services.DialogService(this).ConfirmAsync(L.T("Coller dans le terminal"),
-            L.F("Ce texte fait {0} lignes : le programme peut exécuter chacune dès le collage.\nColler quand même ?", text.Split('\n').Length));
-        TerminalScreen.FocusChanged += focused => vm.Terminal.HasFocus = focused;
-        TerminalScreen.GridChanged += (columns, rows) =>
+        foreach (var screen in new[] { TerminalScreen, TerminalScreen2 })
         {
-            vm.Terminal.Columns = columns;
-            vm.Terminal.Rows = rows;
-        };
+            bool right = screen == TerminalScreen2;
+            screen.PassThrough = e => _terminalGestures.Any(g => g.Matches(e));
+            screen.ConfirmPaste = text => new TwinPanel.App.Services.DialogService(this).ConfirmAsync(L.T("Coller dans le terminal"),
+                L.F("Ce texte fait {0} lignes : le programme peut exécuter chacune dès le collage.\nColler quand même ?", text.Split('\n').Length));
+            screen.FocusChanged += focused =>
+            {
+                vm.Terminal.HasFocus = TerminalScreen.IsFocused || TerminalScreen2.IsFocused;
+                if (focused) vm.Terminal.ActivatePane(right);
+            };
+            screen.GridChanged += (columns, rows) =>
+            {
+                vm.Terminal.Columns = columns;
+                vm.Terminal.Rows = rows;
+            };
+        }
         vm.Terminal.FocusFilesRequested += FocusActiveList;
         vm.Terminal.FocusTerminalRequested += () => Dispatcher.UIThread.Post(() =>
         {
-            TerminalScreen.ScrollToEnd();
-            TerminalScreen.Focus();
+            var screen = vm.Terminal.ActiveIsRight ? TerminalScreen2 : TerminalScreen;
+            screen.ScrollToEnd();
+            screen.Focus();
         }, DispatcherPriority.Loaded);
         vm.Terminal.CopyRequested += text => _ = Clipboard?.SetTextAsync(text);
         vm.Terminal.PropertyChanging += (_, e) =>
@@ -130,6 +139,12 @@ public partial class MainWindow : Window
         vm.Terminal.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(TerminalPanelViewModel.IsOpen)) LayOutTerminal(vm);
+            // La largeur du second terminal n'existe qu'en côte à côte, sinon il garderait sa moitié.
+            if (e.PropertyName == nameof(TerminalPanelViewModel.IsSplit))
+            {
+                TerminalPanes.ColumnDefinitions[0].Width = new GridLength(1, GridUnitType.Star);
+                TerminalPanes.ColumnDefinitions[2].Width = vm.Terminal.IsSplit ? new GridLength(1, GridUnitType.Star) : GridLength.Auto;
+            }
         };
     }
 
@@ -251,6 +266,10 @@ public partial class MainWindow : Window
         var duplicate = TerminalItem(vm, "DuplicateTerminal", L.T("Dupliquer ce terminal"), vm.DuplicateTerminalCommand);
         duplicate.IsEnabled = vm.Terminal.Selected?.Reopen is not null;
         items.Add(duplicate);
+        var split = TerminalItem(vm, "ToggleTerminalSplit", L.T("Deux terminaux côte à côte"), vm.ToggleTerminalSplitCommand);
+        split.ToggleType = MenuItemToggleType.CheckBox;
+        split.IsChecked = vm.Terminal.IsSplit;
+        items.Add(split);
 
         items.Add(new Separator());
         items.Add(new MenuItem { Header = L.T("Sur ce PC"), IsEnabled = false });
@@ -345,7 +364,7 @@ public partial class MainWindow : Window
                 {
                     var gesture = KeyGesture.Parse(text);
                     KeyBindings.Add(new KeyBinding { Gesture = gesture, Command = command, CommandParameter = info.Parameter! });
-                    if (info.Id == "ToggleTerminal") _terminalGestures.Add(gesture);
+                    if (info.Id is "ToggleTerminal" or "ToggleTerminalSplit") _terminalGestures.Add(gesture);
                 }
                 catch (Exception ex) when (ex is ArgumentException or FormatException or KeyNotFoundException)
                 {
