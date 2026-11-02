@@ -6,7 +6,7 @@ rem Resultat detaille dans installer.log.
 cd /d "%~dp0"
 setlocal
 
-for /f "usebackq delims=" %%v in (`powershell -NoProfile -Command "(Select-Xml -Path 'Directory.Build.props' -XPath '//Version').Node.InnerText"`) do set VERSION=%%v
+for /f "usebackq delims=" %%v in (`powershell -NoProfile -Command "(Select-Xml -Path 'Directory.Build.props' -XPath '//Version[not(@Condition)]').Node.InnerText"`) do set VERSION=%%v
 if "%VERSION%"=="" set VERSION=0.0.0
 
 set ISCC=
@@ -26,7 +26,7 @@ echo === Installateur TwinPanel %VERSION% ===
 echo.
 echo === Publication (Release, .NET inclus) ===
 if exist publish\win-x64 rmdir /s /q publish\win-x64
-dotnet publish src\TwinPanel.App\TwinPanel.App.csproj -c Release -r win-x64 --self-contained true -o publish\win-x64
+dotnet publish src\TwinPanel.App\TwinPanel.App.csproj -c Release -r win-x64 --self-contained true -o publish\win-x64 -p:DebugType=none "-p:PathMap=%CD%=."
 if errorlevel 1 (
   echo ECHEC de la publication.
   goto :done

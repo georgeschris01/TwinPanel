@@ -102,6 +102,7 @@ public partial class MainWindowViewModel : ObservableObject
     /// <summary>Charge les réglages (synchrone, avant l'affichage de la fenêtre).</summary>
     public void LoadSettings()
     {
+        _isFirstStart = !File.Exists(_store.FilePath);
         _settings = _store.Load();
         _recent.Capacity = Math.Clamp(_settings.Appearance.RecentFoldersCount, 5, 200); // avant la lecture, qui s'y arrêterait
         _recent.Load();
@@ -111,6 +112,18 @@ public partial class MainWindowViewModel : ObservableObject
         OnPropertyChanged(nameof(Favorites));
         ApplyTheme(_settings.Theme);
         ApplyCustomization(refreshPanels: false);
+    }
+
+    private bool _isFirstStart;
+
+    /// <summary>Tout premier démarrage sur cette machine : proposer de reprendre la configuration d'une autre.</summary>
+    public async Task OfferFirstStartSyncAsync()
+    {
+        if (!_isFirstStart) return;
+        _isFirstStart = false;
+        if (await _dialogs.ConfirmAsync(L.T("Bienvenue dans TwinPanel"),
+                L.T("Tu utilises déjà TwinPanel sur une autre machine ?\nRécupérer ma configuration : connexions, clés, mots de passe, thème et raccourcis.\n\nTu pourras aussi le faire plus tard dans Options → Synchronisation.")))
+            await OpenOptions("Sync");
     }
 
     /// <summary>Ouvre les onglets enregistrés (après l'affichage de la fenêtre).</summary>
@@ -443,11 +456,6 @@ public partial class MainWindowViewModel : ObservableObject
         if (!go) return;
         var defaultDestination = destination ?? OtherPanel.Current.CurrentPath;
         bool intoArchive = ArchivePath.TrySplit(defaultDestination, out _, out _);
-        if (intoArchive && fromPanel && SessionOf(ActivePanel.Current) is not null)
-        {
-            await _dialogs.ShowErrorAsync("Archive", L.T("Copie d'abord les fichiers du serveur sur le PC, puis ajoute-les à l'archive."));
-            return;
-        }
         if (await RemoteTransferAsync(move, items, destination, fromPanel, forced)) return;
 
         if (fromPanel && ArchivePath.TrySplit(ActivePanel.Current.CurrentPath, out var archive, out var innerBase))

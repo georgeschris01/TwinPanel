@@ -325,6 +325,15 @@ TwinPanel retente tout seul (3 fois par défaut), puis propose **Reprendre**. La
 
 Si TwinPanel a été fermé pendant un transfert, il propose au démarrage suivant **Reprendre**, **Plus tard** ou **Oublier**. Pour y revenir : ≡ → Connexions → Transferts non terminés.
 
+### Retrouver sa configuration sur une autre machine
+
+Options → Synchronisation : choisis un dossier partagé entre tes machines (Nextcloud, OneDrive, Syncthing, clé USB…), puis **Envoyer**. Sur l'autre machine, Windows ou Linux, indique ce dossier et clique sur **Récupérer**, puis sur OK. Au tout premier lancement, TwinPanel le propose de lui-même.
+
+- **Ce qui voyage** : connexions, clés SSH, mots de passe enregistrés, serveurs connus, commandes enregistrées, thème, couleurs, raccourcis et langue.
+- **Ce qui reste sur chaque machine** : dossiers et onglets, favoris, éditeurs, terminal, boutons et taille de la fenêtre.
+- **Phrase secrète** : tout le fichier est chiffré avec une phrase d'au moins 12 caractères, demandée à chaque fois. TwinPanel ne la garde pas : **si tu l'oublies, personne ne pourra plus ouvrir le fichier**. Il te restera à ressaisir tes mots de passe et à envoyer de nouveau.
+- **Rien n'est automatique** : Récupérer garde les connexions absentes du fichier, et Envoyer remplace le fichier, en prévenant si une autre machine y a écrit depuis. Une connexion supprimée sur une machine reste donc sur les autres.
+
 ## Archives
 
 `Entrée` ouvre une archive comme un dossier. `Retour arrière` en sort.
@@ -346,6 +355,8 @@ Si TwinPanel a été fermé pendant un transfert, il propose au démarrage suiva
 | `Alt+F5` | Créer une archive (.zip, .tar, .tar.gz), avec mot de passe en option |
 
 Une archive modifiée est réécrite à côté, relue, puis elle remplace l'original : il faut de la place libre, et c'est long sur les gros fichiers.
+
+Tout cela fonctionne aussi entre une archive et un serveur, dans les deux sens, et pour une archive qui se trouve sur un serveur. `Entrée` la télécharge une fois dans un dossier temporaire, avec une barre de progression ; la copie disparaît quand plus aucun onglet ne la montre. Pour modifier une archive d'un serveur, TwinPanel réécrit la copie, puis remplace l'archive sur le serveur en gardant ses droits. Une grosse archive est donc téléchargée, puis renvoyée en entier. Si elle a changé sur le serveur depuis son ouverture, rien n'est remplacé : sortez-en, puis rouvrez-la.
 
 Le mot de passe d'une archive reste en mémoire jusqu'à la fermeture de TwinPanel et n'est enregistré nulle part. Dans un zip chiffré, le contenu est protégé, mais les noms des fichiers restent visibles.
 
@@ -373,6 +384,7 @@ Un vrai terminal dans le bas de la fenêtre, écrit pour TwinPanel : les couleur
 - Le bouton **Terminal** de la barre du haut déroule un menu : afficher ou masquer, nouveau terminal, dupliquer, un programme de ton PC ou un de tes serveurs SFTP / SCP.
 - `Ctrl+F12` ouvre un autre terminal, dans un nouvel onglet. Le bouton **+** après les onglets propose tes programmes et tes serveurs SFTP / SCP.
 - Le bouton **⧉** d'un onglet le duplique : même programme ou même serveur, dans son dossier de départ. La copie porte un numéro dans son onglet, par exemple `serveur (2)`. Le clic droit sur un onglet propose aussi **Dupliquer** ; en côte à côte, tu choisis le côté de la copie.
+- Le clic droit sur un onglet propose **Reconnecter** pour un serveur, **Relancer** sur ce PC : le terminal repart dans le même onglet, dans son dossier de départ, par exemple après une coupure de connexion. L'onglet reste ouvert après une coupure et rappelle la marche à suivre. Le terminal repart à neuf : un programme lancé avant la coupure ne revient pas, sauf s'il tourne dans `tmux` ou `screen` sur le serveur. S'il semble encore en marche, TwinPanel demande confirmation, car ce qui s'y exécute est fermé.
 - Le bouton **Côte à côte** ou `Ctrl+Maj+F12` montre deux terminaux ensemble, avec une séparation à tirer. Chaque côté a ses onglets et son bouton **+**. S'il n'y a qu'un terminal, le second est sa copie. Clique dans un côté pour le rendre actif : il reçoit le clavier et les commandes enregistrées. `Alt+F12` passe d'un côté à l'autre. La largeur de la séparation est mémorisée. Le clic droit sur un onglet propose aussi **Déplacer** vers l'autre côté. En revenant à un seul côté, tous les terminaux restent ouverts.
 - Le terminal démarre dans le dossier du panneau actif.
 - Sur un serveur SFTP ou SCP, il ouvre un shell sur ce serveur, avec les mêmes identifiants, le même rebond et le même contrôle du serveur que le panneau.

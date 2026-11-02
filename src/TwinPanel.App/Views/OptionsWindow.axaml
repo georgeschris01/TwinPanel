@@ -415,6 +415,32 @@
           <TextBlock Classes="subtle" TextWrapping="Wrap" Text="{l:T 'Restaurer remplace les réglages affichés ici ; ils ne sont appliqués qu\'avec « OK ». Les connexions de la sauvegarde absentes d\'ici peuvent être ajoutées (sans mots de passe).'}" />
         </StackPanel>
       </TabItem>
+
+      <!-- ============ Synchronisation ============ -->
+      <TabItem Header="{l:T 'Synchronisation'}">
+        <ScrollViewer>
+          <StackPanel Margin="16,0" MaxWidth="640" HorizontalAlignment="Left" Spacing="10">
+            <TextBlock Classes="h" Text="{l:T 'Retrouver sa configuration sur une autre machine'}" />
+            <TextBlock TextWrapping="Wrap" Text="{l:T 'Choisis un dossier partagé entre tes machines : Nextcloud, OneDrive, Syncthing, clé USB… Envoyer y dépose un fichier chiffré ; Récupérer le lit sur une autre machine, Windows ou Linux.'}" />
+            <TextBlock Classes="label" Text="{l:T 'Dossier de synchronisation'}" />
+            <Grid ColumnDefinitions="*,6,Auto">
+              <TextBox Text="{Binding SyncFolder}" />
+              <Button Grid.Column="2" Content="{l:T 'Parcourir…'}" Command="{Binding BrowseSyncFolderCommand}" />
+            </Grid>
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button Content="{l:T 'Envoyer'}" Classes="accent" Command="{Binding SendSyncCommand}" />
+              <Button Content="{l:T 'Récupérer'}" Command="{Binding FetchSyncCommand}" />
+            </StackPanel>
+            <TextBlock Classes="label" Text="{l:T 'Ce qui voyage'}" />
+            <TextBlock TextWrapping="Wrap" Text="{l:T 'Connexions, clés SSH, mots de passe enregistrés, serveurs connus, commandes enregistrées, thème, couleurs, raccourcis et langue.'}" />
+            <TextBlock Classes="label" Text="{l:T 'Ce qui reste sur chaque machine'}" />
+            <TextBlock TextWrapping="Wrap" Text="{l:T 'Dossiers et onglets, favoris, éditeurs, terminal, boutons et taille de la fenêtre : ils ne fonctionneraient pas forcément sur un autre système.'}" />
+            <TextBlock Classes="label" Text="{l:T 'Phrase secrète'}" />
+            <TextBlock TextWrapping="Wrap" Text="{l:T 'Tout le fichier est chiffré avec une phrase secrète que tu choisis, demandée à chaque envoi et à chaque récupération. TwinPanel ne la garde pas : si tu l\'oublies, le fichier ne peut plus être ouvert par personne.'}" />
+            <TextBlock TextWrapping="Wrap" Classes="subtle" Text="{l:T 'Une connexion supprimée sur une machine reste sur les autres : supprime-la aussi là-bas.'}" />
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
     </TabControl>
   </DockPanel>
 </Window>

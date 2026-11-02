@@ -10,6 +10,20 @@ public static class Breadcrumb
     public static IReadOnlyList<BreadcrumbSegment> Split(string path)
     {
         var result = new List<BreadcrumbSegment>();
+        if (Remote.ServerArchives.Find(path) is { } server)
+        {
+            // Copie d'une archive d'un serveur : on montre où elle est vraiment, pas le dossier temporaire.
+            result.AddRange(Split(server.FolderPanelPath));
+            result.Add(new BreadcrumbSegment(server.Name, server.LocalPath));
+            Archives.ArchivePath.TrySplit(path, out _, out var inner);
+            var key = string.Empty;
+            foreach (var part in inner.Split('/', StringSplitOptions.RemoveEmptyEntries))
+            {
+                key = key.Length == 0 ? part : key + "/" + part;
+                result.Add(new BreadcrumbSegment(part, Archives.ArchivePath.Combine(server.LocalPath, key)));
+            }
+            return result;
+        }
         if (Remote.PanelRemotePath.TryParse(path, out var remote))
         {
             // sftp://chrypox/home/x → [chrypox, home, x]

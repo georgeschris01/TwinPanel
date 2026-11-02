@@ -601,10 +601,30 @@ public sealed class SftpFileSystem : RemoteFileSystemBase, IServerSideMove
                 if (!overwrite) throw new RemoteException(L.F("« {0} » existe déjà sur le serveur.", NameFor(to)));
                 var a = _client.GetAttributes(to);
                 if (a.IsDirectory) throw new RemoteException(L.F("« {0} » est un dossier : impossible de le remplacer.", NameFor(to)));
-                _client.DeleteFile(to);
+                try
+                {
+                    // En une seule opération : une coupure ne peut pas laisser le serveur sans le fichier.
+                    _client.RenameFile(from, to, isPosix: true);
+                    return;
+                }
+                catch (NotSupportedException) { ReplaceStepByStep(from, to); return; }
             }
             _client.RenameFile(from, to);
         }, ct);
+
+    /// <summary>Serveur sans renommage atomique : l'ancien fichier est mis de côté, et remis en place si la suite échoue.</summary>
+    private void ReplaceStepByStep(string from, string to)
+    {
+        var aside = to + RemoteTransfer.AsideSuffix;
+        _client.RenameFile(to, aside);
+        try { _client.RenameFile(from, to); }
+        catch (SshException)
+        {
+            try { _client.RenameFile(aside, to); } catch (SshException) { /* l'ancien fichier reste à côté, sous ce nom */ }
+            throw;
+        }
+        try { _client.DeleteFile(aside); } catch (SshException) { /* remplacement réussi : il ne reste qu'un fichier en trop */ }
+    }
 
     public override Task SetModifiedAsync(string path, DateTime modified, CancellationToken ct) =>
         RunAsync(null, () =>

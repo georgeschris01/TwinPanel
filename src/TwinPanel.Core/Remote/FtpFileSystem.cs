@@ -231,7 +231,19 @@ public sealed class FtpFileSystem : RemoteFileSystemBase
             if (await _client.FileExists(to, ct).ConfigureAwait(false))
             {
                 if (!overwrite) throw new RemoteException(L.F("« {0} » existe déjà sur le serveur.", NameFor(to)));
-                await _client.DeleteFile(to, ct).ConfigureAwait(false);
+                // FTP ne sait pas remplacer : l'ancien fichier est mis de côté, et remis en place si la suite échoue.
+                var aside = to + RemoteTransfer.AsideSuffix;
+                await _client.Rename(to, aside, ct).ConfigureAwait(false);
+                try { await _client.Rename(from, to, ct).ConfigureAwait(false); }
+                catch (FluentFTP.Exceptions.FtpException)
+                {
+                    try { await _client.Rename(aside, to, CancellationToken.None).ConfigureAwait(false); }
+                    catch (Exception ex) when (ex is FluentFTP.Exceptions.FtpException or IOException) { /* l'ancien fichier reste à côté, sous ce nom */ }
+                    throw;
+                }
+                try { await _client.DeleteFile(aside, ct).ConfigureAwait(false); }
+                catch (FluentFTP.Exceptions.FtpException) { /* remplacement réussi : il ne reste qu'un fichier en trop */ }
+                return;
             }
             else if (await _client.DirectoryExists(to, ct).ConfigureAwait(false))
                 throw new RemoteException(L.F("« {0} » existe déjà sur le serveur.", NameFor(to)));

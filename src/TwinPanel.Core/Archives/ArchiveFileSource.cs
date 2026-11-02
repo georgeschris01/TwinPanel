@@ -25,7 +25,7 @@ public sealed class ArchiveFileSource : IFileSource
     {
         if (!ArchivePath.TrySplit(path, out var archive, out var inner)) return null;
         return inner.Length == 0
-            ? Path.GetDirectoryName(archive) // à la racine de l'archive : on ressort dans son dossier
+            ? Remote.ServerArchives.Find(archive)?.FolderPanelPath ?? Path.GetDirectoryName(archive) // à la racine de l'archive : on ressort dans son dossier
             : ArchivePath.Combine(archive, ArchiveIndex.ParentOf(inner));
     }
 

@@ -325,6 +325,15 @@ TwinPanel retries by itself (3 times by default), then offers **Resume**. Resumi
 
 If TwinPanel was closed during a transfer, at the next startup it offers **Resume**, **Later** or **Forget**. To come back to it: ≡ → Connections → Unfinished transfers.
 
+### Get your configuration back on another machine
+
+Options → Synchronization: choose a folder shared between your machines (Nextcloud, OneDrive, Syncthing, USB stick…), then **Send**. On the other machine, Windows or Linux, point to that folder and click **Fetch**, then OK. On the very first launch, TwinPanel offers this by itself.
+
+- **What travels**: connections, SSH keys, saved passwords, known servers, saved commands, theme, colors, shortcuts and language.
+- **What stays on each machine**: folders and tabs, favorites, editors, terminal, buttons and window size.
+- **Passphrase**: the whole file is encrypted with a passphrase of at least 12 characters, asked every time. TwinPanel does not keep it: **if you forget it, nobody can open the file any more**. You will then have to type your passwords again and send again.
+- **Nothing is automatic**: Fetch keeps connections that are not in the file, and Send replaces the file, warning you if another machine wrote to it since. A connection deleted on one machine therefore stays on the others.
+
 ## Archives
 
 `Enter` opens an archive like a folder. `Backspace` leaves it.
@@ -346,6 +355,8 @@ If TwinPanel was closed during a transfer, at the next startup it offers **Resum
 | `Alt+F5` | Create an archive (.zip, .tar, .tar.gz), with an optional password |
 
 An edited archive is rewritten next to the original, read back, then it replaces the original: free space is needed, and it takes time on large files.
+
+All of this also works between an archive and a server, in both directions, and for an archive that is on a server. `Enter` downloads it once to a temporary folder, with a progress bar; the copy disappears when no tab shows it any more. To modify an archive on a server, TwinPanel rewrites the copy, then replaces the archive on the server and keeps its permissions. A large archive is therefore downloaded, then sent back in full. If it has changed on the server since it was opened, nothing is replaced: leave it, then open it again.
 
 An archive password stays in memory until TwinPanel closes and is saved nowhere. In an encrypted zip, the content is protected, but file names remain visible.
 
@@ -373,6 +384,7 @@ A real terminal at the bottom of the window, written for TwinPanel: colours, `vi
 - The **Terminal** button in the top bar opens a menu: show or hide, new terminal, duplicate, a program on your PC or one of your SFTP / SCP servers.
 - `Ctrl+F12` opens another terminal in a new tab. The **+** button after the tabs offers your programs and your SFTP / SCP servers.
 - The **⧉** button on a tab duplicates it: same program or same server, in its starting folder. The copy has a number in its tab, such as `server (2)`. Right-clicking a tab also offers **Duplicate**; side by side, you choose which side the copy goes to.
+- Right-clicking a tab offers **Reconnect** for a server and **Restart** on this PC: the terminal starts again in the same tab, in its starting folder, for example after a lost connection. The tab stays open after a lost connection and reminds you what to do. The terminal starts fresh: a program started before the loss does not come back, unless it runs in `tmux` or `screen` on the server. If it still seems to be running, TwinPanel asks first, because whatever is running in it is closed.
 - The **Side by side** button or `Ctrl+Shift+F12` shows two terminals together, with a separator to drag. Each side has its own tabs and **+** button. If there is only one terminal, the second is a copy of it. Click a side to make it active: it receives the keyboard and saved commands. `Alt+F12` switches side. The width of the separator is remembered. Right-clicking a tab also offers **Move** to the other side. Going back to one side keeps every terminal open.
 - The terminal starts in the folder of the active panel.
 - On an SFTP or SCP server, it opens a shell on that server, with the same credentials, jump host and server check as the panel.

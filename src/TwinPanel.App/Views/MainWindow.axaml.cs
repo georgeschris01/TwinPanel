@@ -40,6 +40,7 @@ public partial class MainWindow : Window
             if (DataContext is not MainWindowViewModel vm) return;
             await vm.InitializeAsync();
             LeftPanel.FocusList();
+            await vm.OfferFirstStartSyncAsync();
             await vm.OfferPendingTransfersAsync();
         };
         Activated += (_, _) => Vm?.SetAppActive(true);
@@ -407,6 +408,17 @@ public partial class MainWindow : Window
         e.Handled = true;
         bool? chosen = null;
         var menu = new ContextMenu();
+        menu.Items.Add(new MenuItem
+        {
+            Header = tab.ServerId is null ? L.T("Relancer") : L.T("Reconnecter"),
+            IsEnabled = tab.Restart is not null && tab.Session is not null,
+            Command = new CommunityToolkit.Mvvm.Input.AsyncRelayCommand(() =>
+            {
+                chosen = vm.Terminal.RightTabs.Contains(tab);
+                return vm.ReconnectTerminal(tab);
+            }),
+        });
+        menu.Items.Add(new Separator());
 
         void AddChoice(string header, bool right) => menu.Items.Add(new MenuItem
         {

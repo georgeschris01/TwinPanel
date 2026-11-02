@@ -43,6 +43,10 @@ public sealed partial class TerminalTabViewModel(string name) : ObservableObject
     /// <summary>Rouvre le même programme ou le même serveur (Dupliquer).</summary>
     public Func<Task>? Reopen { get; set; }
 
+    /// <summary>Relance le même programme ou le même serveur dans cet onglet (Reconnecter).</summary>
+    public Func<Task>? Restart { get; set; }
+    public bool IsRestarting { get; set; }
+
     /// <summary>Serveur de ce terminal ; nul : terminal du PC.</summary>
     public Guid? ServerId { get; set; }
     public string ServerName { get; set; } = string.Empty;
@@ -53,23 +57,36 @@ public sealed partial class TerminalTabViewModel(string name) : ObservableObject
     /// <summary>La connexion est finie sans problème (« exit ») : l'onglet n'a plus de raison d'être.</summary>
     public event Action? Ended;
 
+    /// <summary>Branche une connexion sur l'onglet. Celle d'avant n'est fermée que si la nouvelle a démarré.</summary>
     public void Start(ITerminalConnection connection, int columns, int rows)
     {
+        var previous = Session;
         var session = new TerminalSession(connection, columns, rows, HistoryLines);
-        session.TitleChanged += () => Dispatcher.UIThread.Post(() => UpdateTitle(session));
+        session.TitleChanged += () => Dispatcher.UIThread.Post(() =>
+        {
+            if (Session == session) UpdateTitle(session);
+        });
         session.Closed += reason => Dispatcher.UIThread.Post(() =>
         {
+            // La fin d'une session remplacée ne doit pas fermer l'onglet.
+            if (Session != session) return;
             if (reason is null) Ended?.Invoke();
-            else session.ShowMessage(L.F("Connexion terminée : {0}", reason));
+            else
+            {
+                session.ShowMessage(L.F("Connexion terminée : {0}", reason));
+                if (ServerId is not null) session.ShowMessage(L.T("Pour reprendre : clic droit sur l'onglet, puis Reconnecter."));
+            }
         });
         Session = session;
         try { session.Start(); }
         catch
         {
-            Session = null;
+            Session = previous;
             session.Dispose();
             throw;
         }
+        // Une connexion coupée peut mettre du temps à se refermer : la fenêtre n'attend pas.
+        if (previous is not null) _ = Task.Run(previous.Dispose);
     }
 
     private void UpdateTitle(TerminalSession session)
@@ -164,6 +181,15 @@ public sealed partial class TerminalPanelViewModel : ObservableObject
     }
 
     public void RequestFocus() => FocusTerminalRequested?.Invoke();
+
+    /// <summary>Affiche cet onglet, et rend son côté actif.</summary>
+    public void SelectTab(TerminalTabViewModel tab)
+    {
+        if (RightTabs.Contains(tab)) RightTab = tab;
+        else if (LeftTabs.Contains(tab)) LeftTab = tab;
+        else return;
+        ActiveIsRight = RightTabs.Contains(tab);
+    }
 
     /// <summary>Ouvre la barre de recherche : c'est elle qui prend le clavier.</summary>
     public void OpenSearch()

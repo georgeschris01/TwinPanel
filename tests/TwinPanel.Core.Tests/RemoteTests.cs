@@ -631,6 +631,8 @@ internal sealed class MemoryFileSystem : IRemoteFileSystem, IServerSideMove
 {
     /// <summary>Renommage refusé comme un serveur SFTP vers un autre disque (« Failure »).</summary>
     public bool RefuseRename { get; set; }
+    /// <summary>Coupure en plein remplacement : la cible a disparu, et le renommage n'a pas eu lieu.</summary>
+    public bool CutDuringReplace { get; set; }
     /// <summary>« mv » du serveur : null = pas de commandes sur ce serveur ; sinon message d'erreur (vide = réussi).</summary>
     public string? ServerMoveError { get; set; }
     public bool HasServerMove { get; set; }
@@ -699,7 +701,7 @@ internal sealed class MemoryFileSystem : IRemoteFileSystem, IServerSideMove
     public RemoteProtocol Protocol => RemoteProtocol.Sftp;
     public string HomeDirectory => "/";
     public bool IsConnected => true;
-    public bool SupportsPermissions => false;
+    public bool SupportsPermissions { get; set; }
 
     private static string N(string p) => RemotePath.Normalize(p);
 
@@ -805,6 +807,11 @@ internal sealed class MemoryFileSystem : IRemoteFileSystem, IServerSideMove
     public Task RenameAsync(string from, string to, bool overwrite, CancellationToken ct)
     {
         if (RefuseRename) throw new RemoteException("Renommage de " + RemotePath.FileName(from) + " : Failure");
+        if (CutDuringReplace)
+        {
+            Nodes.Remove(N(to));
+            throw new RemoteException("Connexion coupée");
+        }
         if (Nodes.ContainsKey(N(to)) && !overwrite) throw new RemoteException("existe");
         Nodes[N(to)] = Nodes[N(from)];
         if (Dates.TryGetValue(N(from), out var d)) Dates[N(to)] = d;

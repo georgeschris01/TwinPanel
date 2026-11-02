@@ -93,6 +93,58 @@ public static class RemoteArchives
         finally { TryDeleteDir(temp); }
     }
 
+    /// <summary>F5 / F6 d'une archive vers un serveur.</summary>
+    public static async Task ExtractToServerAsync(RemoteSession destination, string archive, IReadOnlyList<string> keys, string innerBase, string destDir,
+        ConflictPolicy policy, bool move, IProgress<TransferProgress>? progress, CancellationToken ct, PauseController? pause = null)
+    {
+        await using var fs = await destination.OpenWorkerAsync(ct).ConfigureAwait(false);
+        await ExtractToServerAsync(fs, archive, keys, innerBase, destDir, policy, move, progress, ct, pause).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Extraction dans un dossier temporaire, puis envoi. F6 ne retire de l'archive que ce qui a bien pris sa place sur le serveur :
+    /// un élément dont la cible existait, et qui n'a peut-être pas été envoyé, reste dans l'archive.
+    /// </summary>
+    public static async Task ExtractToServerAsync(IRemoteFileSystem fs, string archive, IReadOnlyList<string> keys, string innerBase, string destDir,
+        ConflictPolicy policy, bool move, IProgress<TransferProgress>? progress, CancellationToken ct, PauseController? pause = null)
+    {
+        var temp = NewTempDir("extraction");
+        try
+        {
+            var removable = keys;
+            if (await fs.StatAsync(destDir, ct).ConfigureAwait(false) is null) await fs.CreateDirectoryAsync(destDir, ct).ConfigureAwait(false);
+            else if (move && policy is not (ConflictPolicy.Overwrite or ConflictPolicy.RenameNew))
+            {
+                var taken = (await fs.ListAsync(destDir, ct).ConfigureAwait(false)).Select(i => i.Name).ToHashSet(StringComparer.Ordinal);
+                removable = keys.Where(k => !taken.Contains(k[(k.LastIndexOf('/') + 1)..])).ToList();
+            }
+            await ArchiveService.ExtractAsync(archive, keys, innerBase, temp, ConflictPolicy.Overwrite, progress, ct, pause).ConfigureAwait(false);
+            await RemoteTransfer.UploadAsync(fs, Directory.EnumerateFileSystemEntries(temp).ToList(), destDir, policy, progress, ct, pause).ConfigureAwait(false);
+            if (move && removable.Count > 0)
+                await ArchiveEditor.ApplyAsync(archive, new ArchiveEdits { Delete = removable }, progress, ct, pause).ConfigureAwait(false);
+        }
+        finally { TryDeleteDir(temp); }
+    }
+
+    /// <summary>F5 / F6 d'un serveur vers une archive. F6 ne retire les fichiers du serveur que s'ils sont tous entrés dans l'archive.</summary>
+    public static async Task AddFromServerAsync(RemoteSession source, IReadOnlyList<RemoteItem> items, string archive, string inner, ConflictPolicy policy, bool move,
+        IProgress<TransferProgress>? progress, CancellationToken ct, PauseController? pause = null)
+    {
+        var temp = NewTempDir("archive");
+        try
+        {
+            await RemoteTransfer.DownloadAsync(source, items, temp, ConflictPolicy.Overwrite, progress, ct, pause).ConfigureAwait(false);
+            var added = items.Select(i => Path.Combine(temp, i.Name)).Where(p => File.Exists(p) || Directory.Exists(p))
+                             .Select(p => new ArchiveAddition(p, inner)).ToList();
+            var result = await ArchiveEditor.ApplyAsync(archive, new ArchiveEdits { Add = added, Policy = policy }, progress, ct, pause).ConfigureAwait(false);
+            if (!move) return;
+            if (added.Count != items.Count || result.SkippedFiles > 0)
+                throw new FileOperationException(L.T("Archive à jour, mais certains fichiers n'y sont pas entrés : rien n'a été retiré du serveur."));
+            await RemoteTransfer.DeleteAsync(source, items, progress, ct).ConfigureAwait(false);
+        }
+        finally { TryDeleteDir(temp); }
+    }
+
     /// <summary>Teste une archive d'un serveur (téléchargée dans un dossier temporaire).</summary>
     public static async Task TestAsync(RemoteSession session, RemoteItem archive, IProgress<TransferProgress>? progress, CancellationToken ct)
     {
@@ -103,5 +155,5 @@ public static class RemoteArchives
     }
 
     private static FileOperationException OnServerOnly(string archive) =>
-        new(L.F("« {0} » est protégée par un mot de passe : copie-la d'abord sur le PC pour l'ouvrir.", Path.GetFileName(archive)));
+        new(L.F("« {0} » est protégée par un mot de passe : ouvre-la avec Entrée pour le saisir, puis copie ce qu'il te faut (F5).", Path.GetFileName(archive)));
 }

@@ -13,7 +13,11 @@ public partial class MainWindowViewModel
 
     private void StartRemoteRefresh()
     {
-        _remotePoll.Tick += (_, _) => PollRemoteFolders(force: false);
+        _remotePoll.Tick += (_, _) =>
+        {
+            PollRemoteFolders(force: false);
+            CloseUnusedServerArchives();
+        };
         _remotePoll.Start();
     }
 

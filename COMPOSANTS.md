@@ -3,7 +3,7 @@
 Tout ce que TwinPanel utilise et qui ne vient pas de nous, ainsi que le plan de nos propres modules.
 **À mettre à jour à chaque ajout, retrait ou changement de version** (le journal note aussi chaque changement).
 
-Dernière mise à jour : 02/11/2026 (Windows 0.8.4 ; Linux 0.1.5-beta).
+Dernière mise à jour : 02/11/2026 (Windows 0.8.7 ; Linux 0.1.9-beta).
 
 ---
 
@@ -135,6 +135,7 @@ Dernière mise à jour : 02/11/2026 (Windows 0.8.4 ; Linux 0.1.5-beta).
 - **Code** : écrit entièrement pour TwinPanel. On s'inspire du **comportement** de Total Commander (raccourcis, ergonomie), **jamais de son code**.
 - **Couleurs et thème** : définis dans `App.axaml`.
 - **Traduction et guide** : moteur de traduction (`Core/Localization`), textes anglais, lecteur du guide, écrits pour TwinPanel, sans bibliothèque ajoutée.
+- **Synchronisation de la configuration** : fichier chiffré écrit pour TwinPanel (AES-256-GCM, clé tirée de la phrase secrète par PBKDF2-SHA256, 600 000 tours), avec les fonctions de .NET, sans bibliothèque ajoutée.
 - **Terminal intégré** : analyse du flux, écran virtuel, clavier, souris et affichage écrits pour TwinPanel, sans bibliothèque de terminal. Il repose sur ConPTY, la console virtuelle fournie par Windows (Windows 10 version 1809 ou plus récent), et sur SSH.NET pour les serveurs. Le texte défilant reste en mémoire : il n'est jamais écrit sur le disque ni dans un journal.
 - **Glisser-déposer sous Linux en session Wayland** : TwinPanel tourne par XWayland, et KWin affiche le curseur « interdit » pendant tout glissement du système entre fenêtres XWayland (`Qt::ForbiddenCursor` tant qu'aucune cible Wayland n'accepte). TwinPanel utilise donc le glissement interne d'Avalonia (`InWindowDragSource`) : curseurs de copie et de déplacement corrects, mais on ne peut plus lâcher dans une autre application. L'inverse reste possible. En session X11 et sous Windows, rien ne change.
 - **Client WebDAV, coffre des secrets, gestion des serveurs connus, imports, écriture des clés Ed25519 au format OpenSSH** : écrits pour TwinPanel.
