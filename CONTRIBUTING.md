@@ -12,7 +12,7 @@ Ouvrez une Issue et décrivez ce que vous aimeriez faire et dans quelle situatio
 
 Ouvrez une Issue en indiquant :
 
-- la version de TwinPanel (**À propos**) et celle de Windows ;
+- la version de TwinPanel (**À propos**) et celle du système (Windows, ou votre distribution Linux) ;
 - ce que vous avez fait, ce que vous attendiez, ce qui s'est passé.
 
 **N'écrivez jamais dans une Issue** de mot de passe, de phrase secrète, de clé privée, d'adresse de serveur ni de journal non relu : les Issues sont publiques.
@@ -51,7 +51,7 @@ Open an Issue and describe what you would like to do and in what situation. Ther
 
 Open an Issue and state:
 
-- the TwinPanel version (**About**) and the Windows version;
+- the TwinPanel version (**About**) and the system version (Windows, or your Linux distribution);
 - what you did, what you expected, what happened.
 
 **Never write in an Issue** a password, a passphrase, a private key, a server address or a log you have not reread: Issues are public.
