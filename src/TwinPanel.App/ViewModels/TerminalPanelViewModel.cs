@@ -71,7 +71,11 @@ public sealed partial class TerminalTabViewModel(string name) : ObservableObject
             // La fin d'une session remplacée ne doit pas fermer l'onglet.
             if (Session != session) return;
             if (reason is null) Ended?.Invoke();
-            else session.ShowMessage(L.F("Connexion terminée : {0}", reason));
+            else
+            {
+                session.ShowMessage(L.F("Connexion terminée : {0}", reason));
+                if (ServerId is not null) session.ShowMessage(L.T("Pour reprendre : clic droit sur l'onglet, puis Reconnecter."));
+            }
         });
         Session = session;
         try { session.Start(); }

@@ -129,7 +129,7 @@ public partial class MainWindowViewModel
         try
         {
             if (tab.Session is { IsClosed: false } && !await _dialogs.ConfirmAsync("Terminal", toServer
-                    ? L.T("Ce terminal est encore connecté. Le reconnecter ferme ce qui s'y exécute. Continuer ?")
+                    ? L.T("Ce terminal semble encore connecté. Le reconnecter ferme ce qui s'y exécute. Continuer ?")
                     : L.T("Ce terminal est encore en marche. Le relancer ferme ce qui s'y exécute. Continuer ?")))
                 return;
             if (!Terminal.Tabs.Contains(tab)) return;
