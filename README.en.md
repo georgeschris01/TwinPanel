@@ -249,7 +249,7 @@ Mark with `Ins`, `Space`, `Shift+arrows`, the right click, or by mask with `Num+
 
 - `F3` opens the built-in viewer: text, hex, image, media info.
 - `F4` opens the chosen editor, Notepad by default. A built-in editor is also available, and each extension can have its own editor (Options → Editors).
-- `F8` sends to the Windows recycle bin. On a server or in an archive, deletion is permanent and always confirmed.
+- `F8` sends to the system trash. On a server or in an archive, deletion is permanent and always confirmed.
 
 ### Multi-rename
 
@@ -431,7 +431,7 @@ The **≡** button contains all the commands. Options → Shortcuts also lets yo
 
 ### How do I undo a deletion?
 
-On Windows, `F8` sends to the recycle bin: restore the file from there. On a server or in an archive, there is no recycle bin. `Ctrl+Z` only undoes the last multi-rename.
+`F8` sends to the system trash: restore the file from there. On a server or in an archive, there is no recycle bin. `Ctrl+Z` only undoes the last multi-rename.
 
 ### Where are my settings?
 

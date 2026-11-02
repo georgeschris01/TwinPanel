@@ -624,7 +624,7 @@ public partial class MainWindowViewModel : ObservableObject
         if (items.Count == 0) return;
 
         var what = items.Count == 1 ? $"« {items[0].Name} »" : L.F("{0} éléments", items.Count);
-        var recycle = OperatingSystem.IsWindows() && _settings.Behavior.UseRecycleBin;
+        var recycle = (OperatingSystem.IsWindows() || OperatingSystem.IsLinux()) && _settings.Behavior.UseRecycleBin;
         var msg = recycle ? L.F("Envoyer {0} à la corbeille ?", what) : L.F("Supprimer DÉFINITIVEMENT {0} ?", what);
         // Options → Comportement : la confirmation peut être retirée pour la corbeille, jamais pour une suppression définitive.
         if ((_settings.Behavior.ConfirmDelete || !recycle) && !await _dialogs.ConfirmAsync(L.T("Supprimer"), msg)) return;

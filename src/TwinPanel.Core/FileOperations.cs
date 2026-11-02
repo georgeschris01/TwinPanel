@@ -216,7 +216,7 @@ public static class FileOperations
         return dest;
     }
 
-    /// <summary>Supprime les éléments. Sous Windows, passe par la corbeille si demandé.</summary>
+    /// <summary>Supprime les éléments, ou les met à la corbeille si demandé (Windows et Linux).</summary>
     public static Task DeleteAsync(IReadOnlyList<string> paths, bool useRecycleBin,
         IProgress<TransferProgress>? progress = null, CancellationToken ct = default) =>
         Task.Run(() =>
@@ -229,6 +229,8 @@ public static class FileOperations
 
                 if (useRecycleBin && OperatingSystem.IsWindows())
                     RecycleBin.Delete(p);
+                else if (useRecycleBin && OperatingSystem.IsLinux())
+                    DesktopTrash.Delete(p);
                 else if (Directory.Exists(p))
                     Directory.Delete(p, recursive: true);
                 else if (File.Exists(p))

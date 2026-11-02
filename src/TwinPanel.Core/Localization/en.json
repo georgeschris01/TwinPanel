@@ -1623,6 +1623,8 @@
  "Terminal intégré : chercher dans le texte": "Built-in terminal: search the text",
  "Terminal intégré : changer de côté": "Built-in terminal: switch side",
  "Changer de côté": "Switch side",
+ "« {0} » n'a pas pu aller à la corbeille, rien n'a été supprimé : {1}": "“{0}” could not go to the trash, nothing was deleted: {1}",
+ "La corbeille de ce disque n'est pas sûre : {0}. Rien n'a été supprimé.": "The trash of this disk is not safe: {0}. Nothing was deleted.",
  "Ctrl+Maj+F12 : deux terminaux côte à côte. Le bouton + de chaque côté propose tes programmes et tes serveurs.": "Ctrl+Shift+F12: two terminals side by side. The + button on each side offers your programs and servers.",
  "Dans le terminal, Ctrl+Maj+F cherche dans tout le texte, et le panneau Commandes lance tes commandes d'un clic.": "In the terminal, Ctrl+Shift+F searches all the text, and the Commands panel runs your commands in one click.",
  "Le nom de ce dossier contient des caractères de contrôle : le terminal s'ouvre dans le dossier personnel.": "This folder's name contains control characters: the terminal opens in the home folder.",

@@ -249,7 +249,7 @@ Marquez avec `Inser`, `Espace`, `Maj+flèches`, le clic droit, ou selon un masqu
 
 - `F3` ouvre la visionneuse intégrée : texte, hexa, image, infos média.
 - `F4` ouvre l'éditeur choisi, le Bloc-notes par défaut. Un éditeur intégré est aussi disponible, et chaque extension peut avoir son éditeur (Options → Éditeurs).
-- `F8` envoie à la corbeille de Windows. Sur un serveur ou dans une archive, la suppression est définitive et toujours confirmée.
+- `F8` envoie à la corbeille du système. Sur un serveur ou dans une archive, la suppression est définitive et toujours confirmée.
 
 ### Renommage multiple
 
@@ -431,7 +431,7 @@ Le bouton **≡** contient toutes les commandes. Options → Raccourcis permet a
 
 ### Comment annuler une suppression ?
 
-Sous Windows, `F8` envoie à la corbeille : restaurez le fichier depuis celle-ci. Sur un serveur ou dans une archive, il n'y a pas de corbeille. `Ctrl+Z` annule seulement le dernier renommage multiple.
+`F8` envoie à la corbeille du système : restaurez le fichier depuis celle-ci. Sur un serveur ou dans une archive, il n'y a pas de corbeille. `Ctrl+Z` annule seulement le dernier renommage multiple.
 
 ### Où sont mes réglages ?
 
