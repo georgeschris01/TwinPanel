@@ -19,7 +19,7 @@ Gestionnaire de fichiers à deux panneaux, gratuit, moderne et complet. Pour Win
 
 **[TwinPanel pour Windows](../../releases/latest)** (installateur).
 
-**[TwinPanel pour Linux, version bêta](../../releases/tag/linux-v0.1.4-beta)** : paquet `.deb` pour Debian et ses dérivés, ou AppImage. Bêta testée uniquement sur Debian 13 avec KDE : des défauts peuvent rester.
+**[TwinPanel pour Linux, version bêta](../../releases/tag/linux-v0.1.5-beta)** : paquet `.deb` pour Debian et ses dérivés, ou AppImage. Bêta testée uniquement sur Debian 13 avec KDE : des défauts peuvent rester.
 
 ```
 sudo apt install ./twinpanel_*_amd64.deb
@@ -30,6 +30,8 @@ Avec l'AppImage : `chmod +x TwinPanel-*.AppImage`, puis lancez le fichier.
 ![TwinPanel sous Linux](docs/screenshots/linux-fr.png)
 
 ![Le terminal intégré de TwinPanel](docs/screenshots/linux-terminal-fr.png)
+
+![Plusieurs terminaux côte à côte](docs/screenshots/linux-terminaux-fr.png)
 
 > **Message « Windows a protégé votre ordinateur » :** TwinPanel est gratuit et n'est pas signé, car un certificat de signature est payant chaque année. Windows affiche donc ce message tant que le programme n'est pas assez connu. Cliquez sur **Informations complémentaires**, puis sur **Exécuter quand même**. Vérifiez que le fichier vient bien de cette page ; son empreinte SHA-256 est donnée avec chaque version.
 

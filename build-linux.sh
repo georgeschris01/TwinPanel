@@ -110,6 +110,11 @@ cat > "$DEB/usr/share/metainfo/be.chrypox.TwinPanel.metainfo.xml" <<EOF
       <caption xml:lang="fr">Le terminal intégré sous les deux panneaux</caption>
       <image type="source" width="1280" height="800">$SHOTS/linux-terminal-fr.png</image>
     </screenshot>
+    <screenshot>
+      <caption>Several terminals side by side, with tabs on each side</caption>
+      <caption xml:lang="fr">Plusieurs terminaux côte à côte, avec des onglets de chaque côté</caption>
+      <image type="source" width="1280" height="800">$SHOTS/linux-terminaux-fr.png</image>
+    </screenshot>
   </screenshots>
   <content_rating type="oars-1.1"/>
   <releases>
