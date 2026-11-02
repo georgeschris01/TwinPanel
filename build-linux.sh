@@ -84,6 +84,7 @@ cat > "$DEB/usr/share/metainfo/be.chrypox.TwinPanel.metainfo.xml" <<EOF
   </description>
   <!-- Discover relie la fiche au paquet par ce nom : sans lui, l'application n'apparaît pas. -->
   <pkgname>twinpanel</pkgname>
+  <icon type="stock">twinpanel</icon>
   <launchable type="desktop-id">twinpanel.desktop</launchable>
   <url type="homepage">https://github.com/georgeschris01/TwinPanel</url>
   <url type="bugtracker">https://github.com/georgeschris01/TwinPanel/issues</url>
@@ -104,6 +105,16 @@ cat > "$DEB/usr/share/metainfo/be.chrypox.TwinPanel.metainfo.xml" <<EOF
       <caption xml:lang="fr">Le thème clair</caption>
       <image type="source" width="1280" height="800">$SHOTS/linux-clair-fr.png</image>
     </screenshot>
+    <screenshot>
+      <caption>The integrated terminal below the two panels</caption>
+      <caption xml:lang="fr">Le terminal intégré sous les deux panneaux</caption>
+      <image type="source" width="1280" height="800">$SHOTS/linux-terminal-fr.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Several terminals side by side, with tabs on each side</caption>
+      <caption xml:lang="fr">Plusieurs terminaux côte à côte, avec des onglets de chaque côté</caption>
+      <image type="source" width="1280" height="800">$SHOTS/linux-terminaux-fr.png</image>
+    </screenshot>
   </screenshots>
   <content_rating type="oars-1.1"/>
   <releases>
@@ -111,6 +122,19 @@ cat > "$DEB/usr/share/metainfo/be.chrypox.TwinPanel.metainfo.xml" <<EOF
   </releases>
 </component>
 EOF
+
+# Discover 6.3 ne sait pas afficher une icône « stock » (il compare un nom à une liste de chemins) : il lui faut un fichier
+# désigné par un catalogue, comme pour les applications de Debian. La même fiche sert, avec ces icônes en plus.
+CATALOG="$DEB/usr/share/swcatalog"
+mkdir -p "$CATALOG/xml" "$CATALOG/icons/twinpanel/64x64"
+cp "$ASSETS/twinpanel-64.png" "$CATALOG/icons/twinpanel/64x64/twinpanel.png"
+{
+    echo '<?xml version="1.0" encoding="UTF-8"?>'
+    echo '<components version="1.0" origin="twinpanel">'
+    sed -e '1d' -e 's#^  <launchable #  <icon type="cached" width="64" height="64">twinpanel.png</icon>\n  <icon type="local" width="256" height="256">/usr/share/icons/hicolor/256x256/apps/twinpanel.png</icon>\n&#' \
+        "$DEB/usr/share/metainfo/be.chrypox.TwinPanel.metainfo.xml"
+    echo '</components>'
+} > "$CATALOG/xml/twinpanel.xml"
 
 find "$DEB" -type d -exec chmod 755 {} +
 find "$DEB" -type f -exec chmod 644 {} +
