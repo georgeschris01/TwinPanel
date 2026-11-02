@@ -28,13 +28,15 @@ public static class ThirdPartyComponents
         new("MediaInfo (libmediainfo)", L.T("Infos des vidéos et des musiques"), "BSD-2", "https://mediaarea.net/MediaInfo"),
         new(L.T("libcurl (dans MediaInfo)"), L.T("Lecture réseau de MediaInfo"), L.T("Licence curl"), "https://curl.se"),
         new(L.T("OpenSSL (dans MediaInfo)"), L.T("Chiffrement de MediaInfo"), "Apache-2.0", "https://www.openssl.org"),
+        new(L.T("libssh2 (dans MediaInfo)"), L.T("Accès SSH de MediaInfo"), "BSD-3", "https://libssh2.org"),
         new(L.T("Brotli (dans MediaInfo)"), L.T("Décompression de MediaInfo"), "MIT", "https://github.com/google/brotli"),
         new("ATL .NET", L.T("Tags des musiques et des MP4"), "MIT", "https://github.com/Zeugma440/atldotnet"),
+        new("Ude.NetStandard", L.T("Détection de l'encodage des textes (utilisé par ATL .NET)"), L.T("MPL-1.1 (ou GPL / LGPL) ; code source à ce lien"), "https://github.com/yinyue200/ude"),
         new("MetadataExtractor", L.T("EXIF / GPS des photos"), "Apache-2.0", "https://github.com/drewnoakes/metadata-extractor-dotnet"),
         new(L.T("XmpCore (dans MetadataExtractor)"), L.T("Données XMP des photos"), "BSD (Adobe)", "https://github.com/drewnoakes/xmp-core-dotnet"),
         new(".NET 10 (runtime)", L.T("Faire tourner le programme"), "MIT", "https://dotnet.microsoft.com"),
         new("System.Security.Cryptography.ProtectedData", L.T("Chiffrement des mots de passe enregistrés (Windows)"), "MIT", "https://github.com/dotnet/runtime"),
-        new("Tmds.DBus.Protocol, MicroCom.Runtime, Microsoft.Extensions.Logging.Abstractions", L.T("Composants internes"), "MIT", "https://github.com/dotnet/runtime"),
+        new("Tmds.DBus.Protocol, MicroCom.Runtime, Microsoft.Extensions.Logging.Abstractions, Microsoft.Extensions.DependencyInjection.Abstractions", L.T("Composants internes"), "MIT", "https://github.com/dotnet/runtime"),
     ];
 
     /// <summary>Non livrés : servent à fabriquer TwinPanel, ou sont installés par l'utilisateur s'il le souhaite.</summary>

@@ -33,7 +33,7 @@ Dernière mise à jour : 30/10/2026 (lot 5, archives).
 | **SSH.NET** | 2026.0.0 | MIT | Connexions **SFTP** et **SCP** (lot 6) : authentification par mot de passe, clé ou « clavier interactif », proxy, serveur de rebond, vérification de la clé du serveur. | Bibliothèque SSH libre la plus utilisée en .NET. Version 2026.0.0 obligatoire : toutes les précédentes ont des failles (dont CVE-2026-48798 et CVE-2026-85756 sur SCP). |
 | **FluentFTP** | 55.1.0 | MIT | Connexions **FTP** et **FTPS** (explicite / implicite), mode passif / actif, proxy. | Référence du FTP en .NET, sans aucune dépendance. 55.1.0 : le certificat est aussi vérifié sur les connexions de données (faille corrigée). |
 | System.Security.Cryptography.ProtectedData | 10.0.0 | MIT (Microsoft) | Chiffrement des mots de passe enregistrés avec le compte Windows (**DPAPI**). | Fourni par Microsoft, c'est la méthode standard de Windows. |
-| **MediaInfo.Core.Native** | 26.10.0 | BSD-2 (MediaArea) | Bibliothèque native MediaInfo (libmediainfo, avec libcurl, OpenSSL et Brotli) : codecs, pistes, langues, HDR / Dolby Vision. Appelée directement par `Core/Media/MediaInfoLib.cs`. | Référence de l'analyse des médias, utilisée par la plupart des lecteurs. |
+| **MediaInfo.Core.Native** | 26.10.0 | BSD-2 (MediaArea) | Bibliothèque native MediaInfo (libmediainfo, avec libcurl, libssh2, OpenSSL et Brotli) : codecs, pistes, langues, HDR / Dolby Vision. Appelée directement par `Core/Media/MediaInfoLib.cs`. | Référence de l'analyse des médias, utilisée par la plupart des lecteurs. |
 | **z440.atl.core** (ATL .NET) | 7.19.0 | MIT | Lecture et écriture des tags des musiques (MP3, FLAC, M4A, OGG, Opus, WMA…) et des MP4 ; débit, fréquence, durée. | Pur .NET, très complet, mis à jour régulièrement (MIT plutôt que la LGPL de TagLib#). |
 | **MetadataExtractor** | 2.9.3 | Apache-2.0 | Lecture de l'EXIF / XMP / GPS des photos (avec XmpCore, licence BSD d'Adobe). | Référence en .NET pour lire les métadonnées d'images. |
 
@@ -51,6 +51,8 @@ Dernière mise à jour : 30/10/2026 (lot 5, archives).
 | HarfBuzzSharp (+ NativeAssets) | 8.3.1.3 | MIT ; HarfBuzz : licence « Old MIT » | Mise en forme du texte (accents, écritures complexes). |
 | BouncyCastle.Cryptography | ≥ 2.7.0 (amenée par SSH.NET) | MIT | Algorithmes cryptographiques de SSH ; sert aussi à **créer** les clés Ed25519. |
 | Microsoft.Extensions.Logging.Abstractions | ≥ 8.0.3 (amenée par SSH.NET) | MIT | Interface de journalisation (inutilisée par TwinPanel). |
+| Microsoft.Extensions.DependencyInjection.Abstractions | 8.0.2 (amenée par Logging.Abstractions) | MIT | Élément interne (inutilisé par TwinPanel). |
+| Ude.NetStandard | 1.2.0 (amenée par ATL .NET) | MPL-1.1 (ou GPL / LGPL au choix) | Détection de l'encodage des textes pour ATL. Livrée sans modification ; code source : https://github.com/yinyue200/ude. |
 | MicroCom.Runtime | 0.11.6 | MIT | Appels système natifs (interne à Avalonia). |
 | **Avalonia.BuildServices** | 11.3.2 | MIT | ⚠️ Envoie des **statistiques anonymes de compilation** à l'équipe Avalonia (pas pendant l'utilisation de TwinPanel). Désactivable : variable d'environnement `AVALONIA_TELEMETRY_OPTOUT=1`. |
 
@@ -139,7 +141,7 @@ Dernière mise à jour : 30/10/2026 (lot 5, archives).
 
 ## 8. Licence de TwinPanel
 
-Toutes les licences des bibliothèques livrées sont **permissives** (MIT, BSD, Apache 2.0, SIL OFL, licence curl) : aucune n'impose sa licence à TwinPanel, à condition de garder leurs mentions de copyright — elles sont reproduites dans `THIRD-PARTY-NOTICES.md` et listées dans **À propos → Bibliothèques utilisées et leurs licences** (données : `Core/About/ThirdPartyComponents.cs`).
+Les licences des bibliothèques livrées sont **permissives** (MIT, BSD, Apache 2.0, SIL OFL, licence curl), sauf **Ude.NetStandard**, sous **MPL-1.1** : cette licence s'applique à ce fichier, livré sans modification, avec sa mention et le lien vers son code source. Il faut garder les mentions de copyright de toutes ces bibliothèques — elles sont reproduites dans `THIRD-PARTY-NOTICES.md` et listées dans **À propos → Bibliothèques utilisées et leurs licences** (données : `Core/About/ThirdPartyComponents.cs`).
 
 **TwinPanel lui-même : Licence TwinPanel 1.0** (fichier `LICENSE`, contrat écrit pour le projet ; © 2026 Georges Christophe, chrypox ; contact admin@chrypox.be) — gratuit, non commercial (usage en entreprise permis), partage de la version d'origine seulement, modification pour soi permise mais pas de diffusion, plugins gratuits permis, corrections par « Issue », droit belge. Symbole original : `logo/licence/`. Ce n'est pas une licence Creative Commons (Creative Commons déconseille ses licences pour le logiciel et interdit son nom / logo pour une licence modifiée). Rappel en tête de chaque fichier de code ; page à accepter dans l'installateur ; texte complet dans « À propos ».
 
