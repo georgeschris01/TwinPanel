@@ -7,6 +7,7 @@ using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using TwinPanel.App.ViewModels;
+using TwinPanel.Core.Terminal;
 
 namespace TwinPanel.App.Views;
 
@@ -231,7 +232,8 @@ public partial class MainWindow : Window
     /// <summary>La hauteur du panneau est celle que l'utilisateur a choisie en tirant la séparation.</summary>
     private void RememberTerminalHeight()
     {
-        if (Vm is { Terminal.IsOpen: true } vm) vm.Settings.Terminal.IntegratedHeight = WorkArea.RowDefinitions[2].ActualHeight;
+        if (Vm is { Terminal.IsOpen: true } vm)
+            vm.Settings.Terminal.IntegratedHeight = TerminalPanelHeight.ToRemember(WorkArea.RowDefinitions[2].ActualHeight, vm.Settings.Terminal.IntegratedHeight);
     }
 
     private void LayOutTerminal(MainWindowViewModel vm)
@@ -240,7 +242,7 @@ public partial class MainWindow : Window
         if (vm.Terminal.IsOpen)
         {
             row.MinHeight = MinTerminalHeight;
-            row.Height = new GridLength(Math.Clamp(vm.Settings.Terminal.IntegratedHeight, MinTerminalHeight, Math.Max(MinTerminalHeight, WorkArea.Bounds.Height - MinFilesHeight)));
+            row.Height = new GridLength(TerminalPanelHeight.ToApply(vm.Settings.Terminal.IntegratedHeight, WorkArea.Bounds.Height));
             WorkArea.RowDefinitions[0].MinHeight = MinFilesHeight;
         }
         else
@@ -251,8 +253,8 @@ public partial class MainWindow : Window
         }
     }
 
-    private const double MinTerminalHeight = 110;
-    private const double MinFilesHeight = 120;
+    private const double MinTerminalHeight = TerminalPanelHeight.MinTerminal;
+    private const double MinFilesHeight = TerminalPanelHeight.MinFiles;
 
     private void OnPreviewKeyDown(object? sender, KeyEventArgs e)
     {
