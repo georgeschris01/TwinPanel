@@ -454,7 +454,8 @@ Everything is set in ≡ → Tools → Options.
 | Start menu | Your personal menu, with submenus |
 | Editors | Editor by extension |
 | Terminal | Terminal to open |
-| Backup | All the settings in a single file |
+| Backup | Settings, list of connections and open tabs in a single file, as you choose |
+| Synchronization | Encrypted configuration shared between your machines, contents as you choose |
 
 Parameters for buttons and the menu: `%P` active folder, `%N` item name, `%F` its full path, `%T` folder of the other panel, `%S` marked items.
 
@@ -476,9 +477,25 @@ The **≡** button contains all the commands. Options → Shortcuts also lets yo
 
 In `%APPDATA%\TwinPanel` on Windows, in `~/.config/TwinPanel` on Linux. An update does not touch them.
 
+### How do I back up my settings?
+
+Options → Backup → **Back up…**. A window asks what the file should contain: the settings, the list of connections (never passwords or keys), the open tabs. To go back, **Restore…** shows what the file contains: untick what you do not want to take, then click OK to apply it.
+
+### How do I get the same configuration on several machines?
+
+Options → Synchronization: choose a folder shared between your machines (Nextcloud, OneDrive, Syncthing, USB stick…), then **Send**. Tick what should go: common settings, connections with their passwords and keys, known servers, open tabs. On the other machine, Windows or Linux, point to the same folder, click **Fetch**, choose what to take, then click OK. The whole file is encrypted with a passphrase that TwinPanel does not keep.
+
 ### How do I move to another PC?
 
 Options → Backup creates a single file. At each backup, TwinPanel asks what it should contain: the settings, the list of connections, the open tabs. When restoring, you likewise choose what to take; received tabs replace the open ones, with the same rules as the synchronization. Passwords and keys are never included: passwords will be asked again, and a key-based connection is marked “missing key” until you add its key (Connection manager, Keys tab). A summary is shown at the end of the restore. To carry everything from one computer to another, use Options → Synchronization instead.
+
+### My tabs do not come back on the other machine.
+
+When sending (synchronization) or backing up, tick **Open tabs**, then tick them again when fetching or restoring. They open when you click OK. A server tab comes back if its connection exists on the other machine. A tab of a PC folder only comes back on the same system, and if the folder exists there: `D:\music` cannot open on Linux. The final message says how many tabs were left out.
+
+### I forgot the synchronization passphrase.
+
+It cannot be recovered, and nobody can open the file any more. On a machine that still has your connections and passwords, click **Send** with a new passphrase: the file is replaced. Then use this new passphrase on the other machines.
 
 ### Are my passwords safe?
 
@@ -492,6 +509,10 @@ It cannot be recovered: the passwords and keys in the vault are lost. Your conne
 
 The file opens from a copy on the PC. Save it in your program, then answer **Send back** to the TwinPanel question. Without sending it back, the change stays on the PC.
 
+### How do I change an archive that is on a server?
+
+Open it with `Enter`, like an archive on the PC: TwinPanel downloads a copy. Each change is made to the copy, then sent back to the server. If the archive changed on the server in the meantime, nothing is replaced and TwinPanel warns you.
+
 ### Why can't I change this archive?
 
 rar, gz, bz2 and xz are read-only, as are encrypted 7z files. Extract the contents, then create a new archive with `Alt+F5`.
@@ -502,7 +523,21 @@ Choose it in ≡ → Tools → Editor and viewer, or by extension in Options →
 
 ### What is different in the Linux version?
 
-It is a beta and does the same work. Real icons come from the desktop theme (Options → Display), the terminal starts your usual shell, and a command typed in the bottom line opens in a new tab of the built-in terminal, where you see its result (or in the desktop terminal if the built-in terminal is turned off).
+It is a beta and does the same work. It has been tested on Debian 13 with KDE, and on Ubuntu 26.04 and Fedora 45 with GNOME. Real icons come from the desktop theme (Options → Display), the terminal starts your usual shell, and a command typed in the bottom line opens in a new tab of the built-in terminal, where you see its result (or in the desktop terminal if the built-in terminal is turned off). A few differences:
+
+- **Drag and drop**: in a Wayland session (always the case on GNOME), a file cannot be dropped from TwinPanel into another application; the other way works.
+- **Share**: by email, or to a device linked with KDE Connect.
+- **Passwords**: kept with the desktop keyring; without a keyring, TwinPanel asks for a master password.
+- **Fedora 45**: the AppImage needs `openssl3-libs` (`sudo dnf install openssl3-libs`); the `.rpm` package installs it by itself.
+- **Ubuntu**: TwinPanel does not appear in the App Center; uninstall it with `sudo apt remove twinpanel`.
+
+### How do I send a file to someone?
+
+Right-click → **Share…** on the file, or on the marked files. On Windows, the Windows share window opens; on Linux, email or KDE Connect. A file from a server or an archive is first copied to the PC.
+
+### My terminal on a server lost its connection.
+
+Right-click its tab → **Reconnect**: the terminal starts again in the same tab. At the next start, TwinPanel also offers to reopen last time's terminals (Options → Startup).
 
 ### How do I show hidden files?
 

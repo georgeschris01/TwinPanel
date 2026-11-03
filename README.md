@@ -454,7 +454,8 @@ Tout se règle dans ≡ → Outils → Options.
 | Menu Démarrer | Votre menu personnel, avec sous-menus |
 | Éditeurs | Éditeur par extension |
 | Terminal | Terminal à ouvrir |
-| Sauvegarde | Tous les réglages dans un seul fichier |
+| Sauvegarde | Réglages, liste des connexions et onglets ouverts dans un seul fichier, au choix |
+| Synchronisation | Configuration chiffrée partagée entre vos machines, contenu au choix |
 
 Paramètres des boutons et du menu : `%P` dossier actif, `%N` nom de l'élément, `%F` son chemin complet, `%T` dossier de l'autre panneau, `%S` éléments marqués.
 
@@ -476,9 +477,25 @@ Le bouton **≡** contient toutes les commandes. Options → Raccourcis permet a
 
 Dans `%APPDATA%\TwinPanel` sous Windows, dans `~/.config/TwinPanel` sous Linux. Une mise à jour n'y touche pas.
 
+### Comment sauvegarder mes réglages ?
+
+Options → Sauvegarde → **Sauvegarder…**. Une fenêtre demande ce que le fichier doit contenir : les réglages, la liste des connexions (jamais les mots de passe ni les clés), les onglets ouverts. Pour revenir en arrière, **Restaurer…** montre ce que contient le fichier : décochez ce que vous ne voulez pas reprendre, puis cliquez sur OK pour l'appliquer.
+
+### Comment avoir la même configuration sur plusieurs machines ?
+
+Options → Synchronisation : choisissez un dossier partagé entre vos machines (Nextcloud, OneDrive, Syncthing, clé USB…), puis **Envoyer**. Cochez ce qui doit partir : réglages communs, connexions avec leurs mots de passe et leurs clés, serveurs connus, onglets ouverts. Sur l'autre machine, Windows ou Linux, indiquez le même dossier, cliquez sur **Récupérer**, choisissez ce que vous reprenez, puis cliquez sur OK. Tout le fichier est chiffré avec une phrase secrète que TwinPanel ne garde pas.
+
 ### Comment passer sur un autre PC ?
 
 Options → Sauvegarde crée un seul fichier. À chaque sauvegarde, TwinPanel demande ce qu'il doit contenir : les réglages, la liste des connexions, les onglets ouverts. En restaurant, vous choisissez de même ce que vous reprenez ; les onglets reçus remplacent ceux ouverts, avec les mêmes règles que la synchronisation. Les mots de passe et les clés n'y sont jamais : les mots de passe seront redemandés, et une connexion par clé est marquée « clé manquante » jusqu'à ce que vous ajoutiez sa clé (Gestionnaire de connexions, onglet Clés). Un résumé s'affiche à la fin de la restauration. Pour tout transporter d'un ordinateur à l'autre, utilisez plutôt Options → Synchronisation.
+
+### Mes onglets ne reviennent pas sur l'autre machine.
+
+À l'envoi (synchronisation) ou à la sauvegarde, cochez **Onglets ouverts**, puis cochez-les aussi en récupérant ou en restaurant. Ils s'ouvrent quand vous cliquez sur OK. Un onglet de serveur revient si sa connexion existe sur l'autre machine. Un onglet d'un dossier du PC ne revient que sur le même système, et si le dossier y existe : `D:\musique` ne peut pas s'ouvrir sous Linux. Le message de fin dit combien d'onglets ont été écartés.
+
+### J'ai oublié la phrase secrète de la synchronisation.
+
+Elle ne peut pas être retrouvée, et personne ne peut plus ouvrir le fichier. Sur une machine qui a encore vos connexions et vos mots de passe, cliquez sur **Envoyer** avec une nouvelle phrase : le fichier est remplacé. Utilisez ensuite cette nouvelle phrase sur les autres machines.
 
 ### Mes mots de passe sont-ils en sécurité ?
 
@@ -492,6 +509,10 @@ Il ne peut pas être récupéré : les mots de passe et les clés du coffre sont
 
 Le fichier s'ouvre depuis une copie sur le PC. Enregistrez-le dans votre programme, puis répondez **Renvoyer** à la question de TwinPanel. Sans renvoi, la modification reste sur le PC.
 
+### Comment modifier une archive qui est sur un serveur ?
+
+Ouvrez-la avec `Entrée`, comme une archive du PC : TwinPanel en télécharge une copie. Chaque modification est faite sur la copie, puis renvoyée au serveur. Si l'archive a changé sur le serveur entre-temps, rien n'est remplacé et TwinPanel vous prévient.
+
 ### Pourquoi je ne peux pas modifier cette archive ?
 
 rar, gz, bz2 et xz sont en lecture seule, comme les 7z chiffrés. Extrayez le contenu, puis créez une nouvelle archive avec `Alt+F5`.
@@ -502,7 +523,21 @@ Choisissez-le dans ≡ → Outils → Éditeur et visionneuse, ou par extension 
 
 ### Que change la version Linux ?
 
-Elle est en bêta et fait le même travail. Les vraies icônes viennent du thème du bureau (Options → Affichage), le terminal lance votre shell habituel, et une commande tapée dans la ligne du bas s'ouvre dans un nouvel onglet du terminal intégré, où l'on voit son résultat (ou dans le terminal du bureau si le terminal intégré est désactivé).
+Elle est en bêta et fait le même travail. Elle a été essayée sur Debian 13 avec KDE, et sur Ubuntu 26.04 et Fedora 45 avec GNOME. Les vraies icônes viennent du thème du bureau (Options → Affichage), le terminal lance votre shell habituel, et une commande tapée dans la ligne du bas s'ouvre dans un nouvel onglet du terminal intégré, où l'on voit son résultat (ou dans le terminal du bureau si le terminal intégré est désactivé). Quelques différences :
+
+- **Glisser-déposer** : en session Wayland (toujours le cas sous GNOME), on ne peut pas lâcher un fichier de TwinPanel dans une autre application ; l'inverse marche.
+- **Partager** : par courriel, ou vers un appareil relié par KDE Connect.
+- **Mots de passe** : gardés grâce au trousseau du bureau ; sans trousseau, TwinPanel demande un mot de passe maître.
+- **Fedora 45** : l'AppImage a besoin de `openssl3-libs` (`sudo dnf install openssl3-libs`) ; le paquet `.rpm` l'installe de lui-même.
+- **Ubuntu** : TwinPanel n'apparaît pas dans le Centre d'applications ; on le désinstalle avec `sudo apt remove twinpanel`.
+
+### Comment envoyer un fichier à quelqu'un ?
+
+Clic droit → **Partager…** sur le fichier, ou sur les fichiers marqués. Sous Windows s'ouvre la fenêtre de partage de Windows ; sous Linux, le courriel ou KDE Connect. Un fichier d'un serveur ou d'une archive est d'abord copié sur le PC.
+
+### Mon terminal sur un serveur a perdu la connexion.
+
+Clic droit sur son onglet → **Reconnecter** : le terminal repart dans le même onglet. Au démarrage suivant, TwinPanel propose aussi de rouvrir les terminaux de la dernière fois (Options → Démarrage).
 
 ### Comment afficher les fichiers cachés ?
 
