@@ -105,9 +105,14 @@ public sealed class LinuxIconTheme
     private static readonly string[] Contexts = ["MimeTypes", "Places"];
     private static readonly string[] Extensions = [".svg", ".png"];
 
-    private sealed record Folder(string Path, int Size);
+    /// <summary>Dossier d'icônes. Min / Max : tailles couvertes par un dossier « Scalable » (SVG, Adwaita), sinon Size.</summary>
+    private sealed record Folder(string Path, int Size, int Min, int Max)
+    {
+        public int Distance(int size) => size < Min ? Min - size : size > Max ? size - Max : 0;
+    }
 
     private readonly List<(string Root, List<Folder> Folders)> _themes = [];
+    private readonly bool _found;
 
     /// <param name="name">Nom du thème.</param>
     /// <param name="bases">Dossiers qui contiennent les thèmes, le plus prioritaire d'abord.</param>
@@ -132,24 +137,31 @@ public sealed class LinuxIconTheme
                 var sections = ReadIndex(index);
                 if (!sections.TryGetValue("Icon Theme", out var head)) continue;
                 _themes.Add((root, FoldersOf(head, sections)));
+                if (theme == name) _found = true;
                 foreach (var parent in List(head, "Inherits")) waiting.Enqueue(parent);
                 break;
             }
         }
     }
 
-    /// <summary>Le thème trouvé a-t-il de quoi afficher quelque chose ?</summary>
-    public bool IsUsable => _themes.Any(t => t.Folders.Count > 0);
+    /// <summary>
+    /// Le thème demandé existe-t-il, avec de quoi afficher quelque chose ? hicolor, le secours de tous les thèmes,
+    /// ne compte pas : sous GNOME, Breeze absent ne laissait que lui, presque vide, et Adwaita n'était jamais essayé.
+    /// </summary>
+    public bool IsUsable => _found && _themes.Any(t => t.Folders.Count > 0);
 
-    /// <summary>Thème choisi dans KDE, sinon Breeze, sinon Adwaita (GNOME). Null s'il n'y a aucun thème.</summary>
+    /// <summary>Thème choisi dans le bureau (KDE ou GNOME), sinon Breeze, sinon Adwaita. Null s'il n'y a aucun thème.</summary>
     public static LinuxIconTheme? ForThisUser()
     {
         var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         List<string> bases = [Path.Combine(home, ".icons"), .. LinuxFileTypes.DataFolders().Select(f => Path.Combine(f, "icons")), "/usr/share/pixmaps"];
         var config = Environment.GetEnvironmentVariable("XDG_CONFIG_HOME");
         var settings = Path.Combine(string.IsNullOrEmpty(config) ? Path.Combine(home, ".config") : config, "kdeglobals");
-        var chosen = File.Exists(settings) && ReadIndex(settings).TryGetValue("Icons", out var icons) ? icons.GetValueOrDefault("Theme") : null;
-        foreach (var name in new[] { chosen, "breeze", "Adwaita" })
+        var kde = File.Exists(settings) && ReadIndex(settings).TryGetValue("Icons", out var icons) ? icons.GetValueOrDefault("Theme") : null;
+        var gnome = GnomeThemeName(RunGsettings());
+        // Un fichier kdeglobals peut rester d'une ancienne session KDE : le bureau en cours décide de l'ordre.
+        bool onKde = (Environment.GetEnvironmentVariable("XDG_CURRENT_DESKTOP") ?? "").Contains("KDE", StringComparison.OrdinalIgnoreCase);
+        foreach (var name in onKde ? new[] { kde, gnome, "breeze", "Adwaita" } : [gnome, kde, "Adwaita", "breeze"])
         {
             if (string.IsNullOrEmpty(name)) continue;
             var theme = new LinuxIconTheme(name, bases);
@@ -163,13 +175,37 @@ public sealed class LinuxIconTheme
     {
         foreach (var name in names)
             foreach (var (root, folders) in _themes)
-                foreach (var folder in folders.OrderBy(f => Math.Abs(f.Size - size)))
+                foreach (var folder in folders.OrderBy(f => f.Distance(size)))
                     foreach (var extension in Extensions)
                     {
                         var file = Path.Combine(root, folder.Path, name + extension);
                         if (File.Exists(file)) return file;
                     }
         return null;
+    }
+
+    /// <summary>Réponse de « gsettings get org.gnome.desktop.interface icon-theme » : 'Adwaita' entre apostrophes.</summary>
+    public static string? GnomeThemeName(string? output)
+    {
+        var text = output?.Trim();
+        if (string.IsNullOrEmpty(text)) return null;
+        if (text.Length >= 2 && text[0] == '\'' && text[^1] == '\'') text = text[1..^1];
+        return text.Length == 0 || text.Contains('/') || text.Contains("..", StringComparison.Ordinal) ? null : text;
+    }
+
+    private static string? RunGsettings()
+    {
+        try
+        {
+            var start = new System.Diagnostics.ProcessStartInfo("gsettings") { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };
+            foreach (var a in new[] { "get", "org.gnome.desktop.interface", "icon-theme" }) start.ArgumentList.Add(a);
+            using var process = System.Diagnostics.Process.Start(start);
+            if (process is null) return null;
+            var read = process.StandardOutput.ReadToEndAsync();
+            if (!process.WaitForExit(2000)) { try { process.Kill(); } catch (InvalidOperationException) { } return null; }
+            return process.ExitCode == 0 ? read.Result : null;
+        }
+        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException or IOException) { return null; }
     }
 
     private static List<Folder> FoldersOf(Dictionary<string, string> head, Dictionary<string, Dictionary<string, string>> sections)
@@ -179,10 +215,20 @@ public sealed class LinuxIconTheme
         {
             if (!sections.TryGetValue(path, out var section) || !Contexts.Contains(section.GetValueOrDefault("Context"))) continue;
             if (section.GetValueOrDefault("Scale", "1") != "1") continue;
-            if (int.TryParse(section.GetValueOrDefault("Size"), NumberStyles.Integer, CultureInfo.InvariantCulture, out int size)) folders.Add(new Folder(path, size));
+            if (!int.TryParse(section.GetValueOrDefault("Size"), NumberStyles.Integer, CultureInfo.InvariantCulture, out int size)) continue;
+            int min = size, max = size;
+            if (section.GetValueOrDefault("Type") == "Scalable")
+            {
+                min = Number(section, "MinSize") ?? size;
+                max = Number(section, "MaxSize") ?? size;
+            }
+            folders.Add(new Folder(path, size, min, max));
         }
         return folders;
     }
+
+    private static int? Number(Dictionary<string, string> section, string key) =>
+        int.TryParse(section.GetValueOrDefault(key), NumberStyles.Integer, CultureInfo.InvariantCulture, out int n) ? n : null;
 
     private static string[] List(Dictionary<string, string> section, string key) =>
         section.GetValueOrDefault(key, string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);

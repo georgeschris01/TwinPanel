@@ -19,13 +19,14 @@ A free, modern and complete two-panel file manager. For Windows, and for Linux a
 
 **[TwinPanel for Windows](../../releases/latest)** (installer).
 
-**[TwinPanel for Linux, beta version](../../releases/tag/linux-v0.1.11-beta)**: `.deb` package for Debian and its derivatives, or AppImage. This beta has only been tested on Debian 13 with KDE: some defects may remain.
+**[TwinPanel for Linux, beta version](../../releases/tag/linux-v0.1.12-beta)**: `.deb` package for Debian and Ubuntu, `.rpm` package for Fedora, or AppImage. This beta has been tested on Debian 13 with KDE, and on Ubuntu 26.04 and Fedora 45 with GNOME: some defects may remain.
 
 ```
-sudo apt install ./twinpanel_*_amd64.deb
+sudo apt install ./twinpanel_*_amd64.deb     # Debian, Ubuntu
+sudo dnf install ./twinpanel-*.x86_64.rpm    # Fedora
 ```
 
-With the AppImage: `chmod +x TwinPanel-*.AppImage`, then run the file.
+With the AppImage: `chmod +x TwinPanel-*.AppImage`, then run the file. On Fedora 45, install OpenSSL 3 first: `sudo dnf install openssl3-libs` (the `.rpm` package does it by itself). On Ubuntu, the App Center does not show TwinPanel, as it only knows its own catalogue; uninstall it with `sudo apt remove twinpanel`.
 
 ![TwinPanel on Linux](docs/screenshots/linux-en.png)
 
@@ -116,7 +117,7 @@ You can drop it on a folder, on the other panel, on a tab, on a drive or connect
 - **X11 session**: drag and drop works both ways, from TwinPanel to another application and back;
 - **Wayland session**: you cannot drop into another application. Dragging from another application into TwinPanel remains possible.
 
-To find your session type, type `echo $XDG_SESSION_TYPE` in a desktop terminal. On KDE, you choose the session on the login screen, before typing your password.
+To find your session type, type `echo $XDG_SESSION_TYPE` in a desktop terminal. On KDE, you choose the session on the login screen, before typing your password. On GNOME (Ubuntu, Fedora), the session is always Wayland.
 
 | When dropping | Result |
 |---|---|

@@ -149,7 +149,8 @@ public static class TerminalCommand
     }
 
     /// <summary>Programme et arguments (liste : aucun problème de guillemets, aucune injection possible).</summary>
-    public static (string FileName, IReadOnlyList<string> Arguments) Build(TerminalSettings s, Target target, Func<string, bool>? exists = null)
+    public static (string FileName, IReadOnlyList<string> Arguments) Build(TerminalSettings s, Target target, Func<string, bool>? exists = null,
+        Func<string, string?>? findProgram = null)
     {
         var kind = Resolve(s, exists);
         var folder = target.Folder ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
@@ -186,7 +187,8 @@ public static class TerminalCommand
             default:
             {
                 if (string.IsNullOrWhiteSpace(s.CustomPath))
-                    return OperatingSystem.IsWindows() ? ("cmd.exe", []) : ("x-terminal-emulator", ssh is null ? [] : ["-e", .. ssh]);
+                    return OperatingSystem.IsWindows() ? ("cmd.exe", [])
+                        : ssh is null ? DesktopTerminal.Command(folder, null, findProgram) : DesktopTerminal.Command(null, ssh, findProgram);
                 // %P remplacé après le découpage : un dossier avec des espaces reste un seul argument.
                 var args = s.CustomArguments.Split(' ', StringSplitOptions.RemoveEmptyEntries)
                     .Select(a => a.Replace("%P", folder, StringComparison.OrdinalIgnoreCase)).ToList();
@@ -198,14 +200,15 @@ public static class TerminalCommand
 
     /// <summary>
     /// Linux, terminal intégré désactivé : la commande de la ligne du bas s'ouvre dans le terminal du bureau,
-    /// qui reste ouvert ensuite (shell habituel). Option « -e » : comprise par x-terminal-emulator, Konsole, xterm, xfce4-terminal.
+    /// qui reste ouvert ensuite (shell habituel). Terminal choisi : option « -e » ; sinon celui du bureau, avec ses options.
     /// La commande est un seul argument de sh -c : elle n'est jamais découpée ni réinterprétée par TwinPanel.
     /// </summary>
-    public static (string FileName, IReadOnlyList<string> Arguments) BuildRun(TerminalSettings s, string command)
+    public static (string FileName, IReadOnlyList<string> Arguments) BuildRun(TerminalSettings s, string command, string? folder = null,
+        Func<string, string?>? findProgram = null)
     {
-        List<string> run = ["-e", "/bin/sh", "-c", command + "\nexec \"${SHELL:-/bin/sh}\""];
-        if (s.Kind == TerminalKind.Custom && !string.IsNullOrWhiteSpace(s.CustomPath)) return (s.CustomPath, run);
-        return ("x-terminal-emulator", run);
+        List<string> run = ["/bin/sh", "-c", command + "\nexec \"${SHELL:-/bin/sh}\""];
+        if (s.Kind == TerminalKind.Custom && !string.IsNullOrWhiteSpace(s.CustomPath)) return (s.CustomPath, ["-e", .. run]);
+        return DesktopTerminal.Command(folder, run, findProgram);
     }
 
     /// <summary>Chaîne PowerShell entre apostrophes (l'apostrophe se double).</summary>

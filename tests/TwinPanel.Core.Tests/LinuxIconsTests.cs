@@ -109,6 +109,43 @@ public class LinuxIconsTests : IDisposable
     [Fact]
     public void An_unknown_theme_is_not_usable() => Assert.False(new LinuxIconTheme("absent", [_root]).IsUsable);
 
+    [Fact]
+    public void The_fallback_theme_alone_does_not_make_an_absent_theme_usable()
+    {
+        // Sous GNOME : Breeze absent, seul hicolor existe. Il faut passer au thème suivant (Adwaita).
+        Theme("hicolor", "", ("16x16/mimetypes", "MimeTypes", 16));
+        Assert.False(new LinuxIconTheme("breeze", [_root]).IsUsable);
+        Theme("Adwaita", "hicolor", ("16x16/mimetypes", "MimeTypes", 16));
+        Assert.True(new LinuxIconTheme("Adwaita", [_root]).IsUsable);
+    }
+
+    [Fact]
+    public void A_scalable_folder_beats_a_small_picture()
+    {
+        // Adwaita : 16x16 en PNG, et un dossier SVG qui couvre de 8 à 512. Pour 32, le SVG est net, le PNG serait flou.
+        var root = Path.Combine(_root, "Adwaita");
+        Directory.CreateDirectory(Path.Combine(root, "16x16", "places"));
+        Directory.CreateDirectory(Path.Combine(root, "scalable", "places"));
+        File.WriteAllText(Path.Combine(root, "index.theme"),
+            "[Icon Theme]\nName=Adwaita\nDirectories=16x16/places,scalable/places\n\n[16x16/places]\nContext=Places\nSize=16\nType=Fixed\n\n" +
+            "[scalable/places]\nContext=Places\nSize=128\nMinSize=8\nMaxSize=512\nType=Scalable\n");
+        File.WriteAllText(Path.Combine(root, "16x16", "places", "folder.png"), "");
+        var svg = Path.Combine(root, "scalable", "places", "folder.svg");
+        File.WriteAllText(svg, "");
+        var theme = new LinuxIconTheme("Adwaita", [_root]);
+        Assert.Equal(svg, Path.GetFullPath(theme.Find(["folder"], 32)!));
+        Assert.Equal(Path.Combine(root, "16x16", "places", "folder.png"), Path.GetFullPath(theme.Find(["folder"], 16)!));
+    }
+
+    [Theory]
+    [InlineData("'Adwaita'\n", "Adwaita")]
+    [InlineData("'Papirus-Dark'", "Papirus-Dark")]
+    [InlineData("''", null)]
+    [InlineData("", null)]
+    [InlineData(null, null)]
+    [InlineData("'../../etc'", null)]
+    public void The_gnome_icon_theme_is_read(string? output, string? name) => Assert.Equal(name, LinuxIconTheme.GnomeThemeName(output));
+
     [Theory]
     [InlineData("<g transform=\"translate(-384.57-515.8)\">", "<g transform=\"translate(-384.57 -515.8)\">")]
     [InlineData("<g transform=\"scale(1-1)\">", "<g transform=\"scale(1 -1)\">")]

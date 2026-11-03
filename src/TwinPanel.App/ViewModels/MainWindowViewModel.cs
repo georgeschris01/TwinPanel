@@ -335,7 +335,7 @@ public partial class MainWindowViewModel : ObservableObject
             else
             {
                 // Terminal intégré désactivé : le terminal du bureau, qui reste ouvert après la commande.
-                var (exe, args) = TerminalCommand.BuildRun(_settings.Terminal, cmd);
+                var (exe, args) = TerminalCommand.BuildRun(_settings.Terminal, cmd, cwd);
                 var psi = new ProcessStartInfo(exe) { WorkingDirectory = cwd, UseShellExecute = false };
                 foreach (var a in args) psi.ArgumentList.Add(a);
                 Process.Start(psi)?.Dispose();
