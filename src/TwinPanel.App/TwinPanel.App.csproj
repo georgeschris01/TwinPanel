@@ -7,6 +7,8 @@
     <!-- Icône du programme (Explorateur, barre des tâches, raccourcis). -->
     <ApplicationIcon>Assets\twinpanel.ico</ApplicationIcon>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <!-- Partage de Windows (Services/WindowsShare.cs) : appels directs aux fonctions de Windows. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <PropertyGroup>

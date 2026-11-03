@@ -6,27 +6,39 @@ using System.Runtime.Versioning;
 namespace TwinPanel.App.Services;
 
 /// <summary>
-/// Fenêtre « Partager » de Windows (partage à proximité, courrier, applications…), celle du clic droit de l'Explorateur.
-/// On demande au menu contextuel de Windows d'exécuter son action « Windows.ModernShare » sur les fichiers.
-/// Les fichiers doivent être dans un même dossier : c'est à l'appelant de les y réunir.
+/// Fenêtre « Partager » de Windows (partage à proximité, courrier, applications…), par le composant de partage
+/// intégré à Windows (DataTransferManager), appelé directement, sans bibliothèque.
+/// Identifiants et ordre des fonctions relevés dans les descriptions officielles de Windows (.winmd) ;
+/// les identifiants des interfaces génériques sont calculés comme Windows le fait (vérifié sur le gestionnaire d'événement).
+/// Tout se passe sur le fil de la fenêtre.
 /// </summary>
 [SupportedOSPlatform("windows")]
-public static class WindowsShare
+public static unsafe class WindowsShare
 {
-    private const string ShareVerb = "Windows.ModernShare";
-    private const uint CmfNormal = 0;
-    private const int CmicMaskUnicode = 0x4000;
-    private const int SwShowNormal = 1;
-    private const uint FirstCommand = 1;
-    private const uint GcsVerbW = 4;
+    private static readonly Guid IidDataTransferManagerInterop = new("3A3DCD6C-3EAB-43DC-BCDE-45671CE800C8");
+    private static readonly Guid IidDataTransferManager = new("A5CAEE9B-8708-49D1-8D36-67D25A8DA00C");
+    private static readonly Guid IidStorageFileStatics = new("5984C710-DAF2-43C8-8BB4-A4D3EACFD03F");
+    private static readonly Guid IidStorageItem = new("4207A996-CA2F-42F7-BDE8-8B10457A7F30");
+    private static readonly Guid IidAsyncInfo = new("00000036-0000-0000-C000-000000000046");
 
-    /// <summary>
-    /// Le menu de la dernière demande reste en vie : la fenêtre de partage s'ouvre après le retour de l'appel,
-    /// et Windows l'abandonne si on libère le menu trop tôt.
-    /// </summary>
-    private static IContextMenu? _lastMenu;
-    private static readonly Guid IidShellFolder = new("000214E6-0000-0000-C000-000000000046");
-    private static readonly Guid IidContextMenu = new("000214E4-0000-0000-C000-000000000046");
+    // Place des fonctions dans chaque interface (0 à 5 : IUnknown puis IInspectable).
+    private const int InteropGetForWindow = 3, InteropShowShareUi = 4;
+    private const int ManagerAddDataRequested = 6, ManagerRemoveDataRequested = 7;
+    private const int ArgsGetRequest = 6;
+    private const int RequestGetData = 6;
+    private const int PackageGetProperties = 7, PackageSetStorageItems = 22;
+    private const int PropertiesPutTitle = 7;
+    private const int StaticsGetFileFromPathAsync = 6;
+    private const int AsyncInfoGetStatus = 7, AsyncInfoGetErrorCode = 8;
+    private const int AsyncOperationGetResults = 8;
+    private const int AsyncStarted = 0, AsyncCompleted = 1;
+
+    // Gardés en vie : Windows demande les fichiers après le retour de l'appel, quand l'utilisateur choisit une destination.
+    private static IntPtr _manager;
+    private static long _token;
+    private static IntPtr _handler;
+    private static ShareHandler? _handlerObject;
+    private static StorageItems? _items;
 
     /// <summary>Fenêtre principale de TwinPanel : la fenêtre de partage s'ouvre au-dessus d'elle.</summary>
     public static IntPtr MainWindowHandle() =>
@@ -34,171 +46,276 @@ public static class WindowsShare
             ? window.TryGetPlatformHandle()?.Handle ?? IntPtr.Zero
             : IntPtr.Zero;
 
-    /// <summary>
-    /// Ouvre la fenêtre de partage. Rend null si c'est fait, sinon la raison (code de Windows compris).
-    /// L'action est lancée par sa place dans le menu préparé par Windows : par son nom, Windows la refuse
-    /// (« aucune association », 0x80070483).
-    /// </summary>
+    /// <summary>Ouvre la fenêtre de partage. Rend null si c'est fait, sinon la raison (avec le code de Windows).</summary>
     public static string? Show(IReadOnlyList<string> files, IntPtr owner)
     {
-        if (files.Count == 0) return "0 fichier";
-        var absolute = new List<IntPtr>();
-        IntPtr menu = IntPtr.Zero;
-        IShellFolder? folder = null;
-        IContextMenu? contextMenu = null;
+        if (files.Count == 0) return "0";
+        if (owner == IntPtr.Zero) return "HWND";
+        var items = new List<IntPtr>();
+        IntPtr interop = IntPtr.Zero;
+        try
+        {
+            if (LoadItems(files, items) is { } loadError) return loadError;
+            int hr = ActivationFactory("Windows.ApplicationModel.DataTransfer.DataTransferManager", IidDataTransferManagerInterop, out interop);
+            if (hr != 0) return $"RoGetActivationFactory 0x{hr:X8}";
+            IntPtr manager;
+            var iid = IidDataTransferManager;
+            hr = ((delegate* unmanaged[Stdcall]<IntPtr, IntPtr, Guid*, IntPtr*, int>)Slot(interop, InteropGetForWindow))(interop, owner, &iid, &manager);
+            if (hr != 0) return $"GetForWindow 0x{hr:X8}";
+
+            // Une seule inscription à la fois : la demande précédente est retirée.
+            Unregister();
+            _items = new StorageItems(items);
+            items.Clear(); // appartiennent maintenant à _items
+            _handlerObject = new ShareHandler(_items, files.Count == 1 ? Path.GetFileName(files[0]) : "TwinPanel");
+            _handler = Marshal.GetComInterfaceForObject(_handlerObject, typeof(ITypedEventHandler));
+            _manager = manager;
+            long token;
+            hr = ((delegate* unmanaged[Stdcall]<IntPtr, IntPtr, long*, int>)Slot(manager, ManagerAddDataRequested))(manager, _handler, &token);
+            if (hr != 0) { Unregister(); return $"add_DataRequested 0x{hr:X8}"; }
+            _token = token;
+
+            hr = ((delegate* unmanaged[Stdcall]<IntPtr, IntPtr, int>)Slot(interop, InteropShowShareUi))(interop, owner);
+            return hr == 0 ? null : $"ShowShareUIForWindow 0x{hr:X8}";
+        }
+        finally
+        {
+            foreach (var item in items) Marshal.Release(item);
+            if (interop != IntPtr.Zero) Marshal.Release(interop);
+        }
+    }
+
+    private static void Unregister()
+    {
+        if (_manager != IntPtr.Zero)
+        {
+            if (_token != 0) ((delegate* unmanaged[Stdcall]<IntPtr, long, int>)Slot(_manager, ManagerRemoveDataRequested))(_manager, _token);
+            Marshal.Release(_manager);
+        }
+        if (_handler != IntPtr.Zero) Marshal.Release(_handler);
+        _items?.Dispose();
+        _manager = _handler = IntPtr.Zero;
+        _token = 0;
+        _handlerObject = null;
+        _items = null;
+    }
+
+    /// <summary>Un « StorageItem » de Windows par fichier (attente courte : fichiers de ce PC).</summary>
+    private static string? LoadItems(IReadOnlyList<string> files, List<IntPtr> items)
+    {
+        int hr = ActivationFactory("Windows.Storage.StorageFile", IidStorageFileStatics, out var statics);
+        if (hr != 0) return $"StorageFile 0x{hr:X8}";
         try
         {
             foreach (var file in files)
             {
-                int parsed = SHParseDisplayName(file, IntPtr.Zero, out var pidl, 0, out _);
-                if (parsed != 0 || pidl == IntPtr.Zero) return $"SHParseDisplayName 0x{parsed:X8}";
-                absolute.Add(pidl);
-            }
-            var iidFolder = IidShellFolder;
-            int bound = SHBindToParent(absolute[0], ref iidFolder, out var folderPtr, out _);
-            if (bound != 0) return $"SHBindToParent 0x{bound:X8}";
-            folder = (IShellFolder)Marshal.GetObjectForIUnknown(folderPtr);
-            Marshal.Release(folderPtr);
-            // Les identifiants « enfants » : la dernière partie de chaque chemin, relative au dossier commun.
-            var children = absolute.Select(ILFindLastID).ToArray();
-            var iidMenu = IidContextMenu;
-            int got = folder.GetUIObjectOf(owner, (uint)children.Length, children, ref iidMenu, IntPtr.Zero, out var menuPtr);
-            if (got != 0) return $"GetUIObjectOf 0x{got:X8}";
-            contextMenu = (IContextMenu)Marshal.GetObjectForIUnknown(menuPtr);
-            Marshal.Release(menuPtr);
-            // Le menu doit être préparé : les extensions de Windows n'ajoutent leurs actions qu'à ce moment.
-            menu = CreatePopupMenu();
-            contextMenu.QueryContextMenu(menu, 0, FirstCommand, 0x7FFF, CmfNormal);
-            if (FindVerb(contextMenu, menu, ShareVerb) is not { } id) return L.T("Windows ne propose pas « Partager » pour ces fichiers.");
-            var info = new CMINVOKECOMMANDINFOEX
-            {
-                cbSize = Marshal.SizeOf<CMINVOKECOMMANDINFOEX>(),
-                fMask = CmicMaskUnicode,
-                hwnd = owner,
-                lpVerb = (IntPtr)(id - FirstCommand),
-                lpVerbW = (IntPtr)(id - FirstCommand),
-                nShow = SwShowNormal,
-            };
-            int invoked = contextMenu.InvokeCommand(ref info);
-            if (invoked != 0) return $"InvokeCommand 0x{invoked:X8}";
-            if (_lastMenu is not null) Marshal.ReleaseComObject(_lastMenu);
-            _lastMenu = contextMenu;
-            contextMenu = null;
-            return null;
-        }
-        catch (Exception ex) when (ex is COMException or InvalidCastException or ArgumentException)
-        {
-            return ex.Message;
-        }
-        finally
-        {
-            if (menu != IntPtr.Zero) DestroyMenu(menu);
-            if (contextMenu is not null) Marshal.ReleaseComObject(contextMenu);
-            if (folder is not null) Marshal.ReleaseComObject(folder);
-            foreach (var pidl in absolute) Marshal.FreeCoTaskMem(pidl);
-        }
-    }
-
-    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
-    private static extern int SHParseDisplayName(string name, IntPtr bindingContext, out IntPtr pidl, uint sfgaoIn, out uint sfgaoOut);
-
-    [DllImport("shell32.dll")]
-    private static extern int SHBindToParent(IntPtr pidl, ref Guid riid, out IntPtr folder, out IntPtr pidlLast);
-
-    [DllImport("shell32.dll")]
-    private static extern IntPtr ILFindLastID(IntPtr pidl);
-
-    /// <summary>Cherche l'action dans le menu (et ses sous-menus) par son nom invariable ; rend son numéro.</summary>
-    private static uint? FindVerb(IContextMenu contextMenu, IntPtr menu, string verb)
-    {
-        int count = GetMenuItemCount(menu);
-        var buffer = Marshal.AllocHGlobal(1024);
-        try
-        {
-            for (int i = 0; i < count; i++)
-            {
-                var sub = GetSubMenu(menu, i);
-                if (sub != IntPtr.Zero)
+                IntPtr operation;
+                var path = HString.Create(file);
+                try { hr = ((delegate* unmanaged[Stdcall]<IntPtr, IntPtr, IntPtr*, int>)Slot(statics, StaticsGetFileFromPathAsync))(statics, path, &operation); }
+                finally { HString.Delete(path); }
+                if (hr != 0) return $"GetFileFromPathAsync 0x{hr:X8} — {file}";
+                try
                 {
-                    if (FindVerb(contextMenu, sub, verb) is { } found) return found;
-                    continue;
+                    var iidInfo = IidAsyncInfo;
+                    if (Marshal.QueryInterface(operation, in iidInfo, out var info) != 0) return "IAsyncInfo";
+                    try
+                    {
+                        int status = AsyncStarted;
+                        var limit = Environment.TickCount64 + 15_000;
+                        while (true)
+                        {
+                            hr = ((delegate* unmanaged[Stdcall]<IntPtr, int*, int>)Slot(info, AsyncInfoGetStatus))(info, &status);
+                            if (hr != 0 || status != AsyncStarted || Environment.TickCount64 > limit) break;
+                            Thread.Sleep(5);
+                        }
+                        if (status != AsyncCompleted)
+                        {
+                            int error = 0;
+                            ((delegate* unmanaged[Stdcall]<IntPtr, int*, int>)Slot(info, AsyncInfoGetErrorCode))(info, &error);
+                            return $"GetFileFromPathAsync 0x{error:X8} — {file}";
+                        }
+                    }
+                    finally { Marshal.Release(info); }
+                    IntPtr storageFile;
+                    hr = ((delegate* unmanaged[Stdcall]<IntPtr, IntPtr*, int>)Slot(operation, AsyncOperationGetResults))(operation, &storageFile);
+                    if (hr != 0) return $"GetResults 0x{hr:X8}";
+                    var iidItem = IidStorageItem;
+                    hr = Marshal.QueryInterface(storageFile, in iidItem, out var item);
+                    Marshal.Release(storageFile);
+                    if (hr != 0) return $"IStorageItem 0x{hr:X8}";
+                    items.Add(item);
                 }
-                uint id = GetMenuItemID(menu, i);
-                if (id == uint.MaxValue || id < FirstCommand) continue;
-                Marshal.WriteInt16(buffer, 0, 0);
-                if (contextMenu.GetCommandString((UIntPtr)(id - FirstCommand), GcsVerbW, IntPtr.Zero, buffer, 512) == 0
-                    && string.Equals(Marshal.PtrToStringUni(buffer), verb, StringComparison.OrdinalIgnoreCase))
-                    return id;
+                finally { Marshal.Release(operation); }
             }
             return null;
         }
-        finally { Marshal.FreeHGlobal(buffer); }
+        finally { Marshal.Release(statics); }
     }
 
-    [DllImport("user32.dll")]
-    private static extern int GetMenuItemCount(IntPtr menu);
-
-    [DllImport("user32.dll")]
-    private static extern uint GetMenuItemID(IntPtr menu, int position);
-
-    [DllImport("user32.dll")]
-    private static extern IntPtr GetSubMenu(IntPtr menu, int position);
-
-    [DllImport("user32.dll")]
-    private static extern IntPtr CreatePopupMenu();
-
-    [DllImport("user32.dll")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool DestroyMenu(IntPtr menu);
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct CMINVOKECOMMANDINFOEX
+    private static int ActivationFactory(string className, Guid iid, out IntPtr factory)
     {
-        public int cbSize;
-        public int fMask;
-        public IntPtr hwnd;
-        public IntPtr lpVerb;
-        public IntPtr lpParameters;
-        public IntPtr lpDirectory;
-        public int nShow;
-        public int dwHotKey;
-        public IntPtr hIcon;
-        public IntPtr lpTitle;
-        public IntPtr lpVerbW;
-        public IntPtr lpParametersW;
-        public IntPtr lpDirectoryW;
-        public IntPtr lpTitleW;
-        public POINT ptInvoke;
+        var name = HString.Create(className);
+        try { return RoGetActivationFactory(name, ref iid, out factory); }
+        finally { HString.Delete(name); }
     }
 
-    [StructLayout(LayoutKind.Sequential)]
-    private struct POINT
+    private static void* Slot(IntPtr instance, int index) => (*(void***)instance)[index];
+
+    /// <summary>Appelé par Windows quand l'utilisateur a choisi où partager : on donne le titre et les fichiers.</summary>
+    [ComVisible(true), ClassInterface(ClassInterfaceType.None)]
+    private sealed class ShareHandler(StorageItems items, string title) : ITypedEventHandler
     {
-        public int X;
-        public int Y;
+        public int Invoke(IntPtr sender, IntPtr args)
+        {
+            IntPtr request = IntPtr.Zero, package = IntPtr.Zero, properties = IntPtr.Zero, iterable = IntPtr.Zero;
+            try
+            {
+                int hr = ((delegate* unmanaged[Stdcall]<IntPtr, IntPtr*, int>)Slot(args, ArgsGetRequest))(args, &request);
+                if (hr != 0) return hr;
+                hr = ((delegate* unmanaged[Stdcall]<IntPtr, IntPtr*, int>)Slot(request, RequestGetData))(request, &package);
+                if (hr != 0) return hr;
+                hr = ((delegate* unmanaged[Stdcall]<IntPtr, IntPtr*, int>)Slot(package, PackageGetProperties))(package, &properties);
+                if (hr != 0) return hr;
+                var name = HString.Create(title);
+                try { hr = ((delegate* unmanaged[Stdcall]<IntPtr, IntPtr, int>)Slot(properties, PropertiesPutTitle))(properties, name); }
+                finally { HString.Delete(name); }
+                if (hr != 0) return hr;
+                iterable = Marshal.GetComInterfaceForObject(items, typeof(IIterableStorageItem));
+                return ((delegate* unmanaged[Stdcall]<IntPtr, IntPtr, int>)Slot(package, PackageSetStorageItems))(package, iterable);
+            }
+            catch (Exception ex) { return ex.HResult == 0 ? unchecked((int)0x80004005) : ex.HResult; }
+            finally
+            {
+                foreach (var p in new[] { iterable, properties, package, request })
+                    if (p != IntPtr.Zero) Marshal.Release(p);
+            }
+        }
     }
 
-    // Seule GetUIObjectOf sert ; les autres méthodes sont là pour garder l'ordre de la table de l'interface.
-    [ComImport, Guid("000214E6-0000-0000-C000-000000000046"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    private interface IShellFolder
+    /// <summary>La liste des fichiers, sous la forme que Windows attend (IIterable de IStorageItem).</summary>
+    [ComVisible(true), ClassInterface(ClassInterfaceType.None)]
+    private sealed class StorageItems(List<IntPtr> items) : IIterableStorageItem, IInspectable, IDisposable
     {
-        [PreserveSig] int ParseDisplayName(IntPtr hwnd, IntPtr pbc, [MarshalAs(UnmanagedType.LPWStr)] string name, IntPtr eaten, out IntPtr pidl, IntPtr attributes);
-        [PreserveSig] int EnumObjects(IntPtr hwnd, int flags, out IntPtr enumerator);
-        [PreserveSig] int BindToObject(IntPtr pidl, IntPtr pbc, ref Guid riid, out IntPtr result);
-        [PreserveSig] int BindToStorage(IntPtr pidl, IntPtr pbc, ref Guid riid, out IntPtr result);
-        [PreserveSig] int CompareIDs(IntPtr lParam, IntPtr pidl1, IntPtr pidl2);
-        [PreserveSig] int CreateViewObject(IntPtr hwndOwner, ref Guid riid, out IntPtr result);
-        [PreserveSig] int GetAttributesOf(uint count, [MarshalAs(UnmanagedType.LPArray)] IntPtr[] pidls, ref uint attributes);
-        [PreserveSig] int GetUIObjectOf(IntPtr hwndOwner, uint count, [MarshalAs(UnmanagedType.LPArray)] IntPtr[] pidls, ref Guid riid, IntPtr reserved, out IntPtr result);
-        [PreserveSig] int GetDisplayNameOf(IntPtr pidl, uint flags, IntPtr name);
-        [PreserveSig] int SetNameOf(IntPtr hwnd, IntPtr pidl, [MarshalAs(UnmanagedType.LPWStr)] string name, uint flags, out IntPtr pidlOut);
+        private readonly IntPtr[] _items = [.. items];
+
+        public int GetIids(out uint count, out IntPtr iids) { count = 0; iids = IntPtr.Zero; return 0; }
+        public int GetRuntimeClassName(out IntPtr name) { name = IntPtr.Zero; return 0; }
+        public int GetTrustLevel(out int level) { level = 0; return 0; }
+
+        public int First(out IntPtr iterator)
+        {
+            iterator = Marshal.GetComInterfaceForObject(new StorageItemIterator(_items), typeof(IIteratorStorageItem));
+            return 0;
+        }
+
+        public void Dispose()
+        {
+            for (int i = 0; i < _items.Length; i++)
+            {
+                if (_items[i] != IntPtr.Zero) Marshal.Release(_items[i]);
+                _items[i] = IntPtr.Zero;
+            }
+        }
     }
 
-    [ComImport, Guid("000214E4-0000-0000-C000-000000000046"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    private interface IContextMenu
+    [ComVisible(true), ClassInterface(ClassInterfaceType.None)]
+    private sealed class StorageItemIterator(IntPtr[] items) : IIteratorStorageItem, IInspectable
     {
-        [PreserveSig] int QueryContextMenu(IntPtr hmenu, uint indexMenu, uint idCmdFirst, uint idCmdLast, uint flags);
-        [PreserveSig] int InvokeCommand(ref CMINVOKECOMMANDINFOEX info);
-        [PreserveSig] int GetCommandString(UIntPtr idCmd, uint type, IntPtr reserved, IntPtr name, uint max);
+        private int _index;
+
+        public int GetIids(out uint count, out IntPtr iids) { count = 0; iids = IntPtr.Zero; return 0; }
+        public int GetRuntimeClassName(out IntPtr name) { name = IntPtr.Zero; return 0; }
+        public int GetTrustLevel(out int level) { level = 0; return 0; }
+
+        public int get_Current(out IntPtr current)
+        {
+            current = IntPtr.Zero;
+            if (_index >= items.Length) return unchecked((int)0x8000000B); // E_BOUNDS
+            Marshal.AddRef(items[_index]);
+            current = items[_index];
+            return 0;
+        }
+
+        public int get_HasCurrent(out byte hasCurrent) { hasCurrent = _index < items.Length ? (byte)1 : (byte)0; return 0; }
+
+        public int MoveNext(out byte hasCurrent)
+        {
+            if (_index < items.Length) _index++;
+            return get_HasCurrent(out hasCurrent);
+        }
+
+        public int GetMany(uint capacity, IntPtr destination, out uint actual)
+        {
+            actual = 0;
+            while (actual < capacity && _index < items.Length)
+            {
+                Marshal.AddRef(items[_index]);
+                Marshal.WriteIntPtr(destination, (int)actual * IntPtr.Size, items[_index]);
+                _index++;
+                actual++;
+            }
+            return 0;
+        }
     }
+
+    // TypedEventHandler<DataTransferManager, DataRequestedEventArgs> : un délégué Windows, fondé sur IUnknown.
+    [ComImport, Guid("EC6F9CC8-46D0-5E0E-B4D2-7D7773AE37A0"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    private interface ITypedEventHandler
+    {
+        [PreserveSig] int Invoke(IntPtr sender, IntPtr args);
+    }
+
+    [ComImport, Guid("AF86E2E0-B12D-4C6A-9C5A-D7AA65101E90"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    private interface IInspectable
+    {
+        [PreserveSig] int GetIids(out uint count, out IntPtr iids);
+        [PreserveSig] int GetRuntimeClassName(out IntPtr name);
+        [PreserveSig] int GetTrustLevel(out int level);
+    }
+
+    // IIterable<IStorageItem>
+    [ComImport, Guid("BB8B8418-65D1-544B-B083-6D172F568C73"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    private interface IIterableStorageItem
+    {
+        [PreserveSig] int GetIids(out uint count, out IntPtr iids);
+        [PreserveSig] int GetRuntimeClassName(out IntPtr name);
+        [PreserveSig] int GetTrustLevel(out int level);
+        [PreserveSig] int First(out IntPtr iterator);
+    }
+
+    // IIterator<IStorageItem>
+    [ComImport, Guid("05B487C2-3830-5D3C-98DA-25FA11542DBD"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    private interface IIteratorStorageItem
+    {
+        [PreserveSig] int GetIids(out uint count, out IntPtr iids);
+        [PreserveSig] int GetRuntimeClassName(out IntPtr name);
+        [PreserveSig] int GetTrustLevel(out int level);
+        [PreserveSig] int get_Current(out IntPtr current);
+        [PreserveSig] int get_HasCurrent(out byte hasCurrent);
+        [PreserveSig] int MoveNext(out byte hasCurrent);
+        [PreserveSig] int GetMany(uint capacity, IntPtr items, out uint actual);
+    }
+
+    private static class HString
+    {
+        public static IntPtr Create(string text)
+        {
+            Marshal.ThrowExceptionForHR(WindowsCreateString(text, (uint)text.Length, out var h));
+            return h;
+        }
+
+        public static void Delete(IntPtr h)
+        {
+            if (h != IntPtr.Zero) WindowsDeleteString(h);
+        }
+
+        [DllImport("combase.dll", CharSet = CharSet.Unicode)]
+        private static extern int WindowsCreateString(string source, uint length, out IntPtr hstring);
+
+        [DllImport("combase.dll")]
+        private static extern int WindowsDeleteString(IntPtr hstring);
+    }
+
+    [DllImport("combase.dll")]
+    private static extern int RoGetActivationFactory(IntPtr classId, ref Guid iid, out IntPtr factory);
 }

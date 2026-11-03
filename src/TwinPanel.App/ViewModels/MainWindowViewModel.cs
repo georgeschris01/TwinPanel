@@ -1305,17 +1305,6 @@ public partial class MainWindowViewModel : ObservableObject
     [System.Runtime.Versioning.SupportedOSPlatform("windows")]
     private async Task ShareOnWindowsAsync(List<string> paths)
     {
-        try
-        {
-            // La fenêtre de Windows veut des fichiers d'un même dossier : sinon, des copies réunies dans un dossier temporaire.
-            if (paths.Select(Path.GetDirectoryName).Distinct(StringComparer.OrdinalIgnoreCase).Count() > 1)
-                paths = await Task.Run(() => TwinPanel.Core.Tools.ShareFolder.Gather(paths));
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            await _dialogs.ShowErrorAsync(L.T("Partager"), ex.Message);
-            return;
-        }
         if (WindowsShare.Show(paths, WindowsShare.MainWindowHandle()) is { } problem)
             await _dialogs.ShowErrorAsync(L.T("Partager"), L.T("La fenêtre de partage de Windows ne s'est pas ouverte.") + "\n" + problem);
     }

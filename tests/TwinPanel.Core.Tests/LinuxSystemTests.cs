@@ -58,22 +58,6 @@ public class LinuxSystemTests
     }
 
     [Fact]
-    public void Files_to_share_are_gathered_without_overwriting_same_names()
-    {
-        using var t = new TempDir();
-        var one = Directory.CreateDirectory(Path.Combine(t.Path, "un")).FullName;
-        var two = Directory.CreateDirectory(Path.Combine(t.Path, "deux")).FullName;
-        File.WriteAllText(Path.Combine(one, "note.txt"), "1");
-        File.WriteAllText(Path.Combine(two, "note.txt"), "2");
-
-        var copies = ShareFolder.Gather([Path.Combine(one, "note.txt"), Path.Combine(two, "note.txt")], Path.Combine(t.Path, "tmp"));
-
-        Assert.Equal(["note.txt", "note (2).txt"], copies.Select(Path.GetFileName));
-        Assert.Single(copies.Select(Path.GetDirectoryName).Distinct());
-        Assert.Equal("2", File.ReadAllText(copies[1]));
-    }
-
-    [Fact]
     public void A_printer_list_is_read()
     {
         Assert.Equal(["Bureau", "Salon"], LinuxPrinters.Names("Salon\nBureau\n"));
