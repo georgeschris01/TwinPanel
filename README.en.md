@@ -111,7 +111,12 @@ Click on the name can be turned off in Options → Behavior.
 
 Hold the left button on an item and move the mouse. If the item is marked, all marked items go with it.
 
-You can drop it on a folder, on the other panel, on a tab, on a drive or connection button, or in Windows File Explorer. The reverse direction from File Explorer works too. On Linux in a Wayland session, you cannot drop into another application; dragging from another application into TwinPanel remains possible.
+You can drop it on a folder, on the other panel, on a tab, on a drive or connection button, or in Windows File Explorer. The reverse direction from File Explorer works too. On Linux, it depends on the session type chosen at login:
+
+- **X11 session**: drag and drop works both ways, from TwinPanel to another application and back;
+- **Wayland session**: you cannot drop into another application. Dragging from another application into TwinPanel remains possible.
+
+To find your session type, type `echo $XDG_SESSION_TYPE` in a desktop terminal. On KDE, you choose the session on the login screen, before typing your password.
 
 | When dropping | Result |
 |---|---|

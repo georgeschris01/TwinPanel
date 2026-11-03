@@ -111,7 +111,12 @@ Le clic sur le nom se désactive dans Options → Comportement.
 
 Maintenez le bouton gauche sur un élément et déplacez la souris. Si l'élément est marqué, tous les éléments marqués partent avec lui.
 
-Vous pouvez le lâcher sur un dossier, sur l'autre panneau, sur un onglet, sur un bouton de lecteur ou de connexion, ou dans l'Explorateur de Windows. Depuis l'Explorateur, le chemin inverse marche aussi. Sous Linux en session Wayland, on ne peut pas lâcher dans une autre application ; depuis une autre application vers TwinPanel, le glissement reste possible.
+Vous pouvez le lâcher sur un dossier, sur l'autre panneau, sur un onglet, sur un bouton de lecteur ou de connexion, ou dans l'Explorateur de Windows. Depuis l'Explorateur, le chemin inverse marche aussi. Sous Linux, tout dépend du type de session choisi à la connexion :
+
+- **session X11** : le glisser-déposer marche dans les deux sens, de TwinPanel vers une autre application et l'inverse ;
+- **session Wayland** : on ne peut pas lâcher dans une autre application. Depuis une autre application vers TwinPanel, le glissement reste possible.
+
+Pour connaître votre session, tapez `echo $XDG_SESSION_TYPE` dans un terminal du bureau. Sous KDE, on choisit la session sur l'écran de connexion, avant de taper le mot de passe.
 
 | Au lâcher | Résultat |
 |---|---|
