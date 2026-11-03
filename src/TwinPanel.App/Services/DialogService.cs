@@ -393,6 +393,26 @@ public sealed class DialogService(Window owner) : IDialogService
         await dialog.ShowDialog(parent);
     }
 
+    public async Task<bool[]?> ChooseItemsAsync(string title, string message, IReadOnlyList<(string Label, bool Checked, bool Enabled)> items, string okLabel)
+    {
+        var dialog = CreateWindow(title);
+        bool[]? result = null;
+        var boxes = items.Select(i => new CheckBox { Content = i.Label, IsChecked = i.Checked && i.Enabled, IsEnabled = i.Enabled }).ToList();
+        var ok = new Button { Content = okLabel, IsDefault = true, MinWidth = 100, Classes = { "accent" } };
+        var cancel = new Button { Content = L.T("Annuler"), IsCancel = true, MinWidth = 90 };
+        void Refresh() => ok.IsEnabled = boxes.Any(b => b.IsChecked == true);
+        foreach (var b in boxes) b.IsCheckedChanged += (_, _) => Refresh();
+        Refresh();
+        ok.Click += (_, _) => { result = [.. boxes.Select(b => b.IsChecked == true)]; dialog.Close(); };
+        cancel.Click += (_, _) => dialog.Close();
+        var list = new StackPanel { Spacing = 6 };
+        foreach (var b in boxes) list.Children.Add(b);
+        dialog.Content = Layout(new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap, MaxWidth = 480 }, list, Buttons(ok, cancel));
+        dialog.Opened += (_, _) => ok.Focus();
+        await dialog.ShowDialog(owner);
+        return result;
+    }
+
     public async Task ShowListAsync(string title, string message, IReadOnlyList<string> lines)
     {
         var dialog = CreateWindow(title);

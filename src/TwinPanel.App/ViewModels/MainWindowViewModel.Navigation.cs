@@ -190,18 +190,49 @@ public partial class MainWindowViewModel
         if (locked > 0 && !await _dialogs.ConfirmAsync(L.T("Jeu d'onglets"),
                 L.F("{0} onglet(s) verrouillé(s) seront fermés par « {1} ». Continuer ?", locked, set.Name))) return;
 
+        int skipped = await ReplaceAllTabsAsync(set);
+        StatusMessage = L.F("Jeu d'onglets « {0} » ouvert.", set.Name);
+        if (skipped > 0)
+            await _dialogs.ShowErrorAsync(L.T("Jeu d'onglets"), L.F("{0} onglet(s) de « {1} » n'ont pas été rouverts : ", skipped, set.Name) +
+                L.T("dossier disparu, connexion supprimée ou connexion refusée."));
+    }
+
+    /// <summary>Remplace les onglets des deux panneaux ; un panneau sans onglet possible garde les siens. Retourne le nombre d'onglets pas rouverts.</summary>
+    private async Task<int> ReplaceAllTabsAsync(TabSet set)
+    {
         var sessions = await OpenSessionsOfAsync(set);
         var (left, leftActive, leftSkipped) = await ResolveTabsAsync(set.Left, sessions);
         var (right, rightActive, rightSkipped) = await ResolveTabsAsync(set.Right, sessions);
         await Left.ReplaceTabsAsync(left, leftActive, set.Left.SortColumn, set.Left.SortDescending);
         await Right.ReplaceTabsAsync(right, rightActive, set.Right.SortColumn, set.Right.SortDescending);
         _unopenedTabs.Clear(); // ils appartenaient à la disposition remplacée
+        return leftSkipped + rightSkipped;
+    }
 
-        StatusMessage = L.F("Jeu d'onglets « {0} » ouvert.", set.Name);
-        int skipped = leftSkipped + rightSkipped;
-        if (skipped > 0)
-            await _dialogs.ShowErrorAsync(L.T("Jeu d'onglets"), L.F("{0} onglet(s) de « {1} » n'ont pas été rouverts : ", skipped, set.Name) +
-                L.T("dossier disparu, connexion supprimée ou connexion refusée."));
+    /// <summary>
+    /// Onglets d'une sauvegarde ou d'une synchronisation : ils remplacent ceux ouverts, après accord.
+    /// Ceux d'un dossier d'un autre système, ou d'une connexion absente d'ici, sont écartés et comptés.
+    /// </summary>
+    private async Task OpenReceivedTabsAsync(TransferredTabs received)
+    {
+        var (set, notHere) = TabTransfer.ForThisMachine(received, _connections?.Profiles ?? [], OperatingSystem.IsWindows());
+        int possible = set.Left.Tabs.Count + set.Right.Tabs.Count;
+        string title = L.T("Onglets reçus");
+        if (possible == 0)
+        {
+            await _dialogs.ShowErrorAsync(title, L.F("Aucun des {0} onglet(s) reçus ne peut s'ouvrir ici : ", received.Count) +
+                L.T("dossiers d'un autre système, ou connexions absentes de cette machine."));
+            return;
+        }
+        int open = Left.Tabs.Count + Right.Tabs.Count;
+        int locked = Left.Tabs.Concat(Right.Tabs).Count(t => t.IsLocked);
+        var question = L.F("Remplacer les {0} onglet(s) ouverts par les {1} onglet(s) reçus ?", open, possible);
+        if (locked > 0) question += "\n" + L.F("{0} onglet(s) verrouillé(s) seront fermés.", locked);
+        if (notHere > 0) question += "\n" + L.F("{0} onglet(s) reçus ne peuvent pas s'ouvrir ici (dossier d'un autre système ou connexion absente).", notHere);
+        if (!await _dialogs.ConfirmAsync(title, question)) return;
+
+        int skipped = notHere + await ReplaceAllTabsAsync(set);
+        StatusMessage = skipped > 0 ? L.F("Onglets reçus ouverts, sauf {0}.", skipped) : L.T("Onglets reçus ouverts.");
     }
 
     /// <summary>Ouvre les connexions du jeu ; celles refusées ou annulées sont simplement absentes du résultat.</summary>

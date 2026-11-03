@@ -151,13 +151,22 @@ public partial class MainWindowViewModel : ObservableObject
         ShowStartupTip();
     }
 
+    /// <summary>
+    /// Onglets ouverts maintenant, dans les réglages. Sans cela, ils n'y sont qu'à la fermeture de TwinPanel :
+    /// une sauvegarde faite depuis les Options gardait les onglets de la fermeture précédente.
+    /// </summary>
+    private void CaptureOpenTabs()
+    {
+        _settings.Left = WithUnopenedTabs(Left, WithSavedRemoteTabs(Left.CaptureState()));
+        _settings.Right = WithUnopenedTabs(Right, WithSavedRemoteTabs(Right.CaptureState()));
+        _settings.OpenTerminals = CaptureTerminals();
+    }
+
     public void SaveSettings(double width, double height, bool maximized)
     {
         SaveRecent();
         _transfers.Save();
-        _settings.Left = WithUnopenedTabs(Left, WithSavedRemoteTabs(Left.CaptureState()));
-        _settings.Right = WithUnopenedTabs(Right, WithSavedRemoteTabs(Right.CaptureState()));
-        _settings.OpenTerminals = CaptureTerminals();
+        CaptureOpenTabs();
         _settings.ShowHidden = ShowHidden;
         _settings.LeftTreeVisible = Left.ShowTree;
         _settings.RightTreeVisible = Right.ShowTree;

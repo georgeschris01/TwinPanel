@@ -4,14 +4,20 @@
 
 A free, modern and complete two-panel file manager. For Windows, and for Linux as a beta. Interface in English and French.
 
-- Two panels, tabs, quick view, folder tree, thumbnails, flat view
-- Copy and move with a transfer queue, resume after a cut, free space check
-- SFTP, SCP, FTP, FTPS and WebDAV servers, used just like folders
+- Two panels, lockable and renamable tabs, tab sets, quick view, folder tree, thumbnails, flat view
+- Copy and move with a transfer queue, several transfers at once, resume after a cut, free space check
+- SFTP, SCP, FTP, FTPS and WebDAV servers, used just like folders: connection manager, encrypted vault for passwords and keys, connection import
+- Server files opened or edited directly, and sent back at each save
 - Built-in terminal on the PC and on SSH servers: tabs, side by side, saved commands, search
-- Editable zip, 7z, tar and tar.gz archives, AES-256 encrypted zip
-- Search, duplicates, comparison, synchronization with profiles
-- Multi-rename, also from media data
-- Light or dark theme, customizable shortcuts, colors and button bar
+- Built-in viewer (`F3`) and editor, printing
+- Editable zip, 7z, tar and tar.gz archives, AES-256 encrypted zip, also on a server
+- Search, duplicates, folder comparison, synchronization with profiles
+- Multi-rename, also from media data; info and tags of audio, video and photo files
+- Full properties: Unix permissions, owner and group, NTFS permissions
+- Drag and drop, mouse menus, side buttons, middle click, `Ctrl` + wheel
+- Settings backup, and encrypted synchronization of the configuration between your Windows and Linux machines, open tabs included
+- Light or dark theme, customizable shortcuts, colors, icons and button bar
+- Full built-in guide (`F1`), with FAQ and tips
 
 ![TwinPanel on Windows](docs/screenshots/windows-en.png)
 
@@ -19,7 +25,7 @@ A free, modern and complete two-panel file manager. For Windows, and for Linux a
 
 **[TwinPanel for Windows](../../releases/latest)** (installer).
 
-**[TwinPanel for Linux, beta version](../../releases/tag/linux-v0.1.12-beta)**: `.deb` package for Debian and Ubuntu, `.rpm` package for Fedora, or AppImage. This beta has been tested on Debian 13 with KDE, and on Ubuntu 26.04 and Fedora 45 with GNOME: some defects may remain.
+**[TwinPanel for Linux, beta version](../../releases/tag/linux-v0.1.13-beta)**: `.deb` package for Debian and Ubuntu, `.rpm` package for Fedora, or AppImage. This beta has been tested on Debian 13 with KDE, and on Ubuntu 26.04 and Fedora 45 with GNOME: some defects may remain.
 
 ```
 sudo apt install ./twinpanel_*_amd64.deb     # Debian, Ubuntu
@@ -336,8 +342,9 @@ If TwinPanel was closed during a transfer, at the next startup it offers **Resum
 
 Options → Synchronization: choose a folder shared between your machines (Nextcloud, OneDrive, Syncthing, USB stick…), then **Send**. On the other machine, Windows or Linux, point to that folder and click **Fetch**, then OK. On the very first launch, TwinPanel offers this by itself.
 
-- **What travels**: connections, SSH keys, saved passwords, known servers, saved commands, theme, colors, shortcuts and language.
-- **What stays on each machine**: folders and tabs, favorites, editors, terminal, buttons and window size.
+- **What travels**, chosen at each send: connections with SSH keys and saved passwords, known servers, common settings (saved commands, theme, colors, shortcuts, language) and **open tabs**. When fetching, a window shows what the file contains: untick what you do not want to take.
+- **Received tabs**: they replace the open ones when you click OK, after a question. A server tab opens if its connection exists on this machine. A tab of a PC folder only opens on the same system (Windows to Windows, or Linux to Linux), and if the folder exists.
+- **What stays on each machine**: favorites, tab sets, editors, terminal, buttons and window size.
 - **Passphrase**: the whole file is encrypted with a passphrase of at least 12 characters, asked every time. TwinPanel does not keep it: **if you forget it, nobody can open the file any more**. You will then have to type your passwords again and send again.
 - **Nothing is automatic**: Fetch keeps connections that are not in the file, and Send replaces the file, warning you if another machine wrote to it since. A connection deleted on one machine therefore stays on the others.
 
@@ -453,7 +460,8 @@ Everything is set in ≡ → Tools → Options.
 | Start menu | Your personal menu, with submenus |
 | Editors | Editor by extension |
 | Terminal | Terminal to open |
-| Backup | All the settings in a single file |
+| Backup | Settings, list of connections and open tabs in a single file, as you choose |
+| Synchronization | Encrypted configuration shared between your machines, contents as you choose |
 
 Parameters for buttons and the menu: `%P` active folder, `%N` item name, `%F` its full path, `%T` folder of the other panel, `%S` marked items.
 
@@ -475,9 +483,25 @@ The **≡** button contains all the commands. Options → Shortcuts also lets yo
 
 In `%APPDATA%\TwinPanel` on Windows, in `~/.config/TwinPanel` on Linux. An update does not touch them.
 
+### How do I back up my settings?
+
+Options → Backup → **Back up…**. A window asks what the file should contain: the settings, the list of connections (never passwords or keys), the open tabs. To go back, **Restore…** shows what the file contains: untick what you do not want to take, then click OK to apply it.
+
+### How do I get the same configuration on several machines?
+
+Options → Synchronization: choose a folder shared between your machines (Nextcloud, OneDrive, Syncthing, USB stick…), then **Send**. Tick what should go: common settings, connections with their passwords and keys, known servers, open tabs. On the other machine, Windows or Linux, point to the same folder, click **Fetch**, choose what to take, then click OK. The whole file is encrypted with a passphrase that TwinPanel does not keep.
+
 ### How do I move to another PC?
 
-Options → Backup creates a single file with all the settings, and the list of connections if you wish. Passwords and keys are never included: passwords will be asked again, and a key-based connection is marked “missing key” until you add its key (Connection manager, Keys tab). A summary is shown at the end of the restore. To carry everything from one computer to another, use Options → Synchronization instead.
+Options → Backup creates a single file. At each backup, TwinPanel asks what it should contain: the settings, the list of connections, the open tabs. When restoring, you likewise choose what to take; received tabs replace the open ones, with the same rules as the synchronization. Passwords and keys are never included: passwords will be asked again, and a key-based connection is marked “missing key” until you add its key (Connection manager, Keys tab). A summary is shown at the end of the restore. To carry everything from one computer to another, use Options → Synchronization instead.
+
+### My tabs do not come back on the other machine.
+
+When sending (synchronization) or backing up, tick **Open tabs**, then tick them again when fetching or restoring. They open when you click OK. A server tab comes back if its connection exists on the other machine. A tab of a PC folder only comes back on the same system, and if the folder exists there: `D:\music` cannot open on Linux. The final message says how many tabs were left out.
+
+### I forgot the synchronization passphrase.
+
+It cannot be recovered, and nobody can open the file any more. On a machine that still has your connections and passwords, click **Send** with a new passphrase: the file is replaced. Then use this new passphrase on the other machines.
 
 ### Are my passwords safe?
 
@@ -491,6 +515,10 @@ It cannot be recovered: the passwords and keys in the vault are lost. Your conne
 
 The file opens from a copy on the PC. Save it in your program, then answer **Send back** to the TwinPanel question. Without sending it back, the change stays on the PC.
 
+### How do I change an archive that is on a server?
+
+Open it with `Enter`, like an archive on the PC: TwinPanel downloads a copy. Each change is made to the copy, then sent back to the server. If the archive changed on the server in the meantime, nothing is replaced and TwinPanel warns you.
+
 ### Why can't I change this archive?
 
 rar, gz, bz2 and xz are read-only, as are encrypted 7z files. Extract the contents, then create a new archive with `Alt+F5`.
@@ -501,7 +529,21 @@ Choose it in ≡ → Tools → Editor and viewer, or by extension in Options →
 
 ### What is different in the Linux version?
 
-It is a beta and does the same work. Real icons come from the desktop theme (Options → Display), the terminal starts your usual shell, and a command typed in the bottom line opens in a new tab of the built-in terminal, where you see its result (or in the desktop terminal if the built-in terminal is turned off).
+It is a beta and does the same work. It has been tested on Debian 13 with KDE, and on Ubuntu 26.04 and Fedora 45 with GNOME. Real icons come from the desktop theme (Options → Display), the terminal starts your usual shell, and a command typed in the bottom line opens in a new tab of the built-in terminal, where you see its result (or in the desktop terminal if the built-in terminal is turned off). A few differences:
+
+- **Drag and drop**: in a Wayland session (always the case on GNOME), a file cannot be dropped from TwinPanel into another application; the other way works.
+- **Share**: by email, or to a device linked with KDE Connect.
+- **Passwords**: kept with the desktop keyring; without a keyring, TwinPanel asks for a master password.
+- **Fedora 45**: the AppImage needs `openssl3-libs` (`sudo dnf install openssl3-libs`); the `.rpm` package installs it by itself.
+- **Ubuntu**: TwinPanel does not appear in the App Center; uninstall it with `sudo apt remove twinpanel`.
+
+### How do I send a file to someone?
+
+Right-click → **Share…** on the file, or on the marked files. On Windows, the Windows share window opens; on Linux, email or KDE Connect. A file from a server or an archive is first copied to the PC.
+
+### My terminal on a server lost its connection.
+
+Right-click its tab → **Reconnect**: the terminal starts again in the same tab. At the next start, TwinPanel also offers to reopen last time's terminals (Options → Startup).
 
 ### How do I show hidden files?
 

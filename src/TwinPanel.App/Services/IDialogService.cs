@@ -36,6 +36,11 @@ public interface IDialogService
 
     /// <summary>Fenêtre « À propos » avec le logo.</summary>
     Task ShowAboutAsync(string title, string text, IReadOnlyList<string> details);
+    /// <summary>
+    /// Cases à cocher (une case grisée n'est pas modifiable). Null si annulé ; sinon l'état de chaque case.
+    /// Le bouton de validation n'est actif que si une case au moins est cochée.
+    /// </summary>
+    Task<bool[]?> ChooseItemsAsync(string title, string message, IReadOnlyList<(string Label, bool Checked, bool Enabled)> items, string okLabel);
     /// <summary>Affiche un message long (liste) avec un bouton OK.</summary>
     Task ShowListAsync(string title, string message, IReadOnlyList<string> lines);
     /// <summary>Visionneuse intégrée (fenêtre non modale).</summary>

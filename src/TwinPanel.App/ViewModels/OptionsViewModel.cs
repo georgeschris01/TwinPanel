@@ -521,7 +521,6 @@ public partial class OptionsViewModel : ObservableObject
     }
 
     // ---- Sauvegarde
-    [ObservableProperty] private bool _backupIncludesConnections = true;
 
     // ---- Chargement / enregistrement -----------------------------------------------------------------------
 
@@ -884,6 +883,15 @@ public partial class OptionsViewModel : ObservableObject
     private async Task ExportBackup()
     {
         if (_host is null) return;
+        int tabCount = _settings.Left.Tabs.Count + _settings.Right.Tabs.Count;
+        bool hasConnections = _connections is { Profiles.Count: > 0 };
+        var chosen = await _dialogs.ChooseItemsAsync(L.T("Sauvegarder les réglages"), L.T("Que doit contenir la sauvegarde ?"),
+        [
+            (L.T("Réglages (apparence, raccourcis, boutons, éditeurs, favoris…)"), true, true),
+            (L.T("Liste des connexions (jamais les mots de passe ni les clés privées)"), hasConnections, hasConnections),
+            (L.F("Onglets ouverts ({0})", tabCount), tabCount > 0, tabCount > 0),
+        ], L.T("Sauvegarder…"));
+        if (chosen is null) return;
         var file = await _host.SaveFileAsync(L.T("Sauvegarder les réglages"), $"twinpanel-reglages-{DateTime.Now:yyyy-MM-dd}.json");
         if (file is null) return;
         try
@@ -891,14 +899,19 @@ public partial class OptionsViewModel : ObservableObject
             var snapshot = SettingsStore.Clone(_settings);
             SaveTo(snapshot); // y compris ce qui vient d'être modifié dans cette fenêtre
             string? connections = null;
-            if (BackupIncludesConnections && _connections is not null && _connections.Profiles.Count > 0)
+            if (chosen[1] && _connections is not null)
             {
                 var tmp = Path.GetTempFileName();
                 try { _connections.Export(_connections.Profiles, tmp); connections = await File.ReadAllTextAsync(tmp); }
                 finally { File.Delete(tmp); }
             }
-            SettingsStore.ExportBundle(snapshot, connections, file);
-            Message = L.F("Réglages sauvegardés dans {0}", Path.GetFileName(file)) + (connections is null ? "." : L.T(" (avec la liste des connexions, sans aucun mot de passe)."));
+            var tabs = chosen[2] ? TabTransfer.Capture(_settings.Left, _settings.Right, id => _connections?.FindProfile(id)) : null;
+            SettingsStore.ExportBundle(snapshot, connections, file, tabs, withSettings: chosen[0]);
+            var parts = new List<string>();
+            if (chosen[0]) parts.Add(L.T("réglages"));
+            if (connections is not null) parts.Add(L.T("connexions sans mot de passe"));
+            if (tabs is not null) parts.Add(L.F("{0} onglet(s)", tabs.Count));
+            Message = L.F("Sauvegardé dans {0} : {1}.", Path.GetFileName(file), string.Join(", ", parts));
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { await _dialogs.ShowErrorAsync(L.T("Sauvegarde"), ex.Message); }
     }
@@ -916,38 +929,63 @@ public partial class OptionsViewModel : ObservableObject
             await _dialogs.ShowErrorAsync(L.T("Restaurer"), ex.Message);
             return;
         }
-        if (!await _dialogs.ConfirmAsync(L.T("Restaurer les réglages"),
-                L.F("Remplacer les réglages affichés par ceux de la sauvegarde du {0:dd/MM/yyyy HH:mm} ?\n", bundle.CreatedUtc.ToLocalTime()) +
-                L.T("Ils ne seront appliqués qu'avec « OK »."))) return;
-
-        var restored = bundle.Settings!;
-        // Les favoris, les jeux d'onglets et l'éditeur F4 font aussi partie de la sauvegarde.
-        _settings.Favorites = restored.Favorites;
-        _settings.TabSets = restored.TabSets;
-        _settings.EditorName = restored.EditorName;
-        _settings.EditorPath = restored.EditorPath;
-        _settings.EditorArguments = restored.EditorArguments;
-        _settings.ViewerPath = restored.ViewerPath;
-        _settings.ViewerArguments = restored.ViewerArguments;
-        LoadFrom(restored);
-        OnPropertyChanged(nameof(GeneralEditor));
-        var msg = L.T("Réglages de la sauvegarde chargés : « OK » pour les appliquer.");
-        var details = new List<string>();
-
-        if (bundle.Connections is { } json && _connections is not null)
+        ConnectionDocument? doc = null;
+        if (bundle.Connections is { } json)
         {
             try
             {
-                var doc = System.Text.Json.JsonSerializer.Deserialize<ConnectionDocument>(json.GetRawText(), new System.Text.Json.JsonSerializerOptions
+                doc = System.Text.Json.JsonSerializer.Deserialize<ConnectionDocument>(json.GetRawText(), new System.Text.Json.JsonSerializerOptions
                 {
                     Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() },
                 });
-                var fresh = doc?.Profiles.Where(p => !_connections.Profiles.Any(x =>
-                    string.Equals(x.Name, p.Name, StringComparison.CurrentCultureIgnoreCase) && string.Equals(x.Host, p.Host, StringComparison.OrdinalIgnoreCase))).ToList() ?? [];
-                if (fresh.Count > 0 && await _dialogs.ConfirmAsync(L.T("Connexions"),
-                        L.F("La sauvegarde contient {0} connexion(s) absente(s) d'ici. Les ajouter au gestionnaire ?\n\nUne sauvegarde ne contient ni mots de passe ni clés : les mots de passe seront demandés, et une connexion par clé attendra que vous ajoutiez sa clé. Pour tout transporter, utilisez Options → Synchronisation.", fresh.Count)))
+            }
+            catch (System.Text.Json.JsonException) { doc = null; }
+        }
+        var openTabs = bundle.OpenTabs;
+        int tabCount = openTabs?.Count ?? 0;
+        bool hasConnections = doc is { Profiles.Count: > 0 } && _connections is not null;
+        var chosen = await _dialogs.ChooseItemsAsync(L.T("Restaurer les réglages"),
+            L.F("Sauvegarde du {0:dd/MM/yyyy HH:mm}. Que faut-il reprendre ?\n", bundle.CreatedUtc.ToLocalTime()) +
+            L.T("Les réglages ne seront appliqués qu'avec « OK », et les onglets reçus remplaceront ceux ouverts."),
+        [
+            (L.T("Réglages (apparence, raccourcis, boutons, éditeurs, favoris…)"), bundle.HasSettings, bundle.HasSettings),
+            (L.T("Connexions absentes d'ici (sans mots de passe ni clés)"), hasConnections, hasConnections),
+            (L.F("Onglets ouverts ({0})", tabCount), tabCount > 0, tabCount > 0),
+        ], L.T("Restaurer"));
+        if (chosen is null) return;
+
+        var details = new List<string>();
+        if (chosen[0])
+        {
+            var restored = bundle.Settings!;
+            // Les favoris, les jeux d'onglets et l'éditeur F4 font aussi partie de la sauvegarde.
+            _settings.Favorites = restored.Favorites;
+            _settings.TabSets = restored.TabSets;
+            _settings.EditorName = restored.EditorName;
+            _settings.EditorPath = restored.EditorPath;
+            _settings.EditorArguments = restored.EditorArguments;
+            _settings.ViewerPath = restored.ViewerPath;
+            _settings.ViewerArguments = restored.ViewerArguments;
+            LoadFrom(restored);
+            OnPropertyChanged(nameof(GeneralEditor));
+            details.Add(L.T("Réglages chargés."));
+        }
+        if (chosen[2] && openTabs is not null)
+        {
+            _settings.PendingTabs = openTabs;
+            details.Add(L.F("{0} onglet(s) à rouvrir.", tabCount));
+        }
+        var msg = L.T("Sauvegarde chargée : « OK » pour l'appliquer.");
+
+        if (chosen[1] && doc is not null && _connections is not null)
+        {
+            {
+                var fresh = doc.Profiles.Where(p => !_connections.Profiles.Any(x =>
+                    string.Equals(x.Name, p.Name, StringComparison.CurrentCultureIgnoreCase) && string.Equals(x.Host, p.Host, StringComparison.OrdinalIgnoreCase))).ToList();
+                if (fresh.Count == 0) details.Add(L.T("Connexions : toutes déjà présentes ici."));
+                else
                 {
-                    var report = _connections.AddImported(fresh, doc?.Keys, doc?.Identities);
+                    var report = _connections.AddImported(fresh, doc.Keys, doc.Identities);
                     details.Add(L.F("Connexions ajoutées : {0}.", report.Added.Count));
                     if (report.NeedPassword.Count > 0)
                         details.Add(L.F("Mot de passe demandé à la première connexion : {0}.", string.Join(", ", report.NeedPassword)));
@@ -956,8 +994,8 @@ public partial class OptionsViewModel : ObservableObject
                     details.Add(L.T("Pour tout transporter, mots de passe et clés compris : Options → Synchronisation."));
                 }
             }
-            catch (System.Text.Json.JsonException) { details.Add(L.T("Liste des connexions illisible, ignorée.")); }
         }
+        else if (bundle.Connections is not null && doc is null) details.Add(L.T("Liste des connexions illisible, ignorée."));
         Message = msg;
         await _dialogs.ShowListAsync(L.T("Restaurer les réglages"), msg, details);
     }
@@ -1023,10 +1061,26 @@ public partial class OptionsViewModel : ObservableObject
         finally { SyncIdle = true; }
     }
 
+    /// <summary>Cases de la fenêtre de choix, dans l'ordre : réglages, connexions, serveurs connus, onglets.</summary>
+    private static TransferParts Parts(bool[] chosen) =>
+        (chosen[0] ? TransferParts.Settings : 0) | (chosen[1] ? TransferParts.Connections : 0)
+        | (chosen[2] ? TransferParts.KnownHosts : 0) | (chosen[3] ? TransferParts.Tabs : 0);
+
     [RelayCommand(CanExecute = nameof(SyncIdle))]
     private Task SendSync() => RunSyncAsync(async () =>
     {
-        if (CurrentSyncState() is not { } state || !await SyncVaultReadyAsync()) return;
+        if (CurrentSyncState() is not { } state) return;
+        int tabCount = _settings.Left.Tabs.Count + _settings.Right.Tabs.Count;
+        var chosen = await _dialogs.ChooseItemsAsync(L.T("Synchronisation"), L.T("Que faut-il envoyer ?"),
+        [
+            (L.T("Réglages communs (langue, thème, raccourcis, couleurs, commandes)"), true, true),
+            (L.T("Connexions, avec leurs mots de passe et leurs clés"), true, true),
+            (L.T("Serveurs connus (empreintes déjà acceptées)"), true, true),
+            (L.F("Onglets ouverts ({0})", tabCount), tabCount > 0, tabCount > 0),
+        ], L.T("Envoyer"));
+        if (chosen is null) return;
+        var parts = Parts(chosen);
+        if (parts.HasFlag(TransferParts.Connections) && !await SyncVaultReadyAsync()) return;
         bool isNew = !ConfigSync.Exists(state.Folder);
         if (isNew && !await _dialogs.ConfirmAsync(L.T("Synchronisation"), L.T("Tes connexions, tes clés SSH et tes mots de passe enregistrés vont être chiffrés dans un fichier, avec une phrase secrète que tu vas choisir.\n\nElle te sera demandée à chaque envoi et sur chaque machine. TwinPanel ne la garde pas et ne l'envoie nulle part.\n\nSi tu l'oublies, personne ne pourra plus ouvrir ce fichier. Note-la en lieu sûr.\n\nContinuer ?"))) return;
         if (await AskSyncPassphraseAsync(isNew) is not { } phrase) return;
@@ -1041,11 +1095,11 @@ public partial class OptionsViewModel : ObservableObject
             if (previous.Revision != state.LastRevision && !await _dialogs.ConfirmAsync(L.T("Synchronisation"),
                     L.F("Le fichier a été envoyé par {0} le {1:dd/MM/yyyy HH:mm}, et cette machine ne l'a pas récupéré.\nL'envoi va le remplacer : ce qui n'existe que là-bas sera perdu. Continuer ?", previous.Machine, previous.SavedUtc.ToLocalTime()))) return;
         }
-        var package = ConfigSync.Build(snapshot, connections);
+        var package = ConfigSync.Build(snapshot, connections, parts);
         await Task.Run(() => ConfigSync.Write(state.Folder, phrase, package));
         state.LastRevision = package.Revision;
         state.Save(connections.Directory);
-        Message = L.F("Configuration envoyée : {0} connexion(s), {1} secret(s).", package.Connections.Profiles.Count, package.Secrets.Count);
+        Message = L.F("Configuration envoyée : {0} connexion(s), {1} secret(s), {2} onglet(s).", package.Connections.Profiles.Count, package.Secrets.Count, package.Tabs?.Count ?? 0);
     });
 
     [RelayCommand(CanExecute = nameof(SyncIdle))]
@@ -1059,21 +1113,37 @@ public partial class OptionsViewModel : ObservableObject
         }
         if (!await SyncVaultReadyAsync() || await AskSyncPassphraseAsync(isNew: false) is not { } phrase) return;
         var package = await Task.Run(() => ConfigSync.Read(state.Folder, phrase));
-        if (!await _dialogs.ConfirmAsync(L.T("Synchronisation"),
-                L.F("Récupérer la configuration envoyée par {0} le {1:dd/MM/yyyy HH:mm} ?\nLes réglages communs seront remplacés. Les connexions d'ici absentes du fichier sont gardées.", package.Machine, package.SavedUtc.ToLocalTime()))) return;
+        var inFile = package.Parts;
+        bool Has(TransferParts p) => inFile.HasFlag(p);
+        int tabCount = package.Tabs?.Count ?? 0;
+        var chosen = await _dialogs.ChooseItemsAsync(L.T("Synchronisation"),
+            L.F("Configuration envoyée par {0} le {1:dd/MM/yyyy HH:mm}. Que faut-il reprendre ?\n", package.Machine, package.SavedUtc.ToLocalTime()) +
+            L.T("Les connexions d'ici absentes du fichier sont gardées. Les onglets reçus remplaceront ceux ouverts, avec « OK »."),
+        [
+            (L.T("Réglages communs (langue, thème, raccourcis, couleurs, commandes)"), Has(TransferParts.Settings), Has(TransferParts.Settings)),
+            (L.F("Connexions, avec leurs mots de passe et leurs clés ({0})", package.Connections.Profiles.Count), Has(TransferParts.Connections), Has(TransferParts.Connections)),
+            (L.T("Serveurs connus (empreintes déjà acceptées)"), Has(TransferParts.KnownHosts), Has(TransferParts.KnownHosts)),
+            (L.F("Onglets ouverts ({0})", tabCount), Has(TransferParts.Tabs), Has(TransferParts.Tabs)),
+        ], L.T("Récupérer"));
+        if (chosen is null) return;
+        var parts = Parts(chosen);
 
         var connections = _connections!;
         // Sur le fil de l'interface : la barre des lecteurs suit les changements de la liste.
-        int count = ConfigSync.ApplyConnections(package, connections);
+        int count = ConfigSync.ApplyConnections(package, connections, parts);
         state.LastRevision = package.Revision;
         state.Save(connections.Directory);
 
-        var restored = SettingsStore.Clone(_settings);
-        SaveTo(restored); // ce qui vient d'être modifié ici et ne voyage pas reste affiché
-        package.Settings.ApplyTo(restored);
-        _settings.Terminal.SavedCommands = restored.Terminal.SavedCommands;
-        LoadFrom(restored);
-        Message = L.F("{0} connexion(s) reçue(s). Réglages chargés : « OK » pour les appliquer.", count);
+        if (parts.HasFlag(TransferParts.Settings))
+        {
+            var restored = SettingsStore.Clone(_settings);
+            SaveTo(restored); // ce qui vient d'être modifié ici et ne voyage pas reste affiché
+            package.Settings.ApplyTo(restored);
+            _settings.Terminal.SavedCommands = restored.Terminal.SavedCommands;
+            LoadFrom(restored);
+        }
+        if (parts.HasFlag(TransferParts.Tabs)) _settings.PendingTabs = package.Tabs;
+        Message = L.F("{0} connexion(s) reçue(s), {1} onglet(s) à rouvrir. « OK » pour appliquer.", count, parts.HasFlag(TransferParts.Tabs) ? tabCount : 0);
     });
 }
 

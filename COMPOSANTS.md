@@ -190,6 +190,7 @@ Les licences des bibliothèques livrées sont **permissives** (MIT, BSD, Apache 
 | `Compare/` | Comparaison et synchronisation de dossiers (côtés PC ou serveur : `SyncSides.cs`, sens réglable), différences de texte, sommes de contrôle (`HashingStream` : empreinte pendant un téléchargement). |
 | `Viewer/` | Détection d'encodage, affichage hexadécimal, `TextDocument` (éditeur : encodage et fins de ligne conservés). |
 | `Tools/ExternalTools.cs` | Éditeurs et visionneuses externes : détection (sous Linux : VSCodium, Kate, gedit, Mousepad, GNOME Text Editor), arguments `%1 %L %N %D`, éditeur intégré. |
+| `Settings/TabTransfer.cs` | Onglets ouverts emportés par une sauvegarde ou une synchronisation : serveurs retrouvés par identifiant ou par adresse, dossiers du PC gardés seulement sur le même système. Contenu au choix : `TransferParts` (`Settings/ConfigSync.cs`). |
 | `Customization/DesktopTerminal.cs` | Terminal du bureau sous Linux : programme trouvé et options pour le dossier et la commande. |
 | `Tools/LinuxShare.cs` | Partager sous Linux : courriel (`xdg-email`), appareils KDE Connect (`kdeconnect-cli`). |
 | `Terminal/` | Terminal intégré. `VtParser` (découpe du flux), `TerminalEmulator` (écran, historique, couleurs, second écran), `TerminalKeys` (clavier, souris, collage), `TerminalSession` (écran + connexion), `TerminalBacklog` (lecture limitée d'un serveur trop rapide), `TerminalCommands` (commandes enregistrées), `ConPtyConnection` (programme du PC), `TerminalShells` (programmes installés). Serveurs : `Remote/SshTerminalConnection.cs`. |

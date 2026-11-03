@@ -57,6 +57,18 @@ public sealed class SyncedSettings
     }
 }
 
+/// <summary>Parties d'une synchronisation ou d'une sauvegarde, choisies avant l'envoi et à la réception.</summary>
+[Flags]
+public enum TransferParts
+{
+    None = 0,
+    Settings = 1,
+    Connections = 2,
+    KnownHosts = 4,
+    Tabs = 8,
+    All = Settings | Connections | KnownHosts | Tabs,
+}
+
 /// <summary>Contenu du fichier, une fois déchiffré.</summary>
 public sealed class SyncPackage
 {
@@ -71,6 +83,18 @@ public sealed class SyncPackage
     public Dictionary<string, string> Secrets { get; set; } = [];
     public List<KnownSshHost> KnownHosts { get; set; } = [];
     public List<TrustedCertificate> Certificates { get; set; } = [];
+    /// <summary>Faux si l'envoi ne les contenait pas (les fichiers d'avant ce choix contiennent tout).</summary>
+    public bool HasSettings { get; set; } = true;
+    public bool HasConnections { get; set; } = true;
+    public bool HasKnownHosts { get; set; } = true;
+    /// <summary>Onglets ouverts à l'envoi ; null s'ils n'ont pas été envoyés.</summary>
+    public TransferredTabs? Tabs { get; set; }
+
+    /// <summary>Ce que contient le fichier.</summary>
+    [JsonIgnore]
+    public TransferParts Parts =>
+        (HasSettings ? TransferParts.Settings : 0) | (HasConnections ? TransferParts.Connections : 0)
+        | (HasKnownHosts ? TransferParts.KnownHosts : 0) | (Tabs is { Count: > 0 } ? TransferParts.Tabs : 0);
 }
 
 /// <summary>Où en est cette machine : dossier choisi et dernier envoi vu. Rien de secret, et rien qui voyage.</summary>
@@ -117,9 +141,25 @@ public static class ConfigSync
 
     public static bool Exists(string folder) => folder.Length > 0 && File.Exists(FilePath(folder));
 
-    /// <summary>Rassemble ce qui voyage. Lève <see cref="VaultLockedException"/> si le coffre est verrouillé.</summary>
-    public static SyncPackage Build(AppSettings settings, ConnectionStore store)
+    /// <summary>Rassemble ce qui voyage (tout, par défaut). Lève <see cref="VaultLockedException"/> si le coffre est verrouillé et que les connexions partent.</summary>
+    public static SyncPackage Build(AppSettings settings, ConnectionStore store, TransferParts parts = TransferParts.All)
     {
+        var package = new SyncPackage
+        {
+            Machine = Environment.MachineName,
+            HasSettings = parts.HasFlag(TransferParts.Settings),
+            HasConnections = parts.HasFlag(TransferParts.Connections),
+            HasKnownHosts = parts.HasFlag(TransferParts.KnownHosts),
+        };
+        if (package.HasSettings) package.Settings = SyncedSettings.From(settings);
+        if (package.HasKnownHosts)
+        {
+            package.KnownHosts = [.. store.KnownHosts.SshHosts];
+            package.Certificates = [.. store.KnownHosts.Certificates];
+        }
+        if (parts.HasFlag(TransferParts.Tabs)) package.Tabs = TabTransfer.Capture(settings.Left, settings.Right, id => store.FindProfile(id));
+        if (!package.HasConnections) return package;
+
         var connections = store.CopyForSync();
         var secrets = new Dictionary<string, string>();
         void Take(string id) { if (store.Vault.Get(id) is { } value) secrets[id] = value; }
@@ -135,15 +175,9 @@ public static class ConfigSync
             Take(SecretIds.KeyPassphrase(k.Id));
         }
         foreach (var i in connections.Identities) Take(SecretIds.IdentityPassword(i.Id));
-        return new SyncPackage
-        {
-            Machine = Environment.MachineName,
-            Settings = SyncedSettings.From(settings),
-            Connections = connections,
-            Secrets = secrets,
-            KnownHosts = [.. store.KnownHosts.SshHosts],
-            Certificates = [.. store.KnownHosts.Certificates],
-        };
+        package.Connections = connections;
+        package.Secrets = secrets;
+        return package;
     }
 
     /// <summary>Écrit le fichier d'un bloc : une coupure laisse l'ancien intact.</summary>
@@ -209,10 +243,10 @@ public static class ConfigSync
     }
 
     /// <summary>Connexions, clés, secrets et serveurs connus. Ce qui n'existe qu'ici est gardé. Retourne le nombre de connexions reçues.</summary>
-    public static int ApplyConnections(SyncPackage package, ConnectionStore store)
+    public static int ApplyConnections(SyncPackage package, ConnectionStore store, TransferParts parts = TransferParts.All)
     {
-        int count = store.MergeSynced(package.Connections, package.Secrets);
-        store.KnownHosts.Merge(package.KnownHosts, package.Certificates);
+        int count = parts.HasFlag(TransferParts.Connections) && package.HasConnections ? store.MergeSynced(package.Connections, package.Secrets) : 0;
+        if (parts.HasFlag(TransferParts.KnownHosts) && package.HasKnownHosts) store.KnownHosts.Merge(package.KnownHosts, package.Certificates);
         return count;
     }
 

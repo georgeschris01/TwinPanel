@@ -36,6 +36,13 @@ public sealed class TabSet
 
 public sealed class AppSettings
 {
+    /// <summary>
+    /// Onglets reçus par une restauration ou une synchronisation, à ouvrir quand les Options se ferment par « OK ».
+    /// Jamais enregistré.
+    /// </summary>
+    [JsonIgnore]
+    public TransferredTabs? PendingTabs { get; set; }
+
     public PanelState Left { get; set; } = new();
     public PanelState Right { get; set; } = new();
     public List<FavoriteFolder> Favorites { get; set; } = [];
@@ -355,12 +362,20 @@ public sealed class SettingsStore(string filePath)
     /// Sauvegarde de tous les réglages dans un seul fichier (pour un autre PC ou une réinstallation).
     /// connectionsJson : la liste des connexions déjà exportée SANS secrets (ou null pour ne pas l'inclure).
     /// </summary>
-    public static void ExportBundle(AppSettings settings, string? connectionsJson, string file)
+    /// <param name="tabs">Onglets ouverts à emporter ; null : pas d'onglets dans la sauvegarde.</param>
+    /// <param name="withSettings">Faux : la sauvegarde ne contient que les connexions et / ou les onglets.</param>
+    public static void ExportBundle(AppSettings settings, string? connectionsJson, string file, TransferredTabs? tabs = null, bool withSettings = true)
     {
+        // Les onglets voyagent à part (Tabs) : ceux des réglages ne doivent pas revenir par une vieille version.
+        var copy = withSettings ? Clone(settings) : new AppSettings();
+        copy.Left = new PanelState { SortColumn = copy.Left.SortColumn, SortDescending = copy.Left.SortDescending };
+        copy.Right = new PanelState { SortColumn = copy.Right.SortColumn, SortDescending = copy.Right.SortDescending };
         var bundle = new SettingsBundle
         {
             CreatedUtc = DateTime.UtcNow,
-            Settings = settings,
+            Settings = copy,
+            HasSettings = withSettings,
+            Tabs = tabs,
             Connections = connectionsJson is null ? null : JsonDocument.Parse(connectionsJson).RootElement.Clone(),
         };
         File.WriteAllText(file, JsonSerializer.Serialize(bundle, Options));
@@ -390,9 +405,18 @@ public sealed class SettingsBundle
 {
     public const string FormatName = "TwinPanel-reglages";
     public string Format { get; set; } = FormatName;
-    public int Version { get; set; } = 1;
+    /// <summary>2 : onglets à part (Tabs) et réglages facultatifs. 1 : les onglets étaient dans Settings.Left / Right.</summary>
+    public int Version { get; set; } = 2;
     public DateTime CreatedUtc { get; set; }
     public AppSettings? Settings { get; set; }
+    public bool HasSettings { get; set; } = true;
+    public TransferredTabs? Tabs { get; set; }
+
+    /// <summary>Onglets de la sauvegarde ; ceux d'une sauvegarde de version 1 sont pris dans ses réglages.</summary>
+    [JsonIgnore]
+    public TransferredTabs? OpenTabs => Version < 2 && Settings is { } s
+        ? new TransferredTabs { Left = s.Left, Right = s.Right }
+        : Tabs;
     /// <summary>Liste des connexions (sans aucun secret), au format de l'export du gestionnaire.</summary>
     public JsonElement? Connections { get; set; }
 }
