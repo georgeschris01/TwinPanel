@@ -166,14 +166,17 @@ public partial class MainWindowViewModel
     private async Task OpenOptions(string? page = null)
     {
         HangWatchdog.Step("Options : ouverture demandée");
+        CaptureOpenTabs(); // la sauvegarde des réglages doit contenir les onglets ouverts maintenant
         var copy = SettingsStore.Clone(_settings);
         HangWatchdog.Step("Options : copie des réglages faite");
         // L'état des panneaux et de la fenêtre continue d'évoluer pendant que les Options sont ouvertes : on le garde.
         var ok = await _dialogs.ShowOptionsAsync(copy, _connections, page);
         HangWatchdog.Step($"Options : fermée ({(ok ? "OK" : "Annuler")})");
         if (!ok) return;
+        CaptureOpenTabs(); // ouverts ou fermés pendant les Options
         copy.Left = _settings.Left;
         copy.Right = _settings.Right;
+        copy.OpenTerminals = _settings.OpenTerminals;
         copy.WindowWidth = _settings.WindowWidth;
         copy.WindowHeight = _settings.WindowHeight;
         copy.WindowMaximized = _settings.WindowMaximized;
@@ -189,6 +192,11 @@ public partial class MainWindowViewModel
         try { _store.Save(_settings); }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { Debug.WriteLine(ex.Message); }
         StatusMessage = L.T("Options enregistrées.");
+        if (copy.PendingTabs is { } received)
+        {
+            copy.PendingTabs = null;
+            await OpenReceivedTabsAsync(received);
+        }
         if (L.Resolve(_settings.Language, System.Globalization.CultureInfo.CurrentUICulture) != L.Language
             && await _dialogs.ConfirmAsync(L.T("Langue"), L.T("TwinPanel doit redémarrer pour changer de langue. Redémarrer maintenant ? (Sinon : au prochain démarrage.)")))
             RestartRequested?.Invoke(this, EventArgs.Empty);

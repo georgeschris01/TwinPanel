@@ -411,7 +411,7 @@
         <StackPanel Margin="16,0" MaxWidth="640" HorizontalAlignment="Left" Spacing="10">
           <TextBlock Classes="h" Text="{l:T 'Sauvegarder / restaurer les réglages'}" />
           <TextBlock TextWrapping="Wrap" Text="{l:T 'Un seul fichier avec tous les réglages : apparence, raccourcis, boutons, menu, éditeurs, favoris… Pour un autre PC ou après une réinstallation.'}" />
-          <CheckBox Content="{l:T 'Inclure la liste des connexions (jamais les mots de passe ni les clés privées)'}" IsChecked="{Binding BackupIncludesConnections}" />
+          <TextBlock TextWrapping="Wrap" Text="{l:T 'À chaque sauvegarde, TwinPanel demande ce qu\'elle doit contenir : réglages, liste des connexions (jamais les mots de passe ni les clés privées), onglets ouverts.'}" />
           <StackPanel Orientation="Horizontal" Spacing="8">
             <Button Content="{l:T 'Sauvegarder…'}" Classes="accent" Command="{Binding ExportBackupCommand}" />
             <Button Content="{l:T 'Restaurer…'}" Command="{Binding ImportBackupCommand}" />
@@ -436,9 +436,9 @@
               <Button Content="{l:T 'Récupérer'}" Command="{Binding FetchSyncCommand}" />
             </StackPanel>
             <TextBlock Classes="label" Text="{l:T 'Ce qui voyage'}" />
-            <TextBlock TextWrapping="Wrap" Text="{l:T 'Connexions, clés SSH, mots de passe enregistrés, serveurs connus, commandes enregistrées, thème, couleurs, raccourcis et langue.'}" />
+            <TextBlock TextWrapping="Wrap" Text="{l:T 'Au choix à chaque envoi et à chaque récupération : connexions avec clés SSH et mots de passe, serveurs connus, réglages communs (commandes enregistrées, thème, couleurs, raccourcis, langue) et onglets ouverts. Un onglet de serveur est rouvert si sa connexion existe ; un onglet d\'un dossier du PC seulement sur le même système, si le dossier existe.'}" />
             <TextBlock Classes="label" Text="{l:T 'Ce qui reste sur chaque machine'}" />
-            <TextBlock TextWrapping="Wrap" Text="{l:T 'Dossiers et onglets, favoris, éditeurs, terminal, boutons et taille de la fenêtre : ils ne fonctionneraient pas forcément sur un autre système.'}" />
+            <TextBlock TextWrapping="Wrap" Text="{l:T 'Favoris, jeux d\'onglets, éditeurs, terminal, boutons et taille de la fenêtre : ils ne fonctionneraient pas forcément sur un autre système.'}" />
             <TextBlock Classes="label" Text="{l:T 'Phrase secrète'}" />
             <TextBlock TextWrapping="Wrap" Text="{l:T 'Tout le fichier est chiffré avec une phrase secrète que tu choisis, demandée à chaque envoi et à chaque récupération. TwinPanel ne la garde pas : si tu l\'oublies, le fichier ne peut plus être ouvert par personne.'}" />
             <TextBlock TextWrapping="Wrap" Classes="subtle" Text="{l:T 'Une connexion supprimée sur une machine reste sur les autres : supprime-la aussi là-bas.'}" />

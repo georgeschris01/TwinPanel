@@ -336,8 +336,9 @@ Si TwinPanel a été fermé pendant un transfert, il propose au démarrage suiva
 
 Options → Synchronisation : choisis un dossier partagé entre tes machines (Nextcloud, OneDrive, Syncthing, clé USB…), puis **Envoyer**. Sur l'autre machine, Windows ou Linux, indique ce dossier et clique sur **Récupérer**, puis sur OK. Au tout premier lancement, TwinPanel le propose de lui-même.
 
-- **Ce qui voyage** : connexions, clés SSH, mots de passe enregistrés, serveurs connus, commandes enregistrées, thème, couleurs, raccourcis et langue.
-- **Ce qui reste sur chaque machine** : dossiers et onglets, favoris, éditeurs, terminal, boutons et taille de la fenêtre.
+- **Ce qui voyage**, au choix à chaque envoi : connexions avec clés SSH et mots de passe enregistrés, serveurs connus, réglages communs (commandes enregistrées, thème, couleurs, raccourcis, langue) et **onglets ouverts**. En récupérant, une fenêtre montre ce que contient le fichier : décochez ce que vous ne voulez pas reprendre.
+- **Onglets reçus** : ils remplacent ceux ouverts quand vous cliquez sur OK, après une question. Un onglet de serveur s'ouvre si sa connexion existe sur cette machine. Un onglet d'un dossier du PC ne s'ouvre que sur le même système (de Windows à Windows, ou de Linux à Linux), et si le dossier existe.
+- **Ce qui reste sur chaque machine** : favoris, jeux d'onglets, éditeurs, terminal, boutons et taille de la fenêtre.
 - **Phrase secrète** : tout le fichier est chiffré avec une phrase d'au moins 12 caractères, demandée à chaque fois. TwinPanel ne la garde pas : **si tu l'oublies, personne ne pourra plus ouvrir le fichier**. Il te restera à ressaisir tes mots de passe et à envoyer de nouveau.
 - **Rien n'est automatique** : Récupérer garde les connexions absentes du fichier, et Envoyer remplace le fichier, en prévenant si une autre machine y a écrit depuis. Une connexion supprimée sur une machine reste donc sur les autres.
 
@@ -477,7 +478,7 @@ Dans `%APPDATA%\TwinPanel` sous Windows, dans `~/.config/TwinPanel` sous Linux. 
 
 ### Comment passer sur un autre PC ?
 
-Options → Sauvegarde crée un seul fichier avec tous les réglages, et la liste des connexions si vous le souhaitez. Les mots de passe et les clés n'y sont jamais : les mots de passe seront redemandés, et une connexion par clé est marquée « clé manquante » jusqu'à ce que vous ajoutiez sa clé (Gestionnaire de connexions, onglet Clés). Un résumé s'affiche à la fin de la restauration. Pour tout transporter d'un ordinateur à l'autre, utilisez plutôt Options → Synchronisation.
+Options → Sauvegarde crée un seul fichier. À chaque sauvegarde, TwinPanel demande ce qu'il doit contenir : les réglages, la liste des connexions, les onglets ouverts. En restaurant, vous choisissez de même ce que vous reprenez ; les onglets reçus remplacent ceux ouverts, avec les mêmes règles que la synchronisation. Les mots de passe et les clés n'y sont jamais : les mots de passe seront redemandés, et une connexion par clé est marquée « clé manquante » jusqu'à ce que vous ajoutiez sa clé (Gestionnaire de connexions, onglet Clés). Un résumé s'affiche à la fin de la restauration. Pour tout transporter d'un ordinateur à l'autre, utilisez plutôt Options → Synchronisation.
 
 ### Mes mots de passe sont-ils en sécurité ?
 

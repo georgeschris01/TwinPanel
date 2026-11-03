@@ -279,4 +279,43 @@ public sealed class ConfigSyncTests : IDisposable
         Assert.Equal((_folder, revision), (state.Folder, state.LastRevision));
         Assert.Empty(SyncState.Load(Path.Combine(_dir, "absent")).Folder);
     }
+
+    [Fact]
+    public void Only_the_chosen_parts_travel()
+    {
+        var p = SavedServer();
+        var settings = new AppSettings { Theme = "Dark", Left = new PanelState { Tabs = [SavedRemoteTab.Encode(p.Id, "/srv")] } };
+        var package = ConfigSync.Build(settings, _windows, TransferParts.Tabs);
+        ConfigSync.Write(_folder, Phrase, package);
+
+        var back = ConfigSync.Read(_folder, Phrase);
+        Assert.Equal(TransferParts.Tabs, back.Parts);
+        Assert.Empty(back.Connections.Profiles);
+        Assert.Empty(back.Secrets);
+        Assert.Equal(1, back.Tabs!.Count);
+        Assert.Equal("maison", Assert.Single(back.Tabs.Servers).Name);
+        Assert.Equal(0, ConfigSync.ApplyConnections(back, _linux));
+        Assert.Empty(_linux.Profiles);
+    }
+
+    [Fact]
+    public void A_part_unticked_on_arrival_is_not_applied()
+    {
+        SavedServer();
+        Send(_windows);
+        var back = ConfigSync.Read(_folder, Phrase);
+        Assert.Equal(TransferParts.Settings | TransferParts.Connections | TransferParts.KnownHosts, back.Parts); // aucun onglet ouvert
+
+        Assert.Equal(0, ConfigSync.ApplyConnections(back, _linux, TransferParts.KnownHosts));
+        Assert.Empty(_linux.Profiles);
+        Assert.Equal(1, ConfigSync.ApplyConnections(back, _linux, TransferParts.Connections));
+    }
+
+    [Fact]
+    public void A_file_sent_before_the_choice_contains_everything()
+    {
+        var package = System.Text.Json.JsonSerializer.Deserialize<SyncPackage>("{\"Version\":1}")!;
+        Assert.Equal(TransferParts.Settings | TransferParts.Connections | TransferParts.KnownHosts, package.Parts);
+        Assert.Null(package.Tabs);
+    }
 }

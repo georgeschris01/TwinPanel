@@ -336,8 +336,9 @@ If TwinPanel was closed during a transfer, at the next startup it offers **Resum
 
 Options → Synchronization: choose a folder shared between your machines (Nextcloud, OneDrive, Syncthing, USB stick…), then **Send**. On the other machine, Windows or Linux, point to that folder and click **Fetch**, then OK. On the very first launch, TwinPanel offers this by itself.
 
-- **What travels**: connections, SSH keys, saved passwords, known servers, saved commands, theme, colors, shortcuts and language.
-- **What stays on each machine**: folders and tabs, favorites, editors, terminal, buttons and window size.
+- **What travels**, chosen at each send: connections with SSH keys and saved passwords, known servers, common settings (saved commands, theme, colors, shortcuts, language) and **open tabs**. When fetching, a window shows what the file contains: untick what you do not want to take.
+- **Received tabs**: they replace the open ones when you click OK, after a question. A server tab opens if its connection exists on this machine. A tab of a PC folder only opens on the same system (Windows to Windows, or Linux to Linux), and if the folder exists.
+- **What stays on each machine**: favorites, tab sets, editors, terminal, buttons and window size.
 - **Passphrase**: the whole file is encrypted with a passphrase of at least 12 characters, asked every time. TwinPanel does not keep it: **if you forget it, nobody can open the file any more**. You will then have to type your passwords again and send again.
 - **Nothing is automatic**: Fetch keeps connections that are not in the file, and Send replaces the file, warning you if another machine wrote to it since. A connection deleted on one machine therefore stays on the others.
 
@@ -477,7 +478,7 @@ In `%APPDATA%\TwinPanel` on Windows, in `~/.config/TwinPanel` on Linux. An updat
 
 ### How do I move to another PC?
 
-Options → Backup creates a single file with all the settings, and the list of connections if you wish. Passwords and keys are never included: passwords will be asked again, and a key-based connection is marked “missing key” until you add its key (Connection manager, Keys tab). A summary is shown at the end of the restore. To carry everything from one computer to another, use Options → Synchronization instead.
+Options → Backup creates a single file. At each backup, TwinPanel asks what it should contain: the settings, the list of connections, the open tabs. When restoring, you likewise choose what to take; received tabs replace the open ones, with the same rules as the synchronization. Passwords and keys are never included: passwords will be asked again, and a key-based connection is marked “missing key” until you add its key (Connection manager, Keys tab). A summary is shown at the end of the restore. To carry everything from one computer to another, use Options → Synchronization instead.
 
 ### Are my passwords safe?
 
