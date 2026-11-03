@@ -19,7 +19,7 @@ Gestionnaire de fichiers à deux panneaux, gratuit, moderne et complet. Pour Win
 
 **[TwinPanel pour Windows](../../releases/latest)** (installateur).
 
-**[TwinPanel pour Linux, version bêta](../../releases/tag/linux-v0.1.12-beta)** : paquet `.deb` pour Debian et Ubuntu, paquet `.rpm` pour Fedora, ou AppImage. Bêta testée sur Debian 13 avec KDE, Ubuntu 26.04 et Fedora 45 avec GNOME : des défauts peuvent rester.
+**[TwinPanel pour Linux, version bêta](../../releases/tag/linux-v0.1.13-beta)** : paquet `.deb` pour Debian et Ubuntu, paquet `.rpm` pour Fedora, ou AppImage. Bêta testée sur Debian 13 avec KDE, Ubuntu 26.04 et Fedora 45 avec GNOME : des défauts peuvent rester.
 
 ```
 sudo apt install ./twinpanel_*_amd64.deb     # Debian, Ubuntu

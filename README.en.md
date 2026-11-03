@@ -19,7 +19,7 @@ A free, modern and complete two-panel file manager. For Windows, and for Linux a
 
 **[TwinPanel for Windows](../../releases/latest)** (installer).
 
-**[TwinPanel for Linux, beta version](../../releases/tag/linux-v0.1.12-beta)**: `.deb` package for Debian and Ubuntu, `.rpm` package for Fedora, or AppImage. This beta has been tested on Debian 13 with KDE, and on Ubuntu 26.04 and Fedora 45 with GNOME: some defects may remain.
+**[TwinPanel for Linux, beta version](../../releases/tag/linux-v0.1.13-beta)**: `.deb` package for Debian and Ubuntu, `.rpm` package for Fedora, or AppImage. This beta has been tested on Debian 13 with KDE, and on Ubuntu 26.04 and Fedora 45 with GNOME: some defects may remain.
 
 ```
 sudo apt install ./twinpanel_*_amd64.deb     # Debian, Ubuntu
