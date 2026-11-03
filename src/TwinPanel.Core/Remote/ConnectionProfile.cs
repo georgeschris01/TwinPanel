@@ -118,6 +118,11 @@ public sealed class ConnectionProfile
     public bool SavePassword { get; set; }
     /// <summary>Clé du trousseau (modes Key et KeyAndPassword).</summary>
     public Guid? KeyId { get; set; }
+    /// <summary>
+    /// Connexion restaurée sans sa clé (une sauvegarde n'en contient jamais) : description de la clé attendue,
+    /// « nom (empreinte) ». Vide dès qu'une clé est choisie. Tant qu'elle est là, la connexion explique quoi faire au lieu de se connecter.
+    /// </summary>
+    public string MissingKey { get; set; } = string.Empty;
 
     // ---- Sécurité
     /// <summary>FTP / WebDAV non chiffrés : l'utilisateur a accepté le risque pour cette connexion.</summary>
@@ -177,7 +182,7 @@ public sealed class ConnectionProfile
         if (Auth == AuthMode.Anonymous && !RemoteProtocols.IsFtp(Protocol)) errors.Add(L.T("La connexion anonyme n'existe qu'en FTP."));
         if (Auth is AuthMode.Key or AuthMode.KeyAndPassword && !RemoteProtocols.IsSsh(Protocol))
             errors.Add(L.T("Les clés privées ne servent qu'en SFTP et SCP."));
-        if (Auth is AuthMode.Key or AuthMode.KeyAndPassword && KeyId is null && IdentityId is null)
+        if (Auth is AuthMode.Key or AuthMode.KeyAndPassword && KeyId is null && IdentityId is null && MissingKey.Length == 0)
             errors.Add(L.T("Choisis une clé du trousseau (onglet Authentification)."));
         if (IdentityId is null && Auth != AuthMode.Anonymous && string.IsNullOrWhiteSpace(UserName))
             errors.Add(L.T("L'identifiant est obligatoire (ou choisis une identité du trousseau)."));

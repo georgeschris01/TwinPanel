@@ -928,6 +928,7 @@ public partial class OptionsViewModel : ObservableObject
         LoadFrom(restored);
         OnPropertyChanged(nameof(GeneralEditor));
         var msg = L.T("Réglages de la sauvegarde chargés : « OK » pour les appliquer.");
+        var details = new List<string>();
 
         if (bundle.Connections is { } json && _connections is not null)
         {
@@ -940,12 +941,21 @@ public partial class OptionsViewModel : ObservableObject
                 var fresh = doc?.Profiles.Where(p => !_connections.Profiles.Any(x =>
                     string.Equals(x.Name, p.Name, StringComparison.CurrentCultureIgnoreCase) && string.Equals(x.Host, p.Host, StringComparison.OrdinalIgnoreCase))).ToList() ?? [];
                 if (fresh.Count > 0 && await _dialogs.ConfirmAsync(L.T("Connexions"),
-                        L.F("La sauvegarde contient {0} connexion(s) absente(s) d'ici. Les ajouter au gestionnaire ?\n\nUne sauvegarde ne contient ni mots de passe ni clés : une connexion par clé revient réglée par mot de passe. Pour tout transporter, utilisez Options → Synchronisation.", fresh.Count)))
-                    msg += L.F(" {0} connexion(s) ajoutée(s).", _connections.AddImported(fresh));
+                        L.F("La sauvegarde contient {0} connexion(s) absente(s) d'ici. Les ajouter au gestionnaire ?\n\nUne sauvegarde ne contient ni mots de passe ni clés : les mots de passe seront demandés, et une connexion par clé attendra que vous ajoutiez sa clé. Pour tout transporter, utilisez Options → Synchronisation.", fresh.Count)))
+                {
+                    var report = _connections.AddImported(fresh, doc?.Keys, doc?.Identities);
+                    details.Add(L.F("Connexions ajoutées : {0}.", report.Added.Count));
+                    if (report.NeedPassword.Count > 0)
+                        details.Add(L.F("Mot de passe demandé à la première connexion : {0}.", string.Join(", ", report.NeedPassword)));
+                    foreach (var missing in report.MissingKey) details.Add(L.F("Clé à ajouter (Gestionnaire de connexions → Clés) : {0}", missing));
+                    if (report.Rejected.Count > 0) details.Add(L.F("Fiches incomplètes, non ajoutées : {0}.", string.Join(", ", report.Rejected)));
+                    details.Add(L.T("Pour tout transporter, mots de passe et clés compris : Options → Synchronisation."));
+                }
             }
-            catch (System.Text.Json.JsonException) { msg += L.T(" (liste des connexions illisible, ignorée)"); }
+            catch (System.Text.Json.JsonException) { details.Add(L.T("Liste des connexions illisible, ignorée.")); }
         }
         Message = msg;
+        await _dialogs.ShowListAsync(L.T("Restaurer les réglages"), msg, details);
     }
 
     // ---- Synchronisation entre machines ---------------------------------------------------------------------

@@ -474,7 +474,7 @@ In `%APPDATA%\TwinPanel` on Windows, in `~/.config/TwinPanel` on Linux. An updat
 
 ### How do I move to another PC?
 
-Options → Backup creates a single file with all the settings, and the list of connections if you wish. Passwords and keys are never included: passwords will be asked again, and a key-based connection comes back set to password. To carry everything from one computer to another, use Options → Synchronization instead.
+Options → Backup creates a single file with all the settings, and the list of connections if you wish. Passwords and keys are never included: passwords will be asked again, and a key-based connection is marked “missing key” until you add its key (Connection manager, Keys tab). A summary is shown at the end of the restore. To carry everything from one computer to another, use Options → Synchronization instead.
 
 ### Are my passwords safe?
 

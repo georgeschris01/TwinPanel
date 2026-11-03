@@ -474,7 +474,7 @@ Dans `%APPDATA%\TwinPanel` sous Windows, dans `~/.config/TwinPanel` sous Linux. 
 
 ### Comment passer sur un autre PC ?
 
-Options → Sauvegarde crée un seul fichier avec tous les réglages, et la liste des connexions si vous le souhaitez. Les mots de passe et les clés n'y sont jamais : les mots de passe seront redemandés, et une connexion par clé revient réglée par mot de passe. Pour tout transporter d'un ordinateur à l'autre, utilisez plutôt Options → Synchronisation.
+Options → Sauvegarde crée un seul fichier avec tous les réglages, et la liste des connexions si vous le souhaitez. Les mots de passe et les clés n'y sont jamais : les mots de passe seront redemandés, et une connexion par clé est marquée « clé manquante » jusqu'à ce que vous ajoutiez sa clé (Gestionnaire de connexions, onglet Clés). Un résumé s'affiche à la fin de la restauration. Pour tout transporter d'un ordinateur à l'autre, utilisez plutôt Options → Synchronisation.
 
 ### Mes mots de passe sont-ils en sécurité ?
 

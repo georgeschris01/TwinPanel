@@ -99,6 +99,8 @@ public sealed class ConnectionStore
     {
         var errors = profile.Validate();
         if (errors.Count > 0) throw new ArgumentException(string.Join(Environment.NewLine, errors));
+        if (profile.KeyId is not null || profile.IdentityId is not null || profile.Auth is not (AuthMode.Key or AuthMode.KeyAndPassword))
+            profile.MissingKey = string.Empty;
         Replace(_doc.Profiles, profile, p => p.Id == profile.Id);
         if (!profile.SavePassword) Vault.Remove(SecretIds.Password(profile.Id));
         if (!profile.SaveProxyPassword) Vault.Remove(SecretIds.ProxyPassword(profile.Id));
@@ -251,26 +253,51 @@ public sealed class ConnectionStore
         JsonSerializer.Deserialize<ConnectionDocument>(File.ReadAllText(file), Json)
         ?? throw new InvalidDataException(L.T("Fichier de connexions vide ou invalide."));
 
-    /// <summary>Ajoute des connexions importées (nouveaux identifiants, noms rendus uniques). Retourne le nombre ajouté.</summary>
-    public int AddImported(IEnumerable<ConnectionProfile> profiles)
+    /// <summary>
+    /// Ajoute des connexions venues d'une sauvegarde (nouveaux identifiants, noms rendus uniques), sans aucun secret.
+    /// keys / identities : celles décrites dans la sauvegarde (parties publiques), pour retrouver une clé déjà présente ici
+    /// par son empreinte, ou dire laquelle manque. Une connexion par clé reste par clé : jamais changée en mot de passe en silence.
+    /// </summary>
+    public ImportReport AddImported(IEnumerable<ConnectionProfile> profiles, IEnumerable<KeychainKey>? keys = null, IEnumerable<KeychainIdentity>? identities = null)
     {
-        int n = 0;
+        var report = new ImportReport();
+        var exportedKeys = (keys ?? []).ToList();
+        var exportedIdentities = (identities ?? []).ToList();
         foreach (var p in profiles)
         {
             var copy = p.Clone(newId: true);
             copy.Name = UniqueName(copy.Name);
-            // Les références vers des clés / identités / rebonds absents d'ici sont retirées.
-            if (FindKey(copy.KeyId) is null) copy.KeyId = null;
-            if (FindIdentity(copy.IdentityId) is null) copy.IdentityId = null;
+            // Identité absente d'ici : son identifiant et sa clé passent dans la connexion.
+            if (copy.IdentityId is not null && FindIdentity(copy.IdentityId) is null)
+            {
+                var identity = exportedIdentities.FirstOrDefault(i => i.Id == copy.IdentityId);
+                if (copy.UserName.Length == 0 && identity is not null) copy.UserName = identity.UserName;
+                if (copy.KeyId is null && identity?.KeyId is not null) copy.KeyId = identity.KeyId;
+                copy.IdentityId = null;
+            }
+            if (copy.KeyId is not null && FindKey(copy.KeyId) is null)
+            {
+                // Même clé déjà ici sous un autre identifiant (importée à part) : reconnue par son empreinte.
+                var described = exportedKeys.FirstOrDefault(k => k.Id == copy.KeyId);
+                var local = described is { Fingerprint.Length: > 0 }
+                    ? _doc.Keys.FirstOrDefault(k => string.Equals(k.Fingerprint, described.Fingerprint, StringComparison.Ordinal)) : null;
+                copy.KeyId = local?.Id;
+                copy.MissingKey = local is not null ? string.Empty
+                    : described is null ? L.T("clé inconnue")
+                    : described.Fingerprint.Length > 0 ? $"{described.Name} ({described.Fingerprint})" : described.Name;
+            }
+            if (copy.Auth is AuthMode.Key or AuthMode.KeyAndPassword && copy.KeyId is null && copy.IdentityId is null && copy.MissingKey.Length == 0)
+                copy.MissingKey = L.T("clé inconnue");
             if (FindProfile(copy.JumpHostId) is null) copy.JumpHostId = null;
-            if (copy.Auth is AuthMode.Key or AuthMode.KeyAndPassword && copy.KeyId is null && copy.IdentityId is null) copy.Auth = AuthMode.Password;
             copy.SavePassword = copy.SaveProxyPassword = copy.SaveClientCertificatePassword = false;
-            if (copy.Validate().Count > 0) continue;
+            if (copy.Validate().Count > 0) { report.Rejected.Add(copy.Name); continue; }
             _doc.Profiles.Add(copy);
-            n++;
+            report.Added.Add(copy.Name);
+            if (copy.MissingKey.Length > 0) report.MissingKey.Add($"{copy.Name} : {copy.MissingKey}");
+            if (copy.Auth is AuthMode.Password or AuthMode.KeyAndPassword) report.NeedPassword.Add(copy.Name);
         }
-        if (n > 0) Save();
-        return n;
+        if (report.Added.Count > 0) Save();
+        return report;
     }
 
     /// <summary>
@@ -370,4 +397,16 @@ public sealed class ConnectionStore
         File.Move(tmp, _path, overwrite: true);
         Changed?.Invoke(this, EventArgs.Empty);
     }
+}
+
+/// <summary>Bilan d'une restauration de connexions : noms ajoutés, refusés, à compléter.</summary>
+public sealed class ImportReport
+{
+    public List<string> Added { get; } = [];
+    /// <summary>Fiches incomplètes (sans hôte, sans identifiant…), pas ajoutées.</summary>
+    public List<string> Rejected { get; } = [];
+    /// <summary>Mot de passe demandé à la première connexion.</summary>
+    public List<string> NeedPassword { get; } = [];
+    /// <summary>« Connexion : clé attendue ».</summary>
+    public List<string> MissingKey { get; } = [];
 }

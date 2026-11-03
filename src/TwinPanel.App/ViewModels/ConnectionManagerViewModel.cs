@@ -51,6 +51,8 @@ public sealed class ProfileRow(ConnectionProfile profile, bool connected) : Conn
     public string Protocol => RemoteProtocols.Scheme(Profile.Protocol).ToUpperInvariant();
     public bool IsConnected { get; } = connected;
     public bool IsUnencrypted => RemoteProtocols.IsUnencrypted(Profile.Protocol);
+    public bool HasMissingKey => Profile.MissingKey.Length > 0;
+    public string MissingKeyTip => L.F("Clé à ajouter (onglet Clés), puis à choisir dans cette connexion : {0}", Profile.MissingKey);
     public IBrush ColorBrush => Profile.Color.Length > 0 && Color.TryParse(Profile.Color, out var c)
         ? new SolidColorBrush(c) : Brushes.Transparent;
 }
