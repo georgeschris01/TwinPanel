@@ -4,14 +4,20 @@
 
 A free, modern and complete two-panel file manager. For Windows, and for Linux as a beta. Interface in English and French.
 
-- Two panels, tabs, quick view, folder tree, thumbnails, flat view
-- Copy and move with a transfer queue, resume after a cut, free space check
-- SFTP, SCP, FTP, FTPS and WebDAV servers, used just like folders
+- Two panels, lockable and renamable tabs, tab sets, quick view, folder tree, thumbnails, flat view
+- Copy and move with a transfer queue, several transfers at once, resume after a cut, free space check
+- SFTP, SCP, FTP, FTPS and WebDAV servers, used just like folders: connection manager, encrypted vault for passwords and keys, connection import
+- Server files opened or edited directly, and sent back at each save
 - Built-in terminal on the PC and on SSH servers: tabs, side by side, saved commands, search
-- Editable zip, 7z, tar and tar.gz archives, AES-256 encrypted zip
-- Search, duplicates, comparison, synchronization with profiles
-- Multi-rename, also from media data
-- Light or dark theme, customizable shortcuts, colors and button bar
+- Built-in viewer (`F3`) and editor, printing
+- Editable zip, 7z, tar and tar.gz archives, AES-256 encrypted zip, also on a server
+- Search, duplicates, folder comparison, synchronization with profiles
+- Multi-rename, also from media data; info and tags of audio, video and photo files
+- Full properties: Unix permissions, owner and group, NTFS permissions
+- Drag and drop, mouse menus, side buttons, middle click, `Ctrl` + wheel
+- Settings backup, and encrypted synchronization of the configuration between your Windows and Linux machines, open tabs included
+- Light or dark theme, customizable shortcuts, colors, icons and button bar
+- Full built-in guide (`F1`), with FAQ and tips
 
 ![TwinPanel on Windows](docs/screenshots/windows-en.png)
 

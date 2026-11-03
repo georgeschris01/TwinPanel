@@ -4,14 +4,20 @@
 
 Gestionnaire de fichiers à deux panneaux, gratuit, moderne et complet. Pour Windows, et pour Linux en version bêta. Interface en français et en anglais.
 
-- Deux panneaux, onglets, vue rapide, arborescence, miniatures, vue à plat
-- Copie et déplacement avec file de transferts, reprise après coupure, contrôle de la place libre
-- Serveurs SFTP, SCP, FTP, FTPS et WebDAV, utilisés comme des dossiers
+- Deux panneaux, onglets verrouillables et renommables, jeux d'onglets, vue rapide, arborescence, miniatures, vue à plat
+- Copie et déplacement avec file de transferts, plusieurs transferts en même temps, reprise après coupure, contrôle de la place libre
+- Serveurs SFTP, SCP, FTP, FTPS et WebDAV, utilisés comme des dossiers : gestionnaire de connexions, coffre chiffré pour les mots de passe et les clés, import de connexions
+- Fichiers d'un serveur ouverts ou édités directement, et renvoyés à chaque enregistrement
 - Terminal intégré sur le PC et sur les serveurs SSH : onglets, côte à côte, commandes enregistrées, recherche
-- Archives zip, 7z, tar, tar.gz modifiables, zip chiffré AES-256
-- Recherche, doublons, comparaison, synchronisation avec profils
-- Renommage multiple, aussi selon les médias
-- Thème clair ou sombre, raccourcis, couleurs et barre de boutons personnalisables
+- Visionneuse (`F3`) et éditeur intégrés, impression
+- Archives zip, 7z, tar, tar.gz modifiables, zip chiffré AES-256, aussi sur un serveur
+- Recherche, doublons, comparaison de dossiers, synchronisation avec profils
+- Renommage multiple, aussi selon les infos des médias ; infos et tags des fichiers audio, vidéo et photo
+- Propriétés complètes : droits Unix, propriétaire et groupe, droits NTFS
+- Glisser-déposer, menus souris, boutons latéraux, clic milieu, `Ctrl` + molette
+- Sauvegarde des réglages, et synchronisation chiffrée de la configuration entre vos machines Windows et Linux, onglets ouverts compris
+- Thème clair ou sombre, raccourcis, couleurs, icônes et barre de boutons personnalisables
+- Guide complet intégré (`F1`), avec FAQ et astuces
 
 ![TwinPanel sous Windows](docs/screenshots/windows-fr.png)
 
