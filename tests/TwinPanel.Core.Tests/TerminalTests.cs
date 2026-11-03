@@ -604,6 +604,20 @@ public class TerminalShellsTests
     }
 
     [Fact]
+    public void Command_line_run_in_desktop_terminal_keeps_the_command_as_one_argument()
+    {
+        var (exe, args) = TerminalCommand.BuildRun(new TerminalSettings(), "ls -l 'mon dossier'; echo fini");
+        Assert.Equal("x-terminal-emulator", exe);
+        Assert.Equal(["-e", "/bin/sh", "-c"], args.Take(3));
+        Assert.Equal(4, args.Count);
+        Assert.StartsWith("ls -l 'mon dossier'; echo fini\n", args[3], StringComparison.Ordinal);
+        Assert.EndsWith("exec \"${SHELL:-/bin/sh}\"", args[3], StringComparison.Ordinal);
+
+        var custom = new TerminalSettings { Kind = TerminalKind.Custom, CustomPath = "/usr/bin/konsole" };
+        Assert.Equal("/usr/bin/konsole", TerminalCommand.BuildRun(custom, "ls").FileName);
+    }
+
+    [Fact]
     public void Custom_external_terminal_keeps_a_folder_with_spaces_as_one_argument()
     {
         var settings = new TerminalSettings { Kind = TerminalKind.Custom, CustomPath = "t.exe", CustomArguments = "--dir %P --fin" };

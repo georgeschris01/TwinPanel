@@ -940,7 +940,7 @@ public partial class OptionsViewModel : ObservableObject
                 var fresh = doc?.Profiles.Where(p => !_connections.Profiles.Any(x =>
                     string.Equals(x.Name, p.Name, StringComparison.CurrentCultureIgnoreCase) && string.Equals(x.Host, p.Host, StringComparison.OrdinalIgnoreCase))).ToList() ?? [];
                 if (fresh.Count > 0 && await _dialogs.ConfirmAsync(L.T("Connexions"),
-                        L.F("La sauvegarde contient {0} connexion(s) absente(s) d'ici. Les ajouter au gestionnaire (sans mots de passe) ?", fresh.Count)))
+                        L.F("La sauvegarde contient {0} connexion(s) absente(s) d'ici. Les ajouter au gestionnaire ?\n\nUne sauvegarde ne contient ni mots de passe ni clés : une connexion par clé revient réglée par mot de passe. Pour tout transporter, utilisez Options → Synchronisation.", fresh.Count)))
                     msg += L.F(" {0} connexion(s) ajoutée(s).", _connections.AddImported(fresh));
             }
             catch (System.Text.Json.JsonException) { msg += L.T(" (liste des connexions illisible, ignorée)"); }

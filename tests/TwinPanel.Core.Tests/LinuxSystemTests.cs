@@ -65,6 +65,7 @@ public class LinuxSystemTests
     }
 
     [LinuxFact]
+    [System.Runtime.Versioning.SupportedOSPlatform("linux")]
     public void The_settings_folder_is_private()
     {
         var parent = Directory.CreateTempSubdirectory("twinpanel-").FullName;

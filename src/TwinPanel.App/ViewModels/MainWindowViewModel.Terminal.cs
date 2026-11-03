@@ -183,7 +183,8 @@ public partial class MainWindowViewModel
             : Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
     }
 
-    private async Task OpenLocalTerminalAsync(TerminalShell shell, string directory, TerminalFamily? family = null)
+    /// <summary>Rend l'onglet ouvert, ou null si le terminal n'a pas pu démarrer.</summary>
+    private async Task<TerminalTabViewModel?> OpenLocalTerminalAsync(TerminalShell shell, string directory, TerminalFamily? family = null)
     {
         family ??= new TerminalFamily();
         ApplyTerminalSettings();
@@ -192,6 +193,7 @@ public partial class MainWindowViewModel
         tab.Reopen = () => OpenLocalTerminalAsync(shell, directory, family);
         tab.Restart = () => StartLocalTerminalAsync(tab, shell, directory);
         await StartLocalTerminalAsync(tab, shell, directory);
+        return tab.Session is null ? null : tab;
     }
 
     /// <summary>Un échec ferme l'onglet s'il est neuf ; sinon il garde son écran.</summary>
@@ -232,11 +234,12 @@ public partial class MainWindowViewModel
     /// <summary>Un échec ferme l'onglet s'il est neuf ; sinon il garde son écran.</summary>
     private async Task StartServerTerminalAsync(TerminalTabViewModel tab, ConnectionProfile profile, string? directory)
     {
+        if (_remote is not { } remote) return;
         var cancellation = tab.Cancellation.Token;
         try
         {
             // Rend la connexion déjà ouverte, ou en ouvre une avec les questions habituelles.
-            var session = await Task.Run(() => _remote.ConnectAsync(profile, _connections, _prompts!, cancellation), cancellation);
+            var session = await Task.Run(() => remote.ConnectAsync(profile, _connections, _prompts!, cancellation), cancellation);
             if (session is null)
             {
                 if (tab.Session is null) Terminal.CloseTab(tab);

@@ -7,6 +7,7 @@ using TwinPanel.App.Services;
 using TwinPanel.Core;
 using TwinPanel.Core.Archives;
 using TwinPanel.Core.Compare;
+using TwinPanel.Core.Customization;
 using TwinPanel.Core.Navigation;
 using TwinPanel.Core.Operations;
 using TwinPanel.Core.Remote;
@@ -277,7 +278,7 @@ public partial class MainWindowViewModel : ObservableObject
 
     // ---- Ligne de commande ------------------------------------------------------------------
 
-    /// <summary>Sous Linux, la commande est lancée sans fenêtre : pas de console à garder ouverte.</summary>
+    /// <summary>Sous Linux, la commande s'ouvre dans un terminal qui reste ouvert : pas de Maj+Entrée.</summary>
     public string CommandLineHint => OperatingSystem.IsWindows()
         ? L.T("Commande (Entrée : exécuter, Maj+Entrée : garder la console ouverte)")
         : L.T("Commande (Entrée : exécuter)");
@@ -321,11 +322,20 @@ public partial class MainWindowViewModel : ObservableObject
                 psi.Arguments = (keepOpen ? "/S /K \"" : "/S /C \"") + cmd + "\"";
                 Process.Start(psi)?.Dispose();
             }
+            else if (IsTerminalEnabled)
+            {
+                // Linux : un onglet du terminal intégré, pour voir le résultat et répondre si la commande pose une question.
+                // La commande est tapée dans le shell comme un collage : les caractères de contrôle sont retirés.
+                if (await OpenLocalTerminalAsync(_settings.Terminal.IntegratedShell, cwd) is not { Session: { } session }) return;
+                session.Send(TwinPanel.Core.Terminal.TerminalCommands.Input(cmd, bracketedPaste: false));
+                Terminal.RequestFocus();
+            }
             else
             {
-                var psi = new ProcessStartInfo("/bin/sh") { WorkingDirectory = cwd, UseShellExecute = false };
-                psi.ArgumentList.Add("-c");
-                psi.ArgumentList.Add(cmd);
+                // Terminal intégré désactivé : le terminal du bureau, qui reste ouvert après la commande.
+                var (exe, args) = TerminalCommand.BuildRun(_settings.Terminal, cmd);
+                var psi = new ProcessStartInfo(exe) { WorkingDirectory = cwd, UseShellExecute = false };
+                foreach (var a in args) psi.ArgumentList.Add(a);
                 Process.Start(psi)?.Dispose();
             }
             CommandLine = string.Empty;

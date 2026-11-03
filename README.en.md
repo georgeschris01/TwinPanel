@@ -474,7 +474,7 @@ In `%APPDATA%\TwinPanel` on Windows, in `~/.config/TwinPanel` on Linux. An updat
 
 ### How do I move to another PC?
 
-Options → Backup creates a single file with all the settings, and the list of connections if you wish. Passwords are never included: they will be asked again.
+Options → Backup creates a single file with all the settings, and the list of connections if you wish. Passwords and keys are never included: passwords will be asked again, and a key-based connection comes back set to password. To carry everything from one computer to another, use Options → Synchronization instead.
 
 ### Are my passwords safe?
 
@@ -498,7 +498,7 @@ Choose it in ≡ → Tools → Editor and viewer, or by extension in Options →
 
 ### What is different in the Linux version?
 
-It is a beta and does the same work. Real icons come from the desktop theme (Options → Display), the terminal starts your usual shell, and the command line at the bottom of the window does not show the result: use the built-in terminal to see it.
+It is a beta and does the same work. Real icons come from the desktop theme (Options → Display), the terminal starts your usual shell, and a command typed in the bottom line opens in a new tab of the built-in terminal, where you see its result (or in the desktop terminal if the built-in terminal is turned off).
 
 ### How do I show hidden files?
 

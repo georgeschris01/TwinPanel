@@ -474,7 +474,7 @@ Dans `%APPDATA%\TwinPanel` sous Windows, dans `~/.config/TwinPanel` sous Linux. 
 
 ### Comment passer sur un autre PC ?
 
-Options → Sauvegarde crée un seul fichier avec tous les réglages, et la liste des connexions si vous le souhaitez. Les mots de passe n'y sont jamais : ils seront redemandés.
+Options → Sauvegarde crée un seul fichier avec tous les réglages, et la liste des connexions si vous le souhaitez. Les mots de passe et les clés n'y sont jamais : les mots de passe seront redemandés, et une connexion par clé revient réglée par mot de passe. Pour tout transporter d'un ordinateur à l'autre, utilisez plutôt Options → Synchronisation.
 
 ### Mes mots de passe sont-ils en sécurité ?
 
@@ -498,7 +498,7 @@ Choisissez-le dans ≡ → Outils → Éditeur et visionneuse, ou par extension 
 
 ### Que change la version Linux ?
 
-Elle est en bêta et fait le même travail. Les vraies icônes viennent du thème du bureau (Options → Affichage), le terminal lance votre shell habituel, et la ligne de commande en bas de la fenêtre n'affiche pas le résultat : utilisez le terminal intégré pour le voir.
+Elle est en bêta et fait le même travail. Les vraies icônes viennent du thème du bureau (Options → Affichage), le terminal lance votre shell habituel, et une commande tapée dans la ligne du bas s'ouvre dans un nouvel onglet du terminal intégré, où l'on voit son résultat (ou dans le terminal du bureau si le terminal intégré est désactivé).
 
 ### Comment afficher les fichiers cachés ?
 
