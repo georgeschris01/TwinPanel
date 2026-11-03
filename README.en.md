@@ -19,7 +19,7 @@ A free, modern and complete two-panel file manager. For Windows, and for Linux a
 - Light or dark theme, customizable shortcuts, colors, icons and button bar
 - Full built-in guide (`F1`), with FAQ and tips
 
-![TwinPanel on Windows and Linux](docs/screenshots/demo-en.gif)
+![TwinPanel on Windows and Linux](docs/screenshots/demo-2k-en.gif)
 
 ## Download
 
@@ -34,11 +34,11 @@ sudo dnf install ./twinpanel-*.x86_64.rpm    # Fedora
 
 With the AppImage: `chmod +x TwinPanel-*.AppImage`, then run the file. On Fedora 45, install OpenSSL 3 first: `sudo dnf install openssl3-libs` (the `.rpm` package does it by itself). On Ubuntu, the App Center does not show TwinPanel, as it only knows its own catalogue; uninstall it with `sudo apt remove twinpanel`.
 
-![TwinPanel on Linux](docs/screenshots/linux-en.png)
+![TwinPanel on Linux (Ubuntu)](docs/screenshots/linux-ubuntu-main-2k-en.png)
 
-![The integrated terminal of TwinPanel](docs/screenshots/linux-terminal-en.png)
+![TwinPanel on Linux (Debian), light theme](docs/screenshots/linux-debian-clair-2k-en.png)
 
-![Several terminals side by side](docs/screenshots/linux-terminaux-en.png)
+![Several terminals side by side (Debian)](docs/screenshots/linux-debian-terminaux-2k-en.png)
 
 > **“Windows protected your PC” message:** TwinPanel is free and not signed, because a signing certificate must be paid for every year. Windows therefore shows this message until the program is well enough known. Click **More info**, then **Run anyway**. Make sure the file comes from this page; its SHA-256 checksum is given with each version.
 

@@ -19,7 +19,7 @@ Gestionnaire de fichiers à deux panneaux, gratuit, moderne et complet. Pour Win
 - Thème clair ou sombre, raccourcis, couleurs, icônes et barre de boutons personnalisables
 - Guide complet intégré (`F1`), avec FAQ et astuces
 
-![TwinPanel sous Windows et Linux](docs/screenshots/demo-fr.gif)
+![TwinPanel sous Windows et Linux](docs/screenshots/demo-2k-fr.gif)
 
 ## Télécharger
 
@@ -34,11 +34,11 @@ sudo dnf install ./twinpanel-*.x86_64.rpm    # Fedora
 
 Avec l'AppImage : `chmod +x TwinPanel-*.AppImage`, puis lancez le fichier. Sur Fedora 45, installez d'abord OpenSSL 3 : `sudo dnf install openssl3-libs` (le paquet `.rpm` le fait de lui-même). Sur Ubuntu, le Centre d'applications ne montre pas TwinPanel, car il ne connaît que son propre catalogue ; on le désinstalle avec `sudo apt remove twinpanel`.
 
-![TwinPanel sous Linux](docs/screenshots/linux-fr.png)
+![TwinPanel sous Linux (Ubuntu)](docs/screenshots/linux-ubuntu-main-2k-fr.png)
 
-![Le terminal intégré de TwinPanel](docs/screenshots/linux-terminal-fr.png)
+![TwinPanel sous Linux (Debian), thème clair](docs/screenshots/linux-debian-clair-2k-fr.png)
 
-![Plusieurs terminaux côte à côte](docs/screenshots/linux-terminaux-fr.png)
+![Plusieurs terminaux côte à côte (Debian)](docs/screenshots/linux-debian-terminaux-2k-fr.png)
 
 > **Message « Windows a protégé votre ordinateur » :** TwinPanel est gratuit et n'est pas signé, car un certificat de signature est payant chaque année. Windows affiche donc ce message tant que le programme n'est pas assez connu. Cliquez sur **Informations complémentaires**, puis sur **Exécuter quand même**. Vérifiez que le fichier vient bien de cette page ; son empreinte SHA-256 est donnée avec chaque version.
 
