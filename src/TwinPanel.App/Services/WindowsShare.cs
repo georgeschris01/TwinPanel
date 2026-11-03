@@ -16,8 +16,15 @@ public static class WindowsShare
     private const string ShareVerb = "Windows.ModernShare";
     private const uint CmfNormal = 0;
     private const int CmicMaskUnicode = 0x4000;
-    private const int CmicMaskFlagNoUi = 0x400;
     private const int SwShowNormal = 1;
+    private const uint FirstCommand = 1;
+    private const uint GcsVerbW = 4;
+
+    /// <summary>
+    /// Le menu de la dernière demande reste en vie : la fenêtre de partage s'ouvre après le retour de l'appel,
+    /// et Windows l'abandonne si on libère le menu trop tôt.
+    /// </summary>
+    private static IContextMenu? _lastMenu;
     private static readonly Guid IidShellFolder = new("000214E6-0000-0000-C000-000000000046");
     private static readonly Guid IidContextMenu = new("000214E4-0000-0000-C000-000000000046");
 
@@ -27,10 +34,14 @@ public static class WindowsShare
             ? window.TryGetPlatformHandle()?.Handle ?? IntPtr.Zero
             : IntPtr.Zero;
 
-    /// <summary>Ouvre la fenêtre de partage ; faux si Windows ne la propose pas pour ces fichiers.</summary>
-    public static bool Show(IReadOnlyList<string> files, IntPtr owner)
+    /// <summary>
+    /// Ouvre la fenêtre de partage. Rend null si c'est fait, sinon la raison (code de Windows compris).
+    /// L'action est lancée par sa place dans le menu préparé par Windows : par son nom, Windows la refuse
+    /// (« aucune association », 0x80070483).
+    /// </summary>
+    public static string? Show(IReadOnlyList<string> files, IntPtr owner)
     {
-        if (files.Count == 0) return false;
+        if (files.Count == 0) return "0 fichier";
         var absolute = new List<IntPtr>();
         IntPtr menu = IntPtr.Zero;
         IShellFolder? folder = null;
@@ -39,41 +50,45 @@ public static class WindowsShare
         {
             foreach (var file in files)
             {
-                if (SHParseDisplayName(file, IntPtr.Zero, out var pidl, 0, out _) != 0 || pidl == IntPtr.Zero) return false;
+                int parsed = SHParseDisplayName(file, IntPtr.Zero, out var pidl, 0, out _);
+                if (parsed != 0 || pidl == IntPtr.Zero) return $"SHParseDisplayName 0x{parsed:X8}";
                 absolute.Add(pidl);
             }
             var iidFolder = IidShellFolder;
-            if (SHBindToParent(absolute[0], ref iidFolder, out var folderPtr, out _) != 0) return false;
+            int bound = SHBindToParent(absolute[0], ref iidFolder, out var folderPtr, out _);
+            if (bound != 0) return $"SHBindToParent 0x{bound:X8}";
             folder = (IShellFolder)Marshal.GetObjectForIUnknown(folderPtr);
             Marshal.Release(folderPtr);
             // Les identifiants « enfants » : la dernière partie de chaque chemin, relative au dossier commun.
             var children = absolute.Select(ILFindLastID).ToArray();
             var iidMenu = IidContextMenu;
-            if (folder.GetUIObjectOf(owner, (uint)children.Length, children, ref iidMenu, IntPtr.Zero, out var menuPtr) != 0) return false;
+            int got = folder.GetUIObjectOf(owner, (uint)children.Length, children, ref iidMenu, IntPtr.Zero, out var menuPtr);
+            if (got != 0) return $"GetUIObjectOf 0x{got:X8}";
             contextMenu = (IContextMenu)Marshal.GetObjectForIUnknown(menuPtr);
             Marshal.Release(menuPtr);
             // Le menu doit être préparé : les extensions de Windows n'ajoutent leurs actions qu'à ce moment.
             menu = CreatePopupMenu();
-            contextMenu.QueryContextMenu(menu, 0, 1, 0x7FFF, CmfNormal);
+            contextMenu.QueryContextMenu(menu, 0, FirstCommand, 0x7FFF, CmfNormal);
+            if (FindVerb(contextMenu, menu, ShareVerb) is not { } id) return L.T("Windows ne propose pas « Partager » pour ces fichiers.");
             var info = new CMINVOKECOMMANDINFOEX
             {
                 cbSize = Marshal.SizeOf<CMINVOKECOMMANDINFOEX>(),
-                fMask = CmicMaskUnicode | CmicMaskFlagNoUi,
+                fMask = CmicMaskUnicode,
                 hwnd = owner,
-                lpVerb = Marshal.StringToHGlobalAnsi(ShareVerb),
-                lpVerbW = Marshal.StringToHGlobalUni(ShareVerb),
+                lpVerb = (IntPtr)(id - FirstCommand),
+                lpVerbW = (IntPtr)(id - FirstCommand),
                 nShow = SwShowNormal,
             };
-            try { return contextMenu.InvokeCommand(ref info) == 0; }
-            finally
-            {
-                Marshal.FreeHGlobal(info.lpVerb);
-                Marshal.FreeHGlobal(info.lpVerbW);
-            }
+            int invoked = contextMenu.InvokeCommand(ref info);
+            if (invoked != 0) return $"InvokeCommand 0x{invoked:X8}";
+            if (_lastMenu is not null) Marshal.ReleaseComObject(_lastMenu);
+            _lastMenu = contextMenu;
+            contextMenu = null;
+            return null;
         }
         catch (Exception ex) when (ex is COMException or InvalidCastException or ArgumentException)
         {
-            return false;
+            return ex.Message;
         }
         finally
         {
@@ -92,6 +107,42 @@ public static class WindowsShare
 
     [DllImport("shell32.dll")]
     private static extern IntPtr ILFindLastID(IntPtr pidl);
+
+    /// <summary>Cherche l'action dans le menu (et ses sous-menus) par son nom invariable ; rend son numéro.</summary>
+    private static uint? FindVerb(IContextMenu contextMenu, IntPtr menu, string verb)
+    {
+        int count = GetMenuItemCount(menu);
+        var buffer = Marshal.AllocHGlobal(1024);
+        try
+        {
+            for (int i = 0; i < count; i++)
+            {
+                var sub = GetSubMenu(menu, i);
+                if (sub != IntPtr.Zero)
+                {
+                    if (FindVerb(contextMenu, sub, verb) is { } found) return found;
+                    continue;
+                }
+                uint id = GetMenuItemID(menu, i);
+                if (id == uint.MaxValue || id < FirstCommand) continue;
+                Marshal.WriteInt16(buffer, 0, 0);
+                if (contextMenu.GetCommandString((UIntPtr)(id - FirstCommand), GcsVerbW, IntPtr.Zero, buffer, 512) == 0
+                    && string.Equals(Marshal.PtrToStringUni(buffer), verb, StringComparison.OrdinalIgnoreCase))
+                    return id;
+            }
+            return null;
+        }
+        finally { Marshal.FreeHGlobal(buffer); }
+    }
+
+    [DllImport("user32.dll")]
+    private static extern int GetMenuItemCount(IntPtr menu);
+
+    [DllImport("user32.dll")]
+    private static extern uint GetMenuItemID(IntPtr menu, int position);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetSubMenu(IntPtr menu, int position);
 
     [DllImport("user32.dll")]
     private static extern IntPtr CreatePopupMenu();

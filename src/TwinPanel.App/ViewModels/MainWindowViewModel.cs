@@ -1316,8 +1316,8 @@ public partial class MainWindowViewModel : ObservableObject
             await _dialogs.ShowErrorAsync(L.T("Partager"), ex.Message);
             return;
         }
-        if (!WindowsShare.Show(paths, WindowsShare.MainWindowHandle()))
-            await _dialogs.ShowErrorAsync(L.T("Partager"), L.T("Windows ne propose pas de partage pour ces fichiers."));
+        if (WindowsShare.Show(paths, WindowsShare.MainWindowHandle()) is { } problem)
+            await _dialogs.ShowErrorAsync(L.T("Partager"), L.T("La fenêtre de partage de Windows ne s'est pas ouverte.") + "\n" + problem);
     }
 
     private async Task ShareOnLinuxAsync(List<string> paths)
