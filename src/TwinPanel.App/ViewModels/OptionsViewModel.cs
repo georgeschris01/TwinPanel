@@ -440,6 +440,9 @@ public partial class OptionsViewModel : ObservableObject
     public static IReadOnlyList<Choice<RemoteTabsRestore>> RemoteTabChoices { get; } =
         [new(RemoteTabsRestore.Ask, L.T("Demander à chaque démarrage")), new(RemoteTabsRestore.Always, L.T("Toujours les rouvrir (reconnexion automatique)")), new(RemoteTabsRestore.Never, L.T("Ne pas les rouvrir"))];
     [ObservableProperty] private Choice<RemoteTabsRestore> _remoteTabs = RemoteTabChoices[0];
+    public static IReadOnlyList<Choice<RemoteTabsRestore>> TerminalTabChoices { get; } =
+        [new(RemoteTabsRestore.Ask, L.T("Demander à chaque démarrage")), new(RemoteTabsRestore.Always, L.T("Toujours les rouvrir")), new(RemoteTabsRestore.Never, L.T("Ne pas les rouvrir"))];
+    [ObservableProperty] private Choice<RemoteTabsRestore> _terminalTabs = TerminalTabChoices[0];
     [ObservableProperty] private string _leftPath = string.Empty;
     [ObservableProperty] private string _rightPath = string.Empty;
 
@@ -600,6 +603,7 @@ public partial class OptionsViewModel : ObservableObject
         RemoteRefreshSeconds = b.RemoteRefreshSeconds;
         RestoreTabs = s.Startup.RestoreTabs;
         RemoteTabs = RemoteTabChoices.First(c => c.Value == s.Startup.RemoteTabs);
+        TerminalTabs = TerminalTabChoices.First(c => c.Value == s.Startup.TerminalTabs);
         LeftPath = s.Startup.LeftPath;
         RightPath = s.Startup.RightPath;
 
@@ -705,7 +709,7 @@ public partial class OptionsViewModel : ObservableObject
             NextTip = _nextTip,
             RemoteRefreshSeconds = (int)Math.Clamp(RemoteRefreshSeconds ?? 15, 0, 3600),
         };
-        s.Startup = new StartupSettings { RestoreTabs = RestoreTabs, RemoteTabs = RemoteTabs.Value, LeftPath = LeftPath.Trim().Trim('"'), RightPath = RightPath.Trim().Trim('"') };
+        s.Startup = new StartupSettings { RestoreTabs = RestoreTabs, RemoteTabs = RemoteTabs.Value, TerminalTabs = TerminalTabs.Value, LeftPath = LeftPath.Trim().Trim('"'), RightPath = RightPath.Trim().Trim('"') };
         s.Shortcuts = AllShortcuts.Where(r => r.IsChanged).ToDictionary(r => r.Info.Id, r => r.Gestures);
         s.ButtonBar = ButtonBar.ToList();
         s.StartMenu = StartMenu.ToList();

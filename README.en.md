@@ -394,6 +394,7 @@ A real terminal at the bottom of the window, written for TwinPanel: colours, `vi
 - The terminal starts in the folder of the active panel.
 - On an SFTP or SCP server, it opens a shell on that server, with the same credentials, jump host and server check as the panel.
 - Drag the separator above the terminal to change its height: TwinPanel remembers it.
+- At the next start, TwinPanel offers to reopen last time's terminals: **Reopen**, **Always reopen**, **Never reopen** or **Not this time** (can be changed in Options → Startup). Each terminal starts again from its starting folder, on its side; server terminals reconnect. The displayed text and running programs are not kept.
 
 When the keyboard is in the terminal, keys go to the program running there: `F5`, `F8` or `Ctrl+W` do not act on files. Only the terminal's own shortcuts stay active.
 
@@ -444,7 +445,7 @@ Everything is set in ≡ → Tools → Options.
 | View | Language, theme, font, columns, formats, thumbnails, media tools |
 | Colors | Colors by file type, rules by mask, disk icons |
 | Behavior | Recycle bin, confirmations, simultaneous transfers, tips |
-| Startup | Tabs to reopen, starting folders |
+| Startup | Tabs and terminals to reopen, starting folders |
 | Shortcuts | All keys, with search |
 | Button bar | Your programs, folders and commands |
 | Start menu | Your personal menu, with submenus |

@@ -394,6 +394,7 @@ Un vrai terminal dans le bas de la fenêtre, écrit pour TwinPanel : les couleur
 - Le terminal démarre dans le dossier du panneau actif.
 - Sur un serveur SFTP ou SCP, il ouvre un shell sur ce serveur, avec les mêmes identifiants, le même rebond et le même contrôle du serveur que le panneau.
 - Tire la séparation au-dessus du terminal pour changer sa hauteur : TwinPanel s'en souvient.
+- Au démarrage suivant, TwinPanel propose de rouvrir les terminaux de la dernière fois : **Rouvrir**, **Toujours rouvrir**, **Ne jamais rouvrir** ou **Pas cette fois** (modifiable dans Options → Démarrage). Chaque terminal repart de son dossier de départ, de son côté ; ceux d'un serveur se reconnectent. Le texte affiché et les programmes en cours ne sont pas gardés.
 
 Quand le clavier est dans le terminal, les touches vont au programme qui y tourne : `F5`, `F8` ou `Ctrl+W` n'agissent pas sur les fichiers. Seuls les raccourcis du terminal restent actifs.
 
@@ -444,7 +445,7 @@ Tout se règle dans ≡ → Outils → Options.
 | Affichage | Langue, thème, police, colonnes, formats, miniatures, outils médias |
 | Couleurs | Couleurs par type de fichier, règles par masque, icônes des disques |
 | Comportement | Corbeille, confirmations, transferts en même temps, astuces |
-| Démarrage | Onglets à rouvrir, dossiers de départ |
+| Démarrage | Onglets et terminaux à rouvrir, dossiers de départ |
 | Raccourcis | Toutes les touches, avec recherche |
 | Barre de boutons | Vos programmes, dossiers et commandes |
 | Menu Démarrer | Votre menu personnel, avec sous-menus |

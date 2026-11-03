@@ -240,6 +240,10 @@
             <TextBlock Classes="subtle" TextWrapping="Wrap" Margin="0,4,0,0"
                        Text="{l:T 'La reconnexion demande le mot de passe s\'il n\'est pas enregistré dans le coffre. Les connexions rapides non enregistrées ne sont pas rouvertes.'}" />
           </StackPanel>
+          <TextBlock Classes="label" Text="{l:T 'Terminaux intégrés qui étaient ouverts'}" Margin="0,10,0,0" />
+          <ComboBox ItemsSource="{x:Static vm:OptionsViewModel.TerminalTabChoices}" SelectedItem="{Binding TerminalTabs}" MinWidth="340" />
+          <TextBlock Classes="subtle" TextWrapping="Wrap" Margin="0,4,0,0"
+                     Text="{l:T 'Chaque terminal repart de son dossier de départ, de son côté. Le texte affiché et les programmes en cours ne sont pas gardés.'}" />
           <TextBlock Classes="subtle" Text="{l:T 'Sinon, ouvrir toujours ces dossiers :'}" Margin="0,8,0,0" />
           <StackPanel IsEnabled="{Binding !RestoreTabs}" Margin="28,0,0,0">
             <TextBlock Classes="label" Text="{l:T 'Panneau gauche'}" />

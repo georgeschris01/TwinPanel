@@ -143,6 +143,7 @@ public partial class MainWindowViewModel : ObservableObject
         await Left.InitializeAsync(left, ShowHidden, home);
         await Right.InitializeAsync(right, ShowHidden, home);
         if (_settings.Startup.RestoreTabs) await RestoreRemoteTabsAsync(leftRemote, rightRemote);
+        await RestoreTerminalsAsync();
         Left.ShowTree = _settings.LeftTreeVisible;
         Right.ShowTree = _settings.RightTreeVisible;
         // Seulement maintenant : les onglets rouverts au démarrage ne sont pas des visites.
@@ -156,6 +157,7 @@ public partial class MainWindowViewModel : ObservableObject
         _transfers.Save();
         _settings.Left = WithUnopenedTabs(Left, WithSavedRemoteTabs(Left.CaptureState()));
         _settings.Right = WithUnopenedTabs(Right, WithSavedRemoteTabs(Right.CaptureState()));
+        _settings.OpenTerminals = CaptureTerminals();
         _settings.ShowHidden = ShowHidden;
         _settings.LeftTreeVisible = Left.ShowTree;
         _settings.RightTreeVisible = Right.ShowTree;

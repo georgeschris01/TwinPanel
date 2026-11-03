@@ -1735,5 +1735,12 @@
  "clé manquante": "missing key",
  "clé inconnue": "unknown key",
  "La connexion « {0} » utilise une clé qui n'est pas sur cet ordinateur : {1}.": "The connection “{0}” uses a key that is not on this computer: {1}.",
- "Ajoutez-la dans le Gestionnaire de connexions (onglet Clés), puis choisissez-la dans cette connexion. Pour tout transporter d'un ordinateur à l'autre, utilisez Options → Synchronisation.": "Add it in the Connection manager (Keys tab), then choose it in this connection. To carry everything from one computer to another, use Options → Synchronization."
+ "Ajoutez-la dans le Gestionnaire de connexions (onglet Clés), puis choisissez-la dans cette connexion. Pour tout transporter d'un ordinateur à l'autre, utilisez Options → Synchronisation.": "Add it in the Connection manager (Keys tab), then choose it in this connection. To carry everything from one computer to another, use Options → Synchronization.",
+ "Chaque terminal repart de son dossier de départ, de son côté. Le texte affiché et les programmes en cours ne sont pas gardés.": "Each terminal starts again from its starting folder, on its side. The displayed text and running programs are not kept.",
+ "Dont {0} sur un serveur : il faudra se reconnecter.": "Including {0} on a server: you will need to reconnect.",
+ "Terminaux": "Terminals",
+ "Terminaux intégrés qui étaient ouverts": "Built-in terminals that were open",
+ "Toujours les rouvrir": "Always reopen them",
+ "{0} terminal(aux) rouvert(s).": "{0} terminal(s) reopened.",
+ "À la fermeture, {0} terminal(aux) étaient ouverts. Les rouvrir ?": "When closing, {0} terminal(s) were open. Reopen them?"
 }

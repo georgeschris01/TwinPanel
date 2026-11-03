@@ -604,6 +604,33 @@ public class TerminalShellsTests
     }
 
     [Fact]
+    public void Saved_terminals_skip_deleted_servers_and_never_leave_an_empty_side()
+    {
+        var kept = Guid.NewGuid();
+        var deleted = Guid.NewGuid();
+        var saved = new SavedTerminals
+        {
+            Tabs =
+            [
+                new SavedTerminalTab { Shell = TerminalShell.PowerShell, Directory = @"D:\projets" },
+                new SavedTerminalTab { ServerId = kept, ServerDirectory = "/srv" },
+                new SavedTerminalTab { ServerId = deleted, Right = true },
+            ],
+        };
+        var tabs = saved.Restorable(id => id == kept);
+        Assert.Equal(2, tabs.Count);                 // la connexion supprimée n'est pas rouverte
+        Assert.All(tabs, t => Assert.False(t.Right)); // son côté droit serait vide : tout reste à gauche
+
+        var both = new SavedTerminals { Tabs = [new SavedTerminalTab(), new SavedTerminalTab { Right = true }] };
+        Assert.Equal([false, true], both.Restorable(_ => true).Select(t => t.Right));
+
+        // Relu depuis le fichier de réglages.
+        var json = System.Text.Json.JsonSerializer.Serialize(new AppSettings { OpenTerminals = saved });
+        var back = System.Text.Json.JsonSerializer.Deserialize<AppSettings>(json)!;
+        Assert.Equal("/srv", back.OpenTerminals!.Tabs[1].ServerDirectory);
+    }
+
+    [Fact]
     public void Command_line_run_in_desktop_terminal_keeps_the_command_as_one_argument()
     {
         var (exe, args) = TerminalCommand.BuildRun(new TerminalSettings(), "ls -l 'mon dossier'; echo fini");
