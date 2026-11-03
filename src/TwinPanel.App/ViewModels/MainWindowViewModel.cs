@@ -7,6 +7,7 @@ using TwinPanel.App.Services;
 using TwinPanel.Core;
 using TwinPanel.Core.Archives;
 using TwinPanel.Core.Compare;
+using TwinPanel.Core.Customization;
 using TwinPanel.Core.Navigation;
 using TwinPanel.Core.Operations;
 using TwinPanel.Core.Remote;
@@ -142,6 +143,7 @@ public partial class MainWindowViewModel : ObservableObject
         await Left.InitializeAsync(left, ShowHidden, home);
         await Right.InitializeAsync(right, ShowHidden, home);
         if (_settings.Startup.RestoreTabs) await RestoreRemoteTabsAsync(leftRemote, rightRemote);
+        await RestoreTerminalsAsync();
         Left.ShowTree = _settings.LeftTreeVisible;
         Right.ShowTree = _settings.RightTreeVisible;
         // Seulement maintenant : les onglets rouverts au démarrage ne sont pas des visites.
@@ -155,6 +157,7 @@ public partial class MainWindowViewModel : ObservableObject
         _transfers.Save();
         _settings.Left = WithUnopenedTabs(Left, WithSavedRemoteTabs(Left.CaptureState()));
         _settings.Right = WithUnopenedTabs(Right, WithSavedRemoteTabs(Right.CaptureState()));
+        _settings.OpenTerminals = CaptureTerminals();
         _settings.ShowHidden = ShowHidden;
         _settings.LeftTreeVisible = Left.ShowTree;
         _settings.RightTreeVisible = Right.ShowTree;
@@ -277,7 +280,7 @@ public partial class MainWindowViewModel : ObservableObject
 
     // ---- Ligne de commande ------------------------------------------------------------------
 
-    /// <summary>Sous Linux, la commande est lancée sans fenêtre : pas de console à garder ouverte.</summary>
+    /// <summary>Sous Linux, la commande s'ouvre dans un terminal qui reste ouvert : pas de Maj+Entrée.</summary>
     public string CommandLineHint => OperatingSystem.IsWindows()
         ? L.T("Commande (Entrée : exécuter, Maj+Entrée : garder la console ouverte)")
         : L.T("Commande (Entrée : exécuter)");
@@ -321,11 +324,20 @@ public partial class MainWindowViewModel : ObservableObject
                 psi.Arguments = (keepOpen ? "/S /K \"" : "/S /C \"") + cmd + "\"";
                 Process.Start(psi)?.Dispose();
             }
+            else if (IsTerminalEnabled)
+            {
+                // Linux : un onglet du terminal intégré, pour voir le résultat et répondre si la commande pose une question.
+                // La commande est tapée dans le shell comme un collage : les caractères de contrôle sont retirés.
+                if (await OpenLocalTerminalAsync(_settings.Terminal.IntegratedShell, cwd) is not { Session: { } session }) return;
+                session.Send(TwinPanel.Core.Terminal.TerminalCommands.Input(cmd, bracketedPaste: false));
+                Terminal.RequestFocus();
+            }
             else
             {
-                var psi = new ProcessStartInfo("/bin/sh") { WorkingDirectory = cwd, UseShellExecute = false };
-                psi.ArgumentList.Add("-c");
-                psi.ArgumentList.Add(cmd);
+                // Terminal intégré désactivé : le terminal du bureau, qui reste ouvert après la commande.
+                var (exe, args) = TerminalCommand.BuildRun(_settings.Terminal, cmd);
+                var psi = new ProcessStartInfo(exe) { WorkingDirectory = cwd, UseShellExecute = false };
+                foreach (var a in args) psi.ArgumentList.Add(a);
                 Process.Start(psi)?.Dispose();
             }
             CommandLine = string.Empty;
@@ -1263,6 +1275,68 @@ public partial class MainWindowViewModel : ObservableObject
             await _dialogs.ShowListAsync(L.T("Imprimer"), L.T("Ces fichiers n'ont pas d'impression directe : ils sont ouverts dans leur application, imprime-les avec Ctrl+P :"), opened);
         if (failed.Count > 0)
             await _dialogs.ShowListAsync(L.T("Imprimer"), L.T("Impossible d'imprimer ou d'ouvrir ces fichiers :"), failed);
+    }
+
+    /// <summary>
+    /// Clic droit → Partager : les fichiers marqués, ou celui sous le curseur. Un fichier de serveur ou d'archive est d'abord copié
+    /// dans un dossier temporaire. Windows : sa fenêtre de partage. Linux : courriel ou appareil KDE Connect.
+    /// </summary>
+    [RelayCommand]
+    private async Task Share()
+    {
+        var files = ActivePanel.Current.TargetEntries.Where(e => !e.IsDirectory).ToList();
+        if (files.Count == 0) { await _dialogs.ShowErrorAsync(L.T("Partager"), L.T("Choisis un ou plusieurs fichiers (les dossiers ne se partagent pas).")); return; }
+        var paths = new List<string>();
+        var failed = new List<string>();
+        foreach (var f in files)
+        {
+            string? path = f.FullPath;
+            if (ActivePanel.Current.IsRemote) path = await DownloadTempAsync(f, quiet: true);       // serveur : copie temporaire
+            else if (ActivePanel.Current.IsInsideArchive) path = await MaterializeAsync(f.FullPath, quiet: true);
+            if (path is null) failed.Add(f.Name);
+            else paths.Add(path);
+        }
+        if (failed.Count > 0) await _dialogs.ShowListAsync(L.T("Partager"), L.T("Ces fichiers n'ont pas pu être préparés :"), failed);
+        if (paths.Count == 0) return;
+        if (OperatingSystem.IsWindows()) await ShareOnWindowsAsync(paths);
+        else await ShareOnLinuxAsync(paths);
+    }
+
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    private async Task ShareOnWindowsAsync(List<string> paths)
+    {
+        if (WindowsShare.Show(paths, WindowsShare.MainWindowHandle()) is { } problem)
+            await _dialogs.ShowErrorAsync(L.T("Partager"), L.T("La fenêtre de partage de Windows ne s'est pas ouverte.") + "\n" + problem);
+    }
+
+    private async Task ShareOnLinuxAsync(List<string> paths)
+    {
+        var devices = await Task.Run(TwinPanel.Core.Tools.LinuxShare.Devices);
+        bool email = TwinPanel.Core.Tools.LinuxShare.Exists("xdg-email");
+        if (!email && devices.Count == 0)
+        {
+            await _dialogs.ShowErrorAsync(L.T("Partager"), L.T("Aucun moyen de partage trouvé : installez xdg-utils (courriel) ou KDE Connect (téléphone, autre ordinateur)."));
+            return;
+        }
+        var choices = new List<(string Label, int? Value)>();
+        if (email) choices.Add((L.T("Par courriel"), -1));
+        for (int i = 0; i < devices.Count; i++) choices.Add((L.F("Vers {0} (KDE Connect)", devices[i].Name), i));
+        choices.Add((L.T("Annuler"), null));
+        var choice = await _dialogs.ChooseAsync<int>(L.T("Partager"), L.F("Partager {0} fichier(s) :", paths.Count), [.. choices]);
+        if (choice is not { } chosen) return;
+        try
+        {
+            if (chosen < 0) Process.Start(TwinPanel.Core.Tools.LinuxShare.Email(paths))?.Dispose();
+            else
+            {
+                foreach (var path in paths) Process.Start(TwinPanel.Core.Tools.LinuxShare.ToDevice(devices[chosen], path))?.Dispose();
+                StatusMessage = L.F("Envoyé à {0} : {1} fichier(s).", devices[chosen].Name, paths.Count);
+            }
+        }
+        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
+        {
+            await _dialogs.ShowErrorAsync(L.T("Partager"), ex.Message);
+        }
     }
 
     private async Task RunShellAsync(Action action)

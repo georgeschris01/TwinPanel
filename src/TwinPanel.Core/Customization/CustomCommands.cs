@@ -196,6 +196,18 @@ public static class TerminalCommand
         }
     }
 
+    /// <summary>
+    /// Linux, terminal intégré désactivé : la commande de la ligne du bas s'ouvre dans le terminal du bureau,
+    /// qui reste ouvert ensuite (shell habituel). Option « -e » : comprise par x-terminal-emulator, Konsole, xterm, xfce4-terminal.
+    /// La commande est un seul argument de sh -c : elle n'est jamais découpée ni réinterprétée par TwinPanel.
+    /// </summary>
+    public static (string FileName, IReadOnlyList<string> Arguments) BuildRun(TerminalSettings s, string command)
+    {
+        List<string> run = ["-e", "/bin/sh", "-c", command + "\nexec \"${SHELL:-/bin/sh}\""];
+        if (s.Kind == TerminalKind.Custom && !string.IsNullOrWhiteSpace(s.CustomPath)) return (s.CustomPath, run);
+        return ("x-terminal-emulator", run);
+    }
+
     /// <summary>Chaîne PowerShell entre apostrophes (l'apostrophe se double).</summary>
     public static string PsQuote(string s) => "'" + s.Replace("'", "''") + "'";
 }

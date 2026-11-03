@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using TwinPanel.Core.Settings;
 using TwinPanel.Core.Terminal;
 
 namespace TwinPanel.App.ViewModels;
@@ -46,6 +47,9 @@ public sealed partial class TerminalTabViewModel(string name) : ObservableObject
     /// <summary>Relance le même programme ou le même serveur dans cet onglet (Reconnecter).</summary>
     public Func<Task>? Restart { get; set; }
     public bool IsRestarting { get; set; }
+
+    /// <summary>De quoi rouvrir ce terminal au prochain démarrage (programme ou serveur, dossier de départ).</summary>
+    public SavedTerminalTab? Saved { get; set; }
 
     /// <summary>Serveur de ce terminal ; nul : terminal du PC.</summary>
     public Guid? ServerId { get; set; }

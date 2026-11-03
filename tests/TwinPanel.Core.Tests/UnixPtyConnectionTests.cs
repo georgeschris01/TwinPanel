@@ -37,7 +37,9 @@ public class UnixPtyConnectionTests
 {
     private const int Patience = 10_000;
 
+    // Simple calcul sur une liste de textes : il tourne aussi sous Windows, l'attribut ne sert qu'à l'analyseur.
     [Fact]
+    [SupportedOSPlatform("linux")]
     public void The_program_receives_our_terminal_type_and_not_the_size_of_the_old_one()
     {
         var variables = UnixPtyConnection.Variables(new Hashtable { ["TERM"] = "dumb", ["LINES"] = "12", ["COLUMNS"] = "40", ["HOME"] = "/home/moi" }).ToList();

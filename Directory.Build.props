@@ -5,10 +5,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
-    <!-- Version de TwinPanel : à augmenter avant chaque nouvel installateur (0.7.1, 0.8.0…). -->
-    <Version>0.8.7</Version>
-    <!-- Version Linux, numérotée à part depuis zéro : à augmenter à chaque livraison (0.1.0-beta, 0.1.1-beta…). -->
-    <LinuxVersion>0.1.9-beta</LinuxVersion>
+    <!-- Version de TwinPanel : à augmenter seulement quand Christophe le demande (0.7.1, 0.8.0…). -->
+    <Version>0.8.8</Version>
+    <!-- Version Linux, numérotée à part depuis zéro : à augmenter seulement quand Christophe le demande (0.1.0-beta, 0.1.1-beta…). -->
+    <LinuxVersion>0.1.11-beta</LinuxVersion>
     <Version Condition="!$([MSBuild]::IsOSPlatform('Windows'))">$(LinuxVersion)</Version>
     <Product>TwinPanel</Product>
     <Company>chrypox</Company>
@@ -16,4 +16,11 @@
     <!-- Affiché dans les propriétés de TwinPanel.exe (clic droit → Propriétés → Détails). -->
     <Copyright>© 2026 Georges Christophe (chrypox). Licence TwinPanel 1.0 : gratuit, non commercial, sans modification.</Copyright>
   </PropertyGroup>
+
+  <!-- Sous Linux, MediaInfo.Core.Native crée ses liens aussi dans le dossier de publication, même pour une simple
+       compilation : sans ce dossier, avertissement MSB6003. Il est créé (vide) juste avant. -->
+  <Target Name="TwinPanelMediaInfoPublishDir" BeforeTargets="CreateMediaInfoCoreNativeSymlinks"
+          Condition="$([MSBuild]::IsOSPlatform('Linux')) And '$(PublishDir)' != ''">
+    <MakeDir Directories="$(PublishDir)" />
+  </Target>
 </Project>

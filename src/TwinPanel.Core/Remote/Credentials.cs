@@ -44,6 +44,7 @@ public static class CredentialResolver
         string? keyText = null;
         if (profile.Auth is AuthMode.Key or AuthMode.KeyAndPassword)
         {
+            if (key is null && profile.MissingKey.Length > 0) throw new MissingKeyException(profile);
             if (key is null || store is null) throw new RemoteException(L.T("La clé choisie pour cette connexion n'existe plus dans le trousseau."));
             keyText = store.Vault.Get(SecretIds.KeyMaterial(key.Id))
                       ?? throw new RemoteException(L.F("La clé « {0} » est introuvable dans le coffre.", key.Name));
@@ -156,4 +157,12 @@ public static class CredentialResolver
         if (!needs || store.Vault.IsUnlocked) return true;
         return await prompts.UnlockVaultAsync(store.Vault);
     }
+}
+
+/// <summary>Connexion restaurée d'une sauvegarde sans sa clé : rien n'est tenté, le message dit quoi faire.</summary>
+public sealed class MissingKeyException(ConnectionProfile profile) : IOException(
+    L.F("La connexion « {0} » utilise une clé qui n'est pas sur cet ordinateur : {1}.", profile.Name, profile.MissingKey) + "\n\n" +
+    L.T("Ajoutez-la dans le Gestionnaire de connexions (onglet Clés), puis choisissez-la dans cette connexion. Pour tout transporter d'un ordinateur à l'autre, utilisez Options → Synchronisation."))
+{
+    public ConnectionProfile Profile { get; } = profile;
 }

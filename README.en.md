@@ -19,7 +19,7 @@ A free, modern and complete two-panel file manager. For Windows, and for Linux a
 
 **[TwinPanel for Windows](../../releases/latest)** (installer).
 
-**[TwinPanel for Linux, beta version](../../releases/tag/linux-v0.1.9-beta)**: `.deb` package for Debian and its derivatives, or AppImage. This beta has only been tested on Debian 13 with KDE: some defects may remain.
+**[TwinPanel for Linux, beta version](../../releases/tag/linux-v0.1.11-beta)**: `.deb` package for Debian and its derivatives, or AppImage. This beta has only been tested on Debian 13 with KDE: some defects may remain.
 
 ```
 sudo apt install ./twinpanel_*_amd64.deb
@@ -273,6 +273,7 @@ Mark with `Ins`, `Space`, `Shift+arrows`, the right click, or by mask with `Num+
 - `F3` opens the built-in viewer: text, hex, image, media info.
 - `F4` opens the chosen editor, by default Notepad on Windows and the system editor on Linux. A built-in editor is also available, and each extension can have its own editor (Options → Editors).
 - `F8` sends to the system trash. On a server or in an archive, deletion is permanent and always confirmed.
+- Right-click → **Share…** sends the marked files, or the one under the cursor. On Windows, it is the Windows share window: nearby sharing, mail, apps. On Linux, TwinPanel offers **By email** (your usual mail app opens with the files attached) and each device linked by KDE Connect (phone, other computer). A file from a server or an archive is first copied to a temporary folder. Folders cannot be shared.
 
 ### Multi-rename
 
@@ -394,6 +395,7 @@ A real terminal at the bottom of the window, written for TwinPanel: colours, `vi
 - The terminal starts in the folder of the active panel.
 - On an SFTP or SCP server, it opens a shell on that server, with the same credentials, jump host and server check as the panel.
 - Drag the separator above the terminal to change its height: TwinPanel remembers it.
+- At the next start, TwinPanel offers to reopen last time's terminals: **Reopen**, **Always reopen**, **Never reopen** or **Not this time** (can be changed in Options → Startup). Each terminal starts again from its starting folder, on its side; server terminals reconnect. The displayed text and running programs are not kept.
 
 When the keyboard is in the terminal, keys go to the program running there: `F5`, `F8` or `Ctrl+W` do not act on files. Only the terminal's own shortcuts stay active.
 
@@ -444,7 +446,7 @@ Everything is set in ≡ → Tools → Options.
 | View | Language, theme, font, columns, formats, thumbnails, media tools |
 | Colors | Colors by file type, rules by mask, disk icons |
 | Behavior | Recycle bin, confirmations, simultaneous transfers, tips |
-| Startup | Tabs to reopen, starting folders |
+| Startup | Tabs and terminals to reopen, starting folders |
 | Shortcuts | All keys, with search |
 | Button bar | Your programs, folders and commands |
 | Start menu | Your personal menu, with submenus |
@@ -474,7 +476,7 @@ In `%APPDATA%\TwinPanel` on Windows, in `~/.config/TwinPanel` on Linux. An updat
 
 ### How do I move to another PC?
 
-Options → Backup creates a single file with all the settings, and the list of connections if you wish. Passwords are never included: they will be asked again.
+Options → Backup creates a single file with all the settings, and the list of connections if you wish. Passwords and keys are never included: passwords will be asked again, and a key-based connection is marked “missing key” until you add its key (Connection manager, Keys tab). A summary is shown at the end of the restore. To carry everything from one computer to another, use Options → Synchronization instead.
 
 ### Are my passwords safe?
 
@@ -498,7 +500,7 @@ Choose it in ≡ → Tools → Editor and viewer, or by extension in Options →
 
 ### What is different in the Linux version?
 
-It is a beta and does the same work. Real icons come from the desktop theme (Options → Display), the terminal starts your usual shell, and the command line at the bottom of the window does not show the result: use the built-in terminal to see it.
+It is a beta and does the same work. Real icons come from the desktop theme (Options → Display), the terminal starts your usual shell, and a command typed in the bottom line opens in a new tab of the built-in terminal, where you see its result (or in the desktop terminal if the built-in terminal is turned off).
 
 ### How do I show hidden files?
 

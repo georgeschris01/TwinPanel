@@ -80,6 +80,8 @@
                       </Border>
                       <TextBlock Text="{l:T '● connecté'}" FontSize="10" Foreground="#57AB5A" IsVisible="{Binding IsConnected}" HorizontalAlignment="Right" />
                       <TextBlock Text="{l:T 'non chiffré'}" FontSize="10" Foreground="#E5534B" IsVisible="{Binding IsUnencrypted}" HorizontalAlignment="Right" />
+                      <TextBlock Text="{l:T 'clé manquante'}" FontSize="10" Foreground="#E5534B" IsVisible="{Binding HasMissingKey}" HorizontalAlignment="Right"
+                                 ToolTip.Tip="{Binding MissingKeyTip}" />
                     </StackPanel>
                   </Grid>
                 </DataTemplate>

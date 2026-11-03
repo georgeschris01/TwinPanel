@@ -306,6 +306,15 @@ public partial class MainWindowViewModel
             await then(session);
         }
         catch (OperationCanceledException) { StatusMessage = L.T("Connexion annulée."); }
+        catch (MissingKeyException ex)
+        {
+            StatusMessage = L.T("Clé manquante pour cette connexion.");
+            if (await _dialogs.ConfirmAsync(L.T("Clé manquante"), ex.Message + "\n\n" + L.T("Ouvrir le Gestionnaire de connexions ?")))
+            {
+                IsConnecting = false;
+                await OpenConnectionManager();
+            }
+        }
         catch (Exception ex) when (ex is RemoteException or IOException or InvalidOperationException or UnauthorizedAccessException)
         {
             StatusMessage = L.T("Échec de la connexion.");

@@ -43,6 +43,21 @@ public class LinuxSystemTests
     }
 
     [Fact]
+    public void Share_reads_kde_connect_devices_and_attaches_every_file()
+    {
+        var devices = LinuxShare.ParseDevices("a1b2c3 Téléphone de démo\n\nseulement-un-mot\nd4e5 Tablette\n");
+        Assert.Equal([new LinuxShare.Device("a1b2c3", "Téléphone de démo"), new LinuxShare.Device("d4e5", "Tablette")], devices);
+        Assert.Empty(LinuxShare.ParseDevices(""));
+
+        var email = LinuxShare.Email(["/tmp/a b.txt", "/tmp/c.pdf"]);
+        Assert.Equal("xdg-email", email.FileName);
+        Assert.Equal(["--attach", "/tmp/a b.txt", "--attach", "/tmp/c.pdf"], email.ArgumentList);
+
+        var send = LinuxShare.ToDevice(devices[1], "/tmp/-photo.jpg");
+        Assert.Equal(["--device", "d4e5", "--share", "/tmp/-photo.jpg"], send.ArgumentList);
+    }
+
+    [Fact]
     public void A_printer_list_is_read()
     {
         Assert.Equal(["Bureau", "Salon"], LinuxPrinters.Names("Salon\nBureau\n"));
@@ -65,6 +80,7 @@ public class LinuxSystemTests
     }
 
     [LinuxFact]
+    [System.Runtime.Versioning.SupportedOSPlatform("linux")]
     public void The_settings_folder_is_private()
     {
         var parent = Directory.CreateTempSubdirectory("twinpanel-").FullName;

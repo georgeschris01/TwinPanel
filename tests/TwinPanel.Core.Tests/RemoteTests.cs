@@ -498,8 +498,70 @@ public class ConnectionStoreTests
         using var t2 = new TempDir();
         var other = new ConnectionStore(t2.Path, new FakeProtector());
         other.SaveProfile(Sample());
-        Assert.Equal(1, other.AddImported(ConnectionStore.ReadExport(export).Profiles));
+        Assert.Single(other.AddImported(ConnectionStore.ReadExport(export).Profiles).Added);
         Assert.Contains(other.Profiles, x => x.Name == "chrypox (2)" && !x.SavePassword && x.Id != r.Id);
+    }
+
+    private static (ConnectionDocument Export, KeychainKey Key) KeyConnectionExport(TempDir t)
+    {
+        var store = new ConnectionStore(t.Path, new FakeProtector());
+        var key = new KeychainKey { Name = "ma-cle", KeyType = "ssh-ed25519", Fingerprint = "SHA256:exemple" };
+        store.SaveKey(key);
+        var p = Sample("serveur-cle");
+        p.Auth = AuthMode.Key;
+        p.KeyId = key.Id;
+        store.SaveProfile(p);
+        var file = Path.Combine(t.Path, "export.json");
+        store.Export(store.Profiles, file);
+        return (ConnectionStore.ReadExport(file), key);
+    }
+
+    [Fact]
+    public async Task Restored_key_connection_stays_by_key_and_says_which_key_is_missing()
+    {
+        using var t = new TempDir();
+        var (export, _) = KeyConnectionExport(t);
+        using var t2 = new TempDir();
+        var other = new ConnectionStore(t2.Path, new FakeProtector());
+
+        var report = other.AddImported(export.Profiles, export.Keys, export.Identities);
+
+        var p = Assert.Single(other.Profiles);
+        Assert.Equal(AuthMode.Key, p.Auth);      // plus jamais changée en mot de passe en silence
+        Assert.Null(p.KeyId);
+        Assert.Equal("ma-cle (SHA256:exemple)", p.MissingKey);
+        Assert.Equal(["serveur-cle : ma-cle (SHA256:exemple)"], report.MissingKey);
+        Assert.Empty(report.NeedPassword);
+        var ex = await Assert.ThrowsAsync<MissingKeyException>(() => CredentialResolver.ResolveAsync(p, other, new NoPrompts()));
+        Assert.Contains("ma-cle", ex.Message, StringComparison.Ordinal);
+
+        // Survit à la relecture du fichier.
+        Assert.Equal("ma-cle (SHA256:exemple)", Assert.Single(new ConnectionStore(t2.Path, new FakeProtector()).Profiles).MissingKey);
+
+        // Une clé choisie ensuite efface la marque.
+        var key = new KeychainKey { Name = "importée", Fingerprint = "SHA256:exemple" };
+        other.SaveKey(key);
+        p.KeyId = key.Id;
+        other.SaveProfile(p);
+        Assert.Empty(Assert.Single(other.Profiles).MissingKey);
+    }
+
+    [Fact]
+    public void Restored_key_connection_finds_the_same_key_already_here_by_its_fingerprint()
+    {
+        using var t = new TempDir();
+        var (export, original) = KeyConnectionExport(t);
+        using var t2 = new TempDir();
+        var other = new ConnectionStore(t2.Path, new FakeProtector());
+        var here = new KeychainKey { Name = "autre nom", Fingerprint = original.Fingerprint };
+        other.SaveKey(here);
+
+        var report = other.AddImported(export.Profiles, export.Keys, export.Identities);
+
+        var p = Assert.Single(other.Profiles);
+        Assert.Equal(here.Id, p.KeyId);
+        Assert.Empty(p.MissingKey);
+        Assert.Empty(report.MissingKey);
     }
 
     private static (ConnectionStore Store, ConnectionProfile[] Line) JumpLine(TempDir t, int count)

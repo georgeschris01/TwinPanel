@@ -76,6 +76,43 @@ public sealed class AppSettings
     /// <summary>Éditeur selon l'extension (la première règle qui correspond gagne ; sinon l'éditeur F4 général).</summary>
     public List<EditorRule> EditorRules { get; set; } = [];
     public TerminalSettings Terminal { get; set; } = new();
+    /// <summary>Terminaux intégrés ouverts à la dernière fermeture (null : aucun). Propre à cette machine, jamais synchronisé.</summary>
+    public SavedTerminals? OpenTerminals { get; set; }
+}
+
+/// <summary>Un terminal intégré à rouvrir : son programme ou son serveur, son dossier de départ, son côté.</summary>
+public sealed class SavedTerminalTab
+{
+    public TerminalShell Shell { get; set; }
+    /// <summary>Dossier de départ sur ce PC (terminal du PC).</summary>
+    public string Directory { get; set; } = string.Empty;
+    /// <summary>Connexion du gestionnaire (terminal sur un serveur) ; null : terminal du PC.</summary>
+    public Guid? ServerId { get; set; }
+    /// <summary>Dossier de départ sur le serveur (null : dossier personnel).</summary>
+    public string? ServerDirectory { get; set; }
+    /// <summary>Côté droit du côte à côte.</summary>
+    public bool Right { get; set; }
+    /// <summary>Onglet affiché de son côté.</summary>
+    public bool Shown { get; set; }
+}
+
+/// <summary>Les terminaux de la dernière fois, et l'état du panneau du bas.</summary>
+public sealed class SavedTerminals
+{
+    public List<SavedTerminalTab> Tabs { get; set; } = [];
+    public bool PanelOpen { get; set; }
+    public bool ActiveIsRight { get; set; }
+
+    /// <summary>
+    /// Ceux qu'on peut rouvrir : un terminal de serveur dont la connexion n'existe plus est laissé de côté.
+    /// S'il ne reste rien à droite, tout repasse à gauche (pas de côte à côte vide).
+    /// </summary>
+    public List<SavedTerminalTab> Restorable(Func<Guid, bool> serverExists)
+    {
+        var list = Tabs.Where(t => t.ServerId is not { } id || serverExists(id)).ToList();
+        if (!list.Any(t => t.Right) || !list.Any(t => !t.Right)) foreach (var t in list) t.Right = false;
+        return list;
+    }
 }
 
 public enum SizeDisplay { Auto, Bytes, Kilobytes }
@@ -186,6 +223,8 @@ public sealed class StartupSettings
     public bool RestoreTabs { get; set; } = true;
     /// <summary>Onglets ouverts sur un serveur : les rouvrir (reconnexion) au démarrage ?</summary>
     public RemoteTabsRestore RemoteTabs { get; set; } = RemoteTabsRestore.Ask;
+    /// <summary>Terminaux intégrés ouverts à la fermeture : les rouvrir au démarrage ?</summary>
+    public RemoteTabsRestore TerminalTabs { get; set; } = RemoteTabsRestore.Ask;
     public string LeftPath { get; set; } = string.Empty;
     public string RightPath { get; set; } = string.Empty;
 }

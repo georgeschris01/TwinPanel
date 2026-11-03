@@ -183,15 +183,18 @@ public partial class MainWindowViewModel
             : Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
     }
 
-    private async Task OpenLocalTerminalAsync(TerminalShell shell, string directory, TerminalFamily? family = null)
+    /// <summary>Rend l'onglet ouvert, ou null si le terminal n'a pas pu démarrer.</summary>
+    private async Task<TerminalTabViewModel?> OpenLocalTerminalAsync(TerminalShell shell, string directory, TerminalFamily? family = null)
     {
         family ??= new TerminalFamily();
         ApplyTerminalSettings();
         var tab = Terminal.Add(Path.GetFileName(directory.TrimEnd(Path.DirectorySeparatorChar)) is { Length: > 0 } name ? name : directory);
         tab.CopyNumber = family.Next();
+        tab.Saved = new SavedTerminalTab { Shell = shell, Directory = directory };
         tab.Reopen = () => OpenLocalTerminalAsync(shell, directory, family);
         tab.Restart = () => StartLocalTerminalAsync(tab, shell, directory);
         await StartLocalTerminalAsync(tab, shell, directory);
+        return tab.Session is null ? null : tab;
     }
 
     /// <summary>Un échec ferme l'onglet s'il est neuf ; sinon il garde son écran.</summary>
@@ -209,11 +212,12 @@ public partial class MainWindowViewModel
         }
     }
 
-    private async Task OpenServerTerminalAsync(ConnectionProfile profile, string? directory, TerminalFamily? family = null)
+    /// <summary>Rend l'onglet ouvert, ou null si la connexion a échoué ou a été annulée.</summary>
+    private async Task<TerminalTabViewModel?> OpenServerTerminalAsync(ConnectionProfile profile, string? directory, TerminalFamily? family = null)
     {
         family ??= new TerminalFamily();
         ApplyTerminalSettings();
-        if (_remote is null) return;
+        if (_remote is null) return null;
         if (directory is not null && !SshTerminalConnection.CanTypePath(directory))
         {
             StatusMessage = L.T("Le nom de ce dossier contient des caractères de contrôle : le terminal s'ouvre dans le dossier personnel.");
@@ -223,20 +227,106 @@ public partial class MainWindowViewModel
         tab.ServerId = profile.Id;
         tab.ServerName = profile.Name;
         tab.CopyNumber = family.Next();
+        tab.Saved = new SavedTerminalTab { ServerId = profile.Id, ServerDirectory = directory };
         tab.Reopen = () => OpenServerTerminalAsync(profile, directory, family);
         tab.Restart = () => StartServerTerminalAsync(tab, profile, directory);
         _terminalCommands?.Refresh();
         await StartServerTerminalAsync(tab, profile, directory);
+        return Terminal.Tabs.Contains(tab) ? tab : null;
+    }
+
+    // ---- Terminaux de la dernière fois ---------------------------------------------------------------
+
+    /// <summary>« Pas cette fois » : gardés tels quels pour le prochain démarrage, sauf si d'autres terminaux sont ouverts entre-temps.</summary>
+    private SavedTerminals? _pendingTerminals;
+
+    /// <summary>Ce qu'il faudra rouvrir : les terminaux ouverts maintenant, dans l'ordre, chacun de son côté.</summary>
+    private SavedTerminals? CaptureTerminals()
+    {
+        if (!IsTerminalEnabled) return null;
+        if (Terminal.Tabs.Count == 0) return _pendingTerminals;
+        var saved = new SavedTerminals { PanelOpen = Terminal.IsOpen, ActiveIsRight = Terminal.IsSplit && Terminal.ActiveIsRight };
+        foreach (var (list, shown, right) in new[] { (Terminal.LeftTabs, Terminal.LeftTab, false), (Terminal.RightTabs, Terminal.RightTab, true) })
+            foreach (var tab in list)
+                if (tab.Saved is { } s)
+                    saved.Tabs.Add(new SavedTerminalTab
+                    {
+                        Shell = s.Shell, Directory = s.Directory, ServerId = s.ServerId, ServerDirectory = s.ServerDirectory,
+                        Right = right, Shown = tab == shown,
+                    });
+        return saved.Tabs.Count == 0 ? null : saved;
+    }
+
+    /// <summary>Au démarrage : propose de rouvrir les terminaux de la dernière fois (Options → Démarrage).</summary>
+    private async Task RestoreTerminalsAsync()
+    {
+        var saved = _settings.OpenTerminals;
+        if (saved is null || !IsTerminalEnabled) return;
+        var tabs = saved.Restorable(id => _connections?.FindProfile(id) is not null);
+        var mode = _settings.Startup.TerminalTabs;
+        if (tabs.Count == 0 || mode == RemoteTabsRestore.Never) return;
+        if (mode == RemoteTabsRestore.Ask)
+        {
+            int servers = tabs.Count(t => t.ServerId is not null);
+            var message = L.F("À la fermeture, {0} terminal(aux) étaient ouverts. Les rouvrir ?", tabs.Count);
+            if (servers > 0) message += "\n" + L.F("Dont {0} sur un serveur : il faudra se reconnecter.", servers);
+            var choice = await _dialogs.ChooseAsync<int>(L.T("Terminaux"), message,
+                (L.T("Rouvrir"), 1), (L.T("Toujours rouvrir"), 2), (L.T("Ne jamais rouvrir"), 3), (L.T("Pas cette fois"), null));
+            if (choice is null)
+            {
+                _pendingTerminals = saved;
+                return;
+            }
+            if (choice is 2 or 3)
+            {
+                // Le choix est retenu (modifiable dans Options → Démarrage).
+                _settings.Startup.TerminalTabs = choice == 2 ? RemoteTabsRestore.Always : RemoteTabsRestore.Never;
+                try { _store.Save(_settings); } catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+                if (choice == 3) return;
+            }
+        }
+
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var reopened = new List<(SavedTerminalTab Saved, TerminalTabViewModel Tab)>();
+        foreach (var right in new[] { false, true })
+        {
+            if (right && !tabs.Any(t => t.Right)) break;
+            if (right) Terminal.IsSplit = true;
+            Terminal.ActivatePane(right);
+            foreach (var t in tabs.Where(t => t.Right == right))
+            {
+                TerminalTabViewModel? tab;
+                if (t.ServerId is { } id)
+                {
+                    if (_connections?.FindProfile(id) is not { } profile) continue;
+                    StatusMessage = L.F("Reconnexion à {0}…", profile.Name);
+                    tab = await OpenServerTerminalAsync(profile, t.ServerDirectory);
+                }
+                else tab = await OpenLocalTerminalAsync(t.Shell, Directory.Exists(t.Directory) ? t.Directory : home);
+                if (tab is not null) reopened.Add((t, tab));
+            }
+        }
+        // Un côté resté vide (échec de connexion…) : retour à un seul côté.
+        if (Terminal.IsSplit && (Terminal.RightTabs.Count == 0 || Terminal.LeftTabs.Count == 0)) Terminal.Unsplit();
+        if (Terminal.Tabs.Count == 0) return;
+        foreach (var (s, tab) in reopened)
+            if (s.Shown && Terminal.Tabs.Contains(tab)) Terminal.SelectTab(tab);
+        Terminal.ActivatePane(saved.ActiveIsRight && Terminal.IsSplit);
+        // Le clavier reste dans les fichiers ; le panneau du bas reprend son état.
+        Terminal.Hide();
+        Terminal.IsOpen = saved.PanelOpen;
+        StatusMessage = L.F("{0} terminal(aux) rouvert(s).", Terminal.Tabs.Count);
     }
 
     /// <summary>Un échec ferme l'onglet s'il est neuf ; sinon il garde son écran.</summary>
     private async Task StartServerTerminalAsync(TerminalTabViewModel tab, ConnectionProfile profile, string? directory)
     {
+        if (_remote is not { } remote) return;
         var cancellation = tab.Cancellation.Token;
         try
         {
             // Rend la connexion déjà ouverte, ou en ouvre une avec les questions habituelles.
-            var session = await Task.Run(() => _remote.ConnectAsync(profile, _connections, _prompts!, cancellation), cancellation);
+            var session = await Task.Run(() => remote.ConnectAsync(profile, _connections, _prompts!, cancellation), cancellation);
             if (session is null)
             {
                 if (tab.Session is null) Terminal.CloseTab(tab);

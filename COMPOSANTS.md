@@ -115,10 +115,13 @@ Dernière mise à jour : 02/11/2026 (Windows 0.8.7 ; Linux 0.1.9-beta).
 | Application associée par Windows | Entrée sur un fichier, Alt+F3. | Message d'erreur de Windows affiché proprement. |
 | `xdg-open` (Linux) | Entrée sur un fichier, Alt+F3. Choisit le programme d'après le type du fichier, sans jamais lancer un fichier marqué exécutable. | Message d'erreur. Recommandé par le paquet `.deb`. |
 | Shell du compte, `$SHELL` (Linux) | Terminal intégré (F12). | Repli sur `/bin/bash`, puis `/bin/sh`. |
-| `/bin/sh` (Linux) | Ligne de commande en bas de la fenêtre. La sortie de la commande n'est pas affichée : le terminal intégré sert à cela. | — |
+| Shell du compte (Linux) | Ligne de commande en bas de la fenêtre : la commande est tapée dans un nouvel onglet du terminal intégré, où l'on voit son résultat. Terminal intégré désactivé : `x-terminal-emulator -e /bin/sh -c …`, qui reste ouvert. | — |
 | `x-terminal-emulator` (Linux) | Terminal externe. | Message clair, choix d'un autre programme dans les Options. |
 | `secret-tool` (Linux, paquet `libsecret-tools`) | Coffre : garde une clé dans le trousseau du bureau. Recommandé par le paquet `.deb`. | Le coffre demande un mot de passe maître. |
 | `lpstat`, `lp` (Linux, système d'impression CUPS) | Impression. | Message « Aucune imprimante n'est installée ». |
+| `xdg-email` (Linux, paquet `xdg-utils`) | Partager → Par courriel : la messagerie du bureau s'ouvre, fichiers joints. | Choix absent. |
+| `kdeconnect-cli` (Linux, KDE Connect) | Partager → vers un appareil relié (téléphone, autre ordinateur). | Choix absent ; s'il n'y a ni courriel ni KDE Connect, message clair. |
+| Partage de Windows (DataTransferManager, composant de Windows 10 / 11) | Partager… sous Windows : fenêtre de partage de Windows (partage à proximité, courrier, applications). Appelé directement par `Services/WindowsShare.cs`, **sans bibliothèque** (la projection `Microsoft.Windows.SDK.NET`, 25 Mo et sous licence du SDK Windows, a été écartée). | Message avec le code d'erreur de Windows. |
 
 ---
 
@@ -187,6 +190,7 @@ Les licences des bibliothèques livrées sont **permissives** (MIT, BSD, Apache 
 | `Compare/` | Comparaison et synchronisation de dossiers (côtés PC ou serveur : `SyncSides.cs`, sens réglable), différences de texte, sommes de contrôle (`HashingStream` : empreinte pendant un téléchargement). |
 | `Viewer/` | Détection d'encodage, affichage hexadécimal, `TextDocument` (éditeur : encodage et fins de ligne conservés). |
 | `Tools/ExternalTools.cs` | Éditeurs et visionneuses externes : détection, arguments `%1 %L %N %D`, éditeur intégré. |
+| `Tools/LinuxShare.cs` | Partager sous Linux : courriel (`xdg-email`), appareils KDE Connect (`kdeconnect-cli`). |
 | `Terminal/` | Terminal intégré. `VtParser` (découpe du flux), `TerminalEmulator` (écran, historique, couleurs, second écran), `TerminalKeys` (clavier, souris, collage), `TerminalSession` (écran + connexion), `TerminalBacklog` (lecture limitée d'un serveur trop rapide), `TerminalCommands` (commandes enregistrées), `ConPtyConnection` (programme du PC), `TerminalShells` (programmes installés). Serveurs : `Remote/SshTerminalConnection.cs`. |
 | `Settings/` | Réglages enregistrés en JSON. |
 | `Media/` | Infos médias (`MediaInfoLib`, `MediaReport`, `MediaCache`), photos (`PhotoInfo`), tags (`AudioTags`), outils externes (`MediaTools`, `MkvEdit`, `ExifEdit`). |
@@ -199,7 +203,7 @@ Les licences des bibliothèques livrées sont **permissives** (MIT, BSD, Apache 
 |---|---|
 | `Views/` | Fenêtres : principale, panneau, visionneuse, éditeur, recherche, synchronisation, comparaison, renommage multiple, gestionnaire de connexions, guide (`HelpWindow`), terminal (`TerminalView`, dessin et saisie). `TExtension.cs` : `{l:T '…'}`, texte traduit dans les fichiers axaml. |
 | `ViewModels/` | État et commandes de chaque écran (onglets, marquage, opérations en cours…). |
-| `Services/` | Boîtes de dialogue, file des opérations, lancement des programmes externes, questions de connexion (clé du serveur, certificat, mots de passe), renvoi des fichiers distants édités. |
+| `Services/` | Boîtes de dialogue, file des opérations, lancement des programmes externes, questions de connexion (clé du serveur, certificat, mots de passe), renvoi des fichiers distants édités. `WindowsShare.cs` : fenêtre de partage de Windows (appels directs, identifiants relevés dans les `.winmd` officiels). |
 | `Converters/` | Icônes et couleurs selon le type de fichier. |
 
 ### `tests/TwinPanel.Core.Tests` — tests automatiques de la logique (xUnit).
