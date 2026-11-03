@@ -60,6 +60,7 @@ public static class CommandCatalog
         new("UndoRename", L.T("Annuler le dernier renommage multiple"), L.T("Fichiers"), "Ctrl+Z"),
         new("OpenWithDefaultApp", L.T("Ouvrir avec l'application associée"), L.T("Fichiers"), "Alt+F3"),
         new("Print", L.T("Imprimer"), L.T("Fichiers"), ""),
+        new("Share", L.T("Partager…"), L.T("Fichiers"), ""),
         new("ShowProperties", L.T("Propriétés (droits, propriétaire, attributs, sécurité)"), L.T("Fichiers"), "Alt+Enter"),
         // Outils
         new("Search", L.T("Rechercher des fichiers"), L.T("Outils"), "Alt+F7"),

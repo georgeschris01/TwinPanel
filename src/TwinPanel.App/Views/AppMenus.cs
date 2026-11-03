@@ -216,7 +216,7 @@ public static class AppMenus
         }
         Add(items, Cmd(vm, "PackArchive", L.T("Compresser…")));
         if (isArchive) Add(items, Cmd(vm, "UnpackArchive", L.T("Décompresser…")), Cmd(vm, "TestArchive"));
-        if (file) Add(items, Cmd(vm, "Print", L.T("Imprimer")));
+        if (file) Add(items, Cmd(vm, "Print", L.T("Imprimer")), Cmd(vm, "Share", L.T("Partager…")));
         items.Add(new Separator());
         Add(items, Cmd(vm, "Copy", L.T("Copier…")), Cmd(vm, "Move", L.T("Déplacer…")));
         if (any) Add(items, Cmd(vm, "Rename", L.T("Renommer…")));

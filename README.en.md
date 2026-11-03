@@ -273,6 +273,7 @@ Mark with `Ins`, `Space`, `Shift+arrows`, the right click, or by mask with `Num+
 - `F3` opens the built-in viewer: text, hex, image, media info.
 - `F4` opens the chosen editor, by default Notepad on Windows and the system editor on Linux. A built-in editor is also available, and each extension can have its own editor (Options → Editors).
 - `F8` sends to the system trash. On a server or in an archive, deletion is permanent and always confirmed.
+- Right-click → **Share…** sends the marked files, or the one under the cursor. On Windows, it is the Windows share window: nearby sharing, mail, apps. On Linux, TwinPanel offers **By email** (your usual mail app opens with the files attached) and each device linked by KDE Connect (phone, other computer). A file from a server or an archive is first copied to a temporary folder. Folders cannot be shared.
 
 ### Multi-rename
 

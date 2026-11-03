@@ -273,6 +273,7 @@ Marquez avec `Inser`, `Espace`, `Maj+flèches`, le clic droit, ou selon un masqu
 - `F3` ouvre la visionneuse intégrée : texte, hexa, image, infos média.
 - `F4` ouvre l'éditeur choisi, par défaut le Bloc-notes sous Windows et l'éditeur du système sous Linux. Un éditeur intégré est aussi disponible, et chaque extension peut avoir son éditeur (Options → Éditeurs).
 - `F8` envoie à la corbeille du système. Sur un serveur ou dans une archive, la suppression est définitive et toujours confirmée.
+- Clic droit → **Partager…** envoie les fichiers marqués, ou celui sous le curseur. Sous Windows, c'est la fenêtre de partage de Windows : partage à proximité, courrier, applications. Sous Linux, TwinPanel propose **Par courriel** (la messagerie habituelle s'ouvre, fichiers joints) et chaque appareil relié par KDE Connect (téléphone, autre ordinateur). Un fichier d'un serveur ou d'une archive est d'abord copié dans un dossier temporaire. Les dossiers ne se partagent pas.
 
 ### Renommage multiple
 

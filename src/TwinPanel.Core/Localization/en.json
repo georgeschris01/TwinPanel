@@ -1742,5 +1742,15 @@
  "Terminaux intégrés qui étaient ouverts": "Built-in terminals that were open",
  "Toujours les rouvrir": "Always reopen them",
  "{0} terminal(aux) rouvert(s).": "{0} terminal(s) reopened.",
- "À la fermeture, {0} terminal(aux) étaient ouverts. Les rouvrir ?": "When closing, {0} terminal(s) were open. Reopen them?"
+ "À la fermeture, {0} terminal(aux) étaient ouverts. Les rouvrir ?": "When closing, {0} terminal(s) were open. Reopen them?",
+ "Aucun moyen de partage trouvé : installez xdg-utils (courriel) ou KDE Connect (téléphone, autre ordinateur).": "No way to share found: install xdg-utils (email) or KDE Connect (phone, other computer).",
+ "Ces fichiers n'ont pas pu être préparés :": "These files could not be prepared:",
+ "Choisis un ou plusieurs fichiers (les dossiers ne se partagent pas).": "Choose one or more files (folders cannot be shared).",
+ "Envoyé à {0} : {1} fichier(s).": "Sent to {0}: {1} file(s).",
+ "Par courriel": "By email",
+ "Partager": "Share",
+ "Partager {0} fichier(s) :": "Share {0} file(s):",
+ "Partager…": "Share…",
+ "Vers {0} (KDE Connect)": "To {0} (KDE Connect)",
+ "Windows ne propose pas de partage pour ces fichiers.": "Windows does not offer sharing for these files."
 }

@@ -1277,6 +1277,79 @@ public partial class MainWindowViewModel : ObservableObject
             await _dialogs.ShowListAsync(L.T("Imprimer"), L.T("Impossible d'imprimer ou d'ouvrir ces fichiers :"), failed);
     }
 
+    /// <summary>
+    /// Clic droit → Partager : les fichiers marqués, ou celui sous le curseur. Un fichier de serveur ou d'archive est d'abord copié
+    /// dans un dossier temporaire. Windows : sa fenêtre de partage. Linux : courriel ou appareil KDE Connect.
+    /// </summary>
+    [RelayCommand]
+    private async Task Share()
+    {
+        var files = ActivePanel.Current.TargetEntries.Where(e => !e.IsDirectory).ToList();
+        if (files.Count == 0) { await _dialogs.ShowErrorAsync(L.T("Partager"), L.T("Choisis un ou plusieurs fichiers (les dossiers ne se partagent pas).")); return; }
+        var paths = new List<string>();
+        var failed = new List<string>();
+        foreach (var f in files)
+        {
+            string? path = f.FullPath;
+            if (ActivePanel.Current.IsRemote) path = await DownloadTempAsync(f, quiet: true);       // serveur : copie temporaire
+            else if (ActivePanel.Current.IsInsideArchive) path = await MaterializeAsync(f.FullPath, quiet: true);
+            if (path is null) failed.Add(f.Name);
+            else paths.Add(path);
+        }
+        if (failed.Count > 0) await _dialogs.ShowListAsync(L.T("Partager"), L.T("Ces fichiers n'ont pas pu être préparés :"), failed);
+        if (paths.Count == 0) return;
+        if (OperatingSystem.IsWindows()) await ShareOnWindowsAsync(paths);
+        else await ShareOnLinuxAsync(paths);
+    }
+
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    private async Task ShareOnWindowsAsync(List<string> paths)
+    {
+        try
+        {
+            // La fenêtre de Windows veut des fichiers d'un même dossier : sinon, des copies réunies dans un dossier temporaire.
+            if (paths.Select(Path.GetDirectoryName).Distinct(StringComparer.OrdinalIgnoreCase).Count() > 1)
+                paths = await Task.Run(() => TwinPanel.Core.Tools.ShareFolder.Gather(paths));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            await _dialogs.ShowErrorAsync(L.T("Partager"), ex.Message);
+            return;
+        }
+        if (!WindowsShare.Show(paths, WindowsShare.MainWindowHandle()))
+            await _dialogs.ShowErrorAsync(L.T("Partager"), L.T("Windows ne propose pas de partage pour ces fichiers."));
+    }
+
+    private async Task ShareOnLinuxAsync(List<string> paths)
+    {
+        var devices = await Task.Run(TwinPanel.Core.Tools.LinuxShare.Devices);
+        bool email = TwinPanel.Core.Tools.LinuxShare.Exists("xdg-email");
+        if (!email && devices.Count == 0)
+        {
+            await _dialogs.ShowErrorAsync(L.T("Partager"), L.T("Aucun moyen de partage trouvé : installez xdg-utils (courriel) ou KDE Connect (téléphone, autre ordinateur)."));
+            return;
+        }
+        var choices = new List<(string Label, int? Value)>();
+        if (email) choices.Add((L.T("Par courriel"), -1));
+        for (int i = 0; i < devices.Count; i++) choices.Add((L.F("Vers {0} (KDE Connect)", devices[i].Name), i));
+        choices.Add((L.T("Annuler"), null));
+        var choice = await _dialogs.ChooseAsync<int>(L.T("Partager"), L.F("Partager {0} fichier(s) :", paths.Count), [.. choices]);
+        if (choice is not { } chosen) return;
+        try
+        {
+            if (chosen < 0) Process.Start(TwinPanel.Core.Tools.LinuxShare.Email(paths))?.Dispose();
+            else
+            {
+                foreach (var path in paths) Process.Start(TwinPanel.Core.Tools.LinuxShare.ToDevice(devices[chosen], path))?.Dispose();
+                StatusMessage = L.F("Envoyé à {0} : {1} fichier(s).", devices[chosen].Name, paths.Count);
+            }
+        }
+        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
+        {
+            await _dialogs.ShowErrorAsync(L.T("Partager"), ex.Message);
+        }
+    }
+
     private async Task RunShellAsync(Action action)
     {
         try { action(); }
