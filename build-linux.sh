@@ -26,7 +26,13 @@ export DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1
     -p:Version="$VERSION" -p:DebugType=none -p:PathMap="$PWD=." -o "$APP" --nologo -v quiet
 # Rien de personnel ne doit partir : ni symboles de débogage, ni chemin de la machine de fabrication dans les programmes.
 find "$APP" -name '*.pdb' -delete
-if grep -rlaF -- "$PWD" "$APP" --include='TwinPanel*.dll' | grep -q .; then echo "Chemin de fabrication trouvé dans les programmes."; exit 1; fi
+# Les options avant « -- » : après lui, grep lit tout comme des noms de fichiers. Code 1 = rien trouvé ; autre chose = erreur.
+set +e
+grep -rlaF --include='TwinPanel*' -- "$PWD" "$APP" > /dev/null
+found=$?
+set -e
+if [ "$found" -eq 0 ]; then echo "Chemin de fabrication trouvé dans les programmes."; exit 1; fi
+if [ "$found" -ne 1 ]; then echo "Contrôle du chemin de fabrication impossible."; exit 1; fi
 test -x "$APP/TwinPanel"
 
 desktop_file() { # $1 : commande à lancer
