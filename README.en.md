@@ -19,7 +19,7 @@ A free, modern and complete two-panel file manager. For Windows, and for Linux a
 - Light or dark theme, customizable shortcuts, colors, icons and button bar
 - Full built-in guide (`F1`), with FAQ and tips
 
-![TwinPanel on Windows](docs/screenshots/windows-en.png)
+![TwinPanel on Windows and Linux](docs/screenshots/demo-en.gif)
 
 ## Download
 

@@ -1,0 +1,15 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.10.0.schema.json
+PackageIdentifier: Chrypox.TwinPanel
+PackageVersion: 0.8.9
+InstallerType: inno
+Scope: machine
+ElevationRequirement: elevatesSelf
+UpgradeBehavior: install
+MinimumOSVersion: 10.0.0.0
+ProductCode: '{148AA9F1-8428-46AD-9082-858121CBFB5E}_is1'
+Installers:
+- Architecture: x64
+  InstallerUrl: https://github.com/georgeschris01/TwinPanel/releases/download/v0.8.9/TwinPanel-Setup-0.8.9.exe
+  InstallerSha256: 935D2785D4633E3BC8DF553BB26FA76EADB9E3416613D69E228150A38A8832EA
+ManifestType: installer
+ManifestVersion: 1.10.0

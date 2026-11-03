@@ -19,7 +19,7 @@ Gestionnaire de fichiers à deux panneaux, gratuit, moderne et complet. Pour Win
 - Thème clair ou sombre, raccourcis, couleurs, icônes et barre de boutons personnalisables
 - Guide complet intégré (`F1`), avec FAQ et astuces
 
-![TwinPanel sous Windows](docs/screenshots/windows-fr.png)
+![TwinPanel sous Windows et Linux](docs/screenshots/demo-fr.gif)
 
 ## Télécharger
 
