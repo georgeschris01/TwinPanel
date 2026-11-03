@@ -87,6 +87,8 @@ public static class ExternalTools
             ("VSCodium", "--goto \"%1\":%L", ["/usr/bin/codium", "/usr/share/codium/codium"]),
             ("Kate", "-l %L \"%1\"", ["/usr/bin/kate"]),
             ("gedit", "\"%1\"", ["/usr/bin/gedit"]),
+            // Éditeur de GNOME depuis GNOME 42 (Fedora, Ubuntu), à la place de gedit.
+            ("GNOME Text Editor", "\"%1\"", ["/usr/bin/gnome-text-editor"]),
             ("Mousepad", "\"%1\"", ["/usr/bin/mousepad"]),
         ];
 

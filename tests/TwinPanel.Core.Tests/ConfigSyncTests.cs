@@ -110,9 +110,13 @@ public sealed class ConfigSyncTests : IDisposable
     {
         Send(_windows);
         var file = ConfigSync.FilePath(_folder);
-        var text = File.ReadAllText(file);
-        int i = text.IndexOf("\"Data\":\"", StringComparison.Ordinal) + 20;
-        File.WriteAllText(file, text[..i] + (text[i] == 'A' ? 'B' : 'A') + text[(i + 1)..]);
+        // Un octet changé dans les données décodées : changer un caractère du texte pouvait tomber dans « + »
+        // (le « + » de la base64 échappé en JSON) et casser le JSON au lieu des données (échec du test, une fois sur 20 environ).
+        var json = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(file))!;
+        var data = Convert.FromBase64String((string)json["Data"]!);
+        data[12] ^= 0x01;
+        json["Data"] = Convert.ToBase64String(data);
+        File.WriteAllText(file, json.ToJsonString());
 
         Assert.Throws<SyncPassphraseException>(() => ConfigSync.Read(_folder, Phrase));
     }

@@ -2,7 +2,8 @@
 # TwinPanel — © 2026 Georges Christophe (chrypox). Tous droits réservés.
 # Licence TwinPanel 1.0 (gratuit, non commercial, sans modification) : voir le fichier LICENSE.
 #
-# Fabrique le paquet .deb et l'AppImage de TwinPanel, pour Linux 64 bits (x86-64).
+# Fabrique les paquets de TwinPanel pour Linux 64 bits (x86-64) : .deb (Debian, Ubuntu) si dpkg-deb est là,
+# .rpm (Fedora) si rpmbuild est là, AppImage si appimagetool est là.
 # À lancer sous Linux, à la racine du projet :  ./build-linux.sh [version]
 # Sans version, LinuxVersion de Directory.Build.props est utilisée. Résultat dans dist/linux/.
 set -euo pipefail
@@ -155,7 +156,7 @@ Priority: optional
 Architecture: amd64
 Maintainer: Georges Christophe (chrypox) <admin@chrypox.be>
 Installed-Size: $(du -sk "$DEB/usr" | cut -f1)
-Depends: libc6, libgcc-s1, libstdc++6, zlib1g, libssl3t64 | libssl3, libicu76 | libicu74 | libicu72, libfontconfig1, libx11-6, libice6, libsm6, libxcursor1, libxrandr2, libxi6
+Depends: libc6, libgcc-s1, libstdc++6, zlib1g, libssl3t64 | libssl3, libicu78 | libicu77 | libicu76 | libicu74 | libicu72, libfontconfig1, libx11-6, libice6, libsm6, libxcursor1, libxrandr2, libxi6
 Recommends: libsecret-tools, xdg-utils
 Suggests: cups-client
 Homepage: https://github.com/georgeschris01/TwinPanel
@@ -164,7 +165,69 @@ Description: Two-panel file manager (beta for Linux)
  WebDAV connections, an integrated terminal, search and batch renaming.
 EOF
 
-dpkg-deb --root-owner-group -Zxz --build "$DEB" "$OUT/twinpanel_${VERSION}_amd64.deb" >/dev/null
+if command -v dpkg-deb >/dev/null; then
+    dpkg-deb --root-owner-group -Zxz --build "$DEB" "$OUT/twinpanel_${VERSION}_amd64.deb" >/dev/null
+else
+    echo "Paquet .deb non fabriqué : dpkg-deb est absent."
+fi
+
+# ---- Paquet .rpm (Fedora) -------------------------------------------------------------------
+# Même arborescence que le .deb. Dépendances écrites à la main : les bibliothèques de .NET sont chargées à la demande,
+# la recherche automatique de rpmbuild ne les verrait pas, et elle réclamerait des bibliothèques livrées avec TwinPanel.
+# Fedora 45 n'a plus que OpenSSL 4, que .NET 10 ne sait pas charger : openssl3-libs (paquet de Fedora) fournit OpenSSL 3.
+if command -v rpmbuild >/dev/null; then
+    RPM="$PWD/$OUT/rpmbuild"
+    rm -rf "$RPM"
+    mkdir -p "$RPM/SPECS"
+    # Pour rpm aussi, « ~ » classe une bêta avant la version finale.
+    cat > "$RPM/SPECS/twinpanel.spec" <<EOF
+Name:           twinpanel
+Version:        $DEB_VERSION
+Release:        1
+Summary:        Two-panel file manager (beta for Linux)
+License:        LicenseRef-TwinPanel-1.0
+URL:            https://github.com/georgeschris01/TwinPanel
+ExclusiveArch:  x86_64
+AutoReqProv:    no
+Requires:       glibc, libgcc, libstdc++, zlib-ng-compat, openssl3-libs, libicu, fontconfig
+Requires:       libX11, libICE, libSM, libXcursor, libXrandr, libXi
+Recommends:     libsecret, xdg-utils
+Suggests:       cups-client
+
+# Programmes déjà compilés par dotnet publish : rien à extraire, rien à retoucher.
+%global debug_package %{nil}
+%global __os_install_post %{nil}
+%global _build_id_links none
+
+%description
+TwinPanel is a two-panel file manager with tabs, archives, SFTP, FTP and
+WebDAV connections, an integrated terminal, search and batch renaming.
+
+%install
+cp -a "$PWD/$DEB/usr" %{buildroot}/
+
+%files
+/usr/bin/twinpanel
+/usr/lib/twinpanel
+/usr/share/applications/twinpanel.desktop
+/usr/share/icons/hicolor/64x64/apps/twinpanel.png
+/usr/share/icons/hicolor/256x256/apps/twinpanel.png
+/usr/share/metainfo/be.chrypox.TwinPanel.metainfo.xml
+/usr/share/swcatalog/xml/twinpanel.xml
+/usr/share/swcatalog/icons/twinpanel
+/usr/share/doc/twinpanel
+
+%changelog
+* $(LC_ALL=C date +'%a %b %d %Y') Georges Christophe (chrypox) <admin@chrypox.be> - $DEB_VERSION-1
+- TwinPanel $VERSION for Linux.
+EOF
+    rpmbuild -bb --quiet --define "_topdir $RPM" "$RPM/SPECS/twinpanel.spec" >/dev/null
+    # Nom sans « ~ » : GitHub le remplacerait dans le nom du fichier téléchargé.
+    mv "$RPM"/RPMS/x86_64/twinpanel-*.rpm "$OUT/twinpanel-${VERSION}.x86_64.rpm"
+    rm -rf "$RPM"
+else
+    echo "Paquet .rpm non fabriqué : rpmbuild est absent."
+fi
 
 # ---- AppImage -------------------------------------------------------------------------------
 DIR="$OUT/AppDir"
@@ -191,5 +254,5 @@ else
 fi
 
 echo
-ls -lh "$OUT"/twinpanel_*.deb "$OUT"/*.AppImage 2>/dev/null || true
-sha256sum "$OUT"/twinpanel_*.deb "$OUT"/*.AppImage 2>/dev/null || true
+ls -lh "$OUT"/twinpanel_*.deb "$OUT"/twinpanel-*.rpm "$OUT"/*.AppImage 2>/dev/null || true
+sha256sum "$OUT"/twinpanel_*.deb "$OUT"/twinpanel-*.rpm "$OUT"/*.AppImage 2>/dev/null || true

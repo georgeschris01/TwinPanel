@@ -633,7 +633,7 @@ public class TerminalShellsTests
     [Fact]
     public void Command_line_run_in_desktop_terminal_keeps_the_command_as_one_argument()
     {
-        var (exe, args) = TerminalCommand.BuildRun(new TerminalSettings(), "ls -l 'mon dossier'; echo fini");
+        var (exe, args) = TerminalCommand.BuildRun(new TerminalSettings(), "ls -l 'mon dossier'; echo fini", findProgram: _ => null);
         Assert.Equal("x-terminal-emulator", exe);
         Assert.Equal(["-e", "/bin/sh", "-c"], args.Take(3));
         Assert.Equal(4, args.Count);

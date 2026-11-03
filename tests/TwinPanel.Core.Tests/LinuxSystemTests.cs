@@ -74,9 +74,41 @@ public class LinuxSystemTests
     public void The_external_terminal_of_linux_can_reach_a_server()
     {
         var settings = new TerminalSettings { Kind = TerminalKind.Custom };
-        var (program, arguments) = Customization.TerminalCommand.Build(settings, new Customization.TerminalCommand.Target(null, "moi", "exemple.test", 2222));
-        Assert.Equal("x-terminal-emulator", program);
+        var target = new Customization.TerminalCommand.Target(null, "moi", "exemple.test", 2222);
+        var (program, arguments) = Customization.TerminalCommand.Build(settings, target,
+            findProgram: n => n == "x-terminal-emulator" ? "/usr/bin/konsole" : null);
+        Assert.Equal("/usr/bin/konsole", program);
         Assert.Equal(["-e", "ssh", "-p", "2222", "moi@exemple.test"], arguments);
+
+        // GNOME (Fedora, Ubuntu) : Ptyxis ne comprend pas « -e ».
+        (program, arguments) = Customization.TerminalCommand.Build(settings, target, findProgram: n => n == "ptyxis" ? "/usr/bin/ptyxis" : null);
+        Assert.Equal("/usr/bin/ptyxis", program);
+        Assert.Equal(["--", "ssh", "-p", "2222", "moi@exemple.test"], arguments);
+    }
+
+    [Theory]
+    [InlineData("/usr/bin/ptyxis", "/usr/bin/ptyxis", "--new-window|-d|/home/a b", "-d|/home/a b|--|ls")]
+    [InlineData("/usr/bin/gnome-terminal.wrapper", "/usr/bin/gnome-terminal", "--working-directory=/home/a b", "--working-directory=/home/a b|--|ls")]
+    [InlineData("/usr/bin/konsole", "/usr/bin/konsole", "--workdir|/home/a b", "--workdir|/home/a b|-e|ls")]
+    [InlineData("/usr/bin/xfce4-terminal", "/usr/bin/xfce4-terminal", "--working-directory=/home/a b", "--working-directory=/home/a b|-x|ls")]
+    [InlineData("/usr/bin/xterm", "/usr/bin/xterm", "", "-e|ls")]
+    public void The_desktop_terminal_gets_its_own_options(string found, string program, string open, string run)
+    {
+        static string? Only(string name, string path) => name == "x-terminal-emulator" ? path : null;
+        var (p1, a1) = Customization.DesktopTerminal.Command("/home/a b", null, n => Only(n, found));
+        Assert.Equal(program, p1);
+        Assert.Equal(open, string.Join('|', a1));
+        var (p2, a2) = Customization.DesktopTerminal.Command("/home/a b", ["ls"], n => Only(n, found));
+        Assert.Equal(program, p2);
+        Assert.Equal(run, string.Join('|', a2));
+    }
+
+    [Fact]
+    public void Without_a_known_terminal_the_distribution_one_is_asked_for()
+    {
+        var (program, arguments) = Customization.DesktopTerminal.Command(null, ["ls"], _ => null);
+        Assert.Equal("x-terminal-emulator", program);
+        Assert.Equal(["-e", "ls"], arguments);
     }
 
     [LinuxFact]

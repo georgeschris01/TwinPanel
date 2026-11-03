@@ -5,7 +5,15 @@ using TwinPanel.Core.Archives;
 
 namespace TwinPanel.Core.Tests;
 
+/// <summary>
+/// Mots de passe et copies déchiffrées sont communs à tout TwinPanel : ForgetAll efface toutes les copies suivies,
+/// dont celles des archives de serveur. Ces tests ne tournent donc pas en même temps que ceux des archives de serveur.
+/// </summary>
+[CollectionDefinition("Copies d'archives")]
+public class ArchiveCopiesCollection;
+
 /// <summary>Archives protégées : jamais de contenu sans le bon mot de passe, et jamais une archive chiffrée réécrite en clair.</summary>
+[Collection("Copies d'archives")]
 public class ArchivePasswordTests
 {
     /// <summary>Mot de passe factice des petites archives ci-dessous, fabriquées avec 7-Zip (« contenu de test » dans note.txt).</summary>

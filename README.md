@@ -19,13 +19,14 @@ Gestionnaire de fichiers à deux panneaux, gratuit, moderne et complet. Pour Win
 
 **[TwinPanel pour Windows](../../releases/latest)** (installateur).
 
-**[TwinPanel pour Linux, version bêta](../../releases/tag/linux-v0.1.11-beta)** : paquet `.deb` pour Debian et ses dérivés, ou AppImage. Bêta testée uniquement sur Debian 13 avec KDE : des défauts peuvent rester.
+**[TwinPanel pour Linux, version bêta](../../releases/tag/linux-v0.1.12-beta)** : paquet `.deb` pour Debian et Ubuntu, paquet `.rpm` pour Fedora, ou AppImage. Bêta testée sur Debian 13 avec KDE, Ubuntu 26.04 et Fedora 45 avec GNOME : des défauts peuvent rester.
 
 ```
-sudo apt install ./twinpanel_*_amd64.deb
+sudo apt install ./twinpanel_*_amd64.deb     # Debian, Ubuntu
+sudo dnf install ./twinpanel-*.x86_64.rpm    # Fedora
 ```
 
-Avec l'AppImage : `chmod +x TwinPanel-*.AppImage`, puis lancez le fichier.
+Avec l'AppImage : `chmod +x TwinPanel-*.AppImage`, puis lancez le fichier. Sur Fedora 45, installez d'abord OpenSSL 3 : `sudo dnf install openssl3-libs` (le paquet `.rpm` le fait de lui-même). Sur Ubuntu, le Centre d'applications ne montre pas TwinPanel, car il ne connaît que son propre catalogue ; on le désinstalle avec `sudo apt remove twinpanel`.
 
 ![TwinPanel sous Linux](docs/screenshots/linux-fr.png)
 
@@ -116,7 +117,7 @@ Vous pouvez le lâcher sur un dossier, sur l'autre panneau, sur un onglet, sur u
 - **session X11** : le glisser-déposer marche dans les deux sens, de TwinPanel vers une autre application et l'inverse ;
 - **session Wayland** : on ne peut pas lâcher dans une autre application. Depuis une autre application vers TwinPanel, le glissement reste possible.
 
-Pour connaître votre session, tapez `echo $XDG_SESSION_TYPE` dans un terminal du bureau. Sous KDE, on choisit la session sur l'écran de connexion, avant de taper le mot de passe.
+Pour connaître votre session, tapez `echo $XDG_SESSION_TYPE` dans un terminal du bureau. Sous KDE, on choisit la session sur l'écran de connexion, avant de taper le mot de passe. Sous GNOME (Ubuntu, Fedora), la session est toujours Wayland.
 
 | Au lâcher | Résultat |
 |---|---|

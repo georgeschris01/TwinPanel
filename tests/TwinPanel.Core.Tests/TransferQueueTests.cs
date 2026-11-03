@@ -277,11 +277,12 @@ public class TransferQueueTests
         var commands = new ServerCommandState();
         var store = Store(dir);
         store.Add(new SavedTransfer { Plan = plan, Commands = commands });
-        using var stop = new CancellationTokenSource(TimeSpan.FromMilliseconds(300));
 
+        // Nombre de changements fixe : une durée fixe laissait les listes grossir sans limite sur un PC rapide,
+        // jusqu'à remplir la mémoire d'une petite machine virtuelle (programme de test arrêté par le système).
         var writer = Task.Run(() =>
         {
-            for (int i = 0; !stop.IsCancellationRequested; i++)
+            for (int i = 0; i < 20_000; i++)
             {
                 plan.Broken.Add(i);
                 commands.Finished[$"/f{i}"] = i;
@@ -289,7 +290,7 @@ public class TransferQueueTests
                 plan.Skipped.Add("x");
             }
         });
-        while (!stop.IsCancellationRequested) store.Save();
+        do store.Save(); while (!writer.IsCompleted);
         await writer;
 
         var back = Restart(dir, store);
