@@ -1,5 +1,5 @@
 @echo off
-rem Fabrique l'installateur de TwinPanel : installer-output\TwinPanel-Setup-<version>.exe
+rem Fabrique l'installateur de TwinPanel : installer-output\windows\TwinPanel-Setup-<version>.exe
 rem Il faut Inno Setup (gratuit) : https://jrsoftware.org/isdl.php
 rem La version se change dans Directory.Build.props (balise Version) avant chaque nouvel installateur.
 rem Resultat detaille dans installer.log.
@@ -17,7 +17,7 @@ if not defined ISCC for /f "delims=" %%i in ('where ISCC.exe 2^>nul') do set ISC
 
 call :work > installer.log 2>&1
 
-if exist "installer-output\TwinPanel-Setup-%VERSION%.exe" explorer /select,"installer-output\TwinPanel-Setup-%VERSION%.exe"
+if exist "installer-output\windows\TwinPanel-Setup-%VERSION%.exe" explorer /select,"installer-output\windows\TwinPanel-Setup-%VERSION%.exe"
 endlocal
 goto :eof
 
@@ -49,7 +49,7 @@ if errorlevel 1 (
   goto :done
 )
 echo.
-echo Installateur cree : installer-output\TwinPanel-Setup-%VERSION%.exe
+echo Installateur cree : installer-output\windows\TwinPanel-Setup-%VERSION%.exe
 :done
 echo.
 echo === FIN ===

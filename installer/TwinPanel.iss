@@ -26,7 +26,7 @@ DisableProgramGroupPage=yes
 ; Mise à jour : même dossier que l'installation précédente, sans redemander.
 UsePreviousAppDir=yes
 DisableDirPage=auto
-OutputDir=..\installer-output
+OutputDir=..\installer-output\windows
 OutputBaseFilename=TwinPanel-Setup-{#AppVersion}
 SetupIconFile=..\src\TwinPanel.App\Assets\twinpanel.ico
 UninstallDisplayIcon={app}\TwinPanel.exe
