@@ -7,6 +7,7 @@ using TwinPanel.Core.Remote;
 namespace TwinPanel.Core.Tests;
 
 /// <summary>Une archive d'un serveur ouverte dans un panneau : copie temporaire, remplacement contrôlé.</summary>
+[Collection("Copies d'archives")]
 public sealed class ServerArchiveTests : IDisposable
 {
     private const string Folder = "sftp://demo/data";
