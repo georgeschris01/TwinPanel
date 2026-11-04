@@ -465,15 +465,15 @@ public partial class MainWindowViewModel
     // ---- F5 / F6 avec un serveur -----------------------------------------------------------------------------
 
     /// <summary>Copie / déplacement quand l'un des panneaux (ou la destination tapée) est un serveur. False : pas concerné.</summary>
-    private async Task<bool> RemoteTransferAsync(bool move, IReadOnlyList<FileEntry> items, string? destination, bool fromPanel, ConflictPolicy? forced)
+    private async Task<bool> RemoteTransferAsync(bool move, IReadOnlyList<FileEntry> items, string? destination, bool fromPanel, ConflictPolicy? forced, string sourceDir)
     {
         if (_remote is null) return false;
-        var src = fromPanel ? SessionOf(ActivePanel.Current) : null;
+        var src = fromPanel ? _remote.FindForPath(sourceDir) : null;
         var defaultDestination = destination ?? OtherPanel.Current.CurrentPath;
         bool destRemote = PanelRemotePath.TryParse(defaultDestination, out _);
         if (src is null && !destRemote) return false;
-        bool fromArchive = fromPanel && ActivePanel.Current.IsInsideArchive;
-        if (fromArchive && move && await EditableArchiveAsync() is null) return true;
+        bool fromArchive = fromPanel && !PanelRemotePath.TryParse(sourceDir, out _) && ArchivePath.TrySplit(sourceDir, out _, out _);
+        if (fromArchive && move && await EditableArchiveAsync(sourceDir) is null) return true;
 
         var verb = move ? L.T("Déplacer") : L.T("Copier");
         var what = items.Count == 1 ? $"« {items[0].Name} »" : L.F("{0} éléments", items.Count);
@@ -535,10 +535,10 @@ public partial class MainWindowViewModel
 
         if (fromArchive)
         {
-            ArchivePath.TrySplit(ActivePanel.Current.CurrentPath, out var archive, out var innerBase);
+            ArchivePath.TrySplit(sourceDir, out var archive, out var innerBase);
             var keys = items.Select(i => ArchivePath.TrySplit(i.FullPath, out _, out var key) ? key : string.Empty).Where(k => k.Length > 0).ToList();
             var server = dst!;
-            ActivePanel.Current.MarkAll(false);
+            if (fromPanel) ActivePanel.Current.MarkAll(false);
             Operations.Start(new OperationJobViewModel(L.F("{0} de {1} vers {2}:{3}", (move ? L.T("Déplacement") : L.T("Envoi")), what, server.Profile.Name, destPath), transfer: true,
                 (progress, ct, pause) => Task.Run(() => RemoteArchives.ExtractToServerAsync(server, archive, keys, innerBase, destPath, policy, move, progress, ct, pause), ct))
                 { ExclusiveKey = move ? archive : null });

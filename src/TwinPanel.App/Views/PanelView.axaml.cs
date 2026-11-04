@@ -1060,9 +1060,39 @@ public partial class PanelView : UserControl
             box.SelectionStart = 0;
             var stem = item.IsDirectory ? item.Name.Length : Path.GetFileNameWithoutExtension(item.Name).Length;
             box.SelectionEnd = stem > 0 ? stem : item.Name.Length;
-            box.LostFocus += (_, _) => FinishInlineRename(commit: true);
+            box.LostFocus += (_, _) => Dispatcher.UIThread.Post(() => FinishRenameIfLeft(box));
         }, DispatcherPriority.Loaded);
     }
+
+    /// <summary>
+    /// Renommage dans la liste : validé quand on quitte la case, mais pas quand son propre menu
+    /// (clic droit : Couper, Copier, Coller…) s'ouvre ; validé ensuite si ce menu se ferme ailleurs.
+    /// </summary>
+    private void FinishRenameIfLeft(TextBox box)
+    {
+        if (!ReferenceEquals(_renameBox, box) || box.IsKeyboardFocusWithin) return;
+        if (box.ContextFlyout is Avalonia.Controls.Primitives.PopupFlyoutBase { IsOpen: true } flyout)
+        {
+            if (!ReferenceEquals(_renameMenuHooked, box))
+            {
+                _renameMenuHooked = box;
+                flyout.Closed += (_, _) => Dispatcher.UIThread.Post(() => FinishRenameIfLeft(box));
+            }
+            return;
+        }
+        if (box.ContextMenu is { IsOpen: true } menu)
+        {
+            if (!ReferenceEquals(_renameMenuHooked, box))
+            {
+                _renameMenuHooked = box;
+                menu.Closed += (_, _) => Dispatcher.UIThread.Post(() => FinishRenameIfLeft(box));
+            }
+            return;
+        }
+        FinishInlineRename(commit: true);
+    }
+
+    private TextBox? _renameMenuHooked;
 
     private void FinishInlineRename(bool commit)
     {

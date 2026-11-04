@@ -1769,5 +1769,18 @@
  "{0} onglet(s) reçus ne peuvent pas s'ouvrir ici (dossier d'un autre système ou connexion absente).": "{0} received tab(s) cannot open here (folder of another system or missing connection).",
  "{0} onglet(s) verrouillé(s) seront fermés.": "{0} locked tab(s) will be closed.",
  "{0} onglet(s) à rouvrir.": "{0} tab(s) to reopen.",
- "À chaque sauvegarde, TwinPanel demande ce qu'elle doit contenir : réglages, liste des connexions (jamais les mots de passe ni les clés privées), onglets ouverts.": "At each backup, TwinPanel asks what it should contain: settings, list of connections (never passwords or private keys), open tabs."
+ "À chaque sauvegarde, TwinPanel demande ce qu'elle doit contenir : réglages, liste des connexions (jamais les mots de passe ni les clés privées), onglets ouverts.": "At each backup, TwinPanel asks what it should contain: settings, list of connections (never passwords or private keys), open tabs.",
+ "Couper": "Cut",
+ "Coller": "Paste",
+ "Couper (presse-papiers)": "Cut (clipboard)",
+ "Copier (presse-papiers)": "Copy (clipboard)",
+ "Coller (presse-papiers)": "Paste (clipboard)",
+ "Copier vers l'autre panneau…": "Copy to the other panel…",
+ "Déplacer vers l'autre panneau…": "Move to the other panel…",
+ "Presse-papiers indisponible : {0}": "Clipboard unavailable: {0}",
+ "{0} coupé : Ctrl+V pour le coller dans un autre dossier.": "{0} cut: Ctrl+V to paste it into another folder.",
+ "{0} copié : Ctrl+V pour le coller dans un autre dossier.": "{0} copied: Ctrl+V to paste it into another folder.",
+ "Ces éléments sont déjà dans ce dossier : ouvre un autre dossier pour les coller.": "These items are already in this folder: open another folder to paste them.",
+ "La connexion « {0} » n'est plus ouverte : rouvre-la, puis colle à nouveau.": "The connection “{0}” is no longer open: reopen it, then paste again.",
+ "Le presse-papiers ne contient pas de fichiers à coller.": "The clipboard contains no files to paste."
 }

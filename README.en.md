@@ -105,7 +105,7 @@ TwinPanel can be driven entirely with the mouse. Several gestures cannot be gues
 | Shift + click | Mark a range of items |
 | Short right click | Mark or unmark the item |
 | Right button held while dragging | Mark or unmark everything the mouse passes over |
-| Right button held ½ second | Open the item menu |
+| Right button held ½ second | Open the item menu (Cut, Copy, Paste…) |
 | Middle click on a folder | Open it in a new tab, in the background |
 | Double click on an empty part | Go back to the parent folder |
 | Side buttons | Previous / next folder |
@@ -203,6 +203,7 @@ All shortcuts can be changed in Options → Shortcuts. In the program, the list 
 | `F4` | Edit |
 | `Shift+F4` | New text file |
 | `F5` / `F6` | Copy / move |
+| `Ctrl+X` / `Ctrl+C` / `Ctrl+V` | Cut / copy / paste (clipboard, also with Explorer) |
 | `Shift+F6` | Rename |
 | `Ctrl+M` | Multi-rename |
 | `Ctrl+Z` | Undo the last multi-rename |
@@ -275,6 +276,7 @@ Mark with `Ins`, `Space`, `Shift+arrows`, the right click, or by mask with `Num+
 
 `F5` copies, `F6` moves. The window lets you change the destination and choose what to do if an item already exists: ask, overwrite, overwrite older items, skip, or keep both.
 
+- **Cut / Copy / Paste** (`Ctrl+X` / `Ctrl+C` / `Ctrl+V`, or the menu of the held right button): open the destination folder, in either panel, then paste. The same window as `F5` / `F6` confirms. This also works for servers and archives and, for PC files, with Explorer in both directions. Cut items can be pasted only once. While typing text (path, name, command line), these keys keep their usual role.
 - The number of simultaneous transfers is set in Options → Behavior (1 by default): the next ones wait their turn.
 - A transfer can be paused, resumed or canceled.
 - When space runs out, TwinPanel stops on the file concerned. Free some space then click **Resume**.

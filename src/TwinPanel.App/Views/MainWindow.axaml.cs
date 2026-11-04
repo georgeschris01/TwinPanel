@@ -141,6 +141,7 @@ public partial class MainWindow : Window
             screen.Focus();
         }, DispatcherPriority.Loaded);
         vm.Terminal.CopyRequested += text => _ = Clipboard?.SetTextAsync(text);
+        vm.ClipboardHost = new FileClipboardHost(this);
         vm.Terminal.PropertyChanging += (_, e) =>
         {
             if (e.PropertyName == nameof(TerminalPanelViewModel.IsOpen) && vm.Terminal.IsOpen) RememberTerminalHeight();
@@ -537,6 +538,11 @@ public partial class MainWindow : Window
     private bool TerminalHasKeyboard => TerminalScreen.IsFocused || TerminalScreen2.IsFocused
         || CommandsPane.IsKeyboardFocusWithin || TerminalSearchBar.IsKeyboardFocusWithin;
 
+    /// <summary>Couper / Copier / Coller des fichiers : pas quand on tape du texte (chemin, nom, ligne de commande…), qui garde les siens.</summary>
+    private static readonly HashSet<string> FileClipboardCommands = ["ClipboardCopy", "ClipboardCut", "ClipboardPaste"];
+
+    private bool TextHasKeyboard => FocusManager?.GetFocusedElement() is TextBox;
+
     /// <summary>
     /// Les raccourcis de la fenêtre passent avant la zone qui a le clavier. Sans ce garde, F8 ou Ctrl+W tapés
     /// dans un programme du terminal agiraient sur les fichiers. Refusé, le raccourci laisse la touche continuer.
@@ -580,10 +586,13 @@ public partial class MainWindow : Window
                 {
                     var gesture = KeyGesture.Parse(text);
                     bool forTerminal = TerminalShortcuts.Contains(info.Id);
+                    bool clipboard = FileClipboardCommands.Contains(info.Id);
                     KeyBindings.Add(new KeyBinding
                     {
                         Gesture = gesture,
-                        Command = forTerminal ? command : new FilesShortcut(command, () => !TerminalHasKeyboard),
+                        Command = forTerminal ? command
+                            : clipboard ? new FilesShortcut(command, () => !TerminalHasKeyboard && !TextHasKeyboard)
+                            : new FilesShortcut(command, () => !TerminalHasKeyboard),
                         CommandParameter = info.Parameter!,
                     });
                     if (forTerminal) _terminalGestures.Add(gesture);

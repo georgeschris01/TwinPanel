@@ -182,6 +182,7 @@ Les licences des bibliothèques livrées sont **permissives** (MIT, BSD, Apache 
 | `Operations/` | Taille des dossiers, renommage multiple (masques, compteur, regex, annulation). |
 | `Search/` | Recherche (nom, texte, taille, date), doublons, vue à plat (`FlatListing`). |
 | `Compare/SyncProfiles.cs` | Profils de synchronisation (`SyncProfile`, `sync-profiles.json`, sans secret). |
+| `Operations/FileClipboard.cs` | Couper / Copier / Coller des fichiers : « couper » de Windows (`Preferred DropEffect`), collage dans le même dossier refusé, fichiers venus d'un autre programme. |
 | `Operations/RenameMedia.cs` | Valeurs des balises médias de Ctrl+M ([Titre], [Résolution]…), nettoyées pour un nom de fichier valable. |
 | `Remote/RemoteDuplicates.cs` | Doublons sur un serveur : tailles, puis `sha256sum` du serveur ou lecture par le réseau après accord (`ServerHashResult` dans `RemoteFileSystem.cs`). |
 | `Remote/TransferQueueStore.cs` | Transferts gardés d'une session à l'autre (`SavedTransfer`, `transfers.json`, sans secret), enregistrés régulièrement ; réservés à la première fenêtre ouverte. |
@@ -204,7 +205,7 @@ Les licences des bibliothèques livrées sont **permissives** (MIT, BSD, Apache 
 
 | Dossier | Rôle |
 |---|---|
-| `Views/` | Fenêtres : principale, panneau, visionneuse, éditeur, recherche, synchronisation, comparaison, renommage multiple, gestionnaire de connexions, guide (`HelpWindow`), terminal (`TerminalView`, dessin et saisie). `TExtension.cs` : `{l:T '…'}`, texte traduit dans les fichiers axaml. `TrimmedTextTips.cs` : infobulle du texte entier sur tout texte coupé par « … ». |
+| `Views/` | Fenêtres : principale, panneau, visionneuse, éditeur, recherche, synchronisation, comparaison, renommage multiple, gestionnaire de connexions, guide (`HelpWindow`), terminal (`TerminalView`, dessin et saisie). `TExtension.cs` : `{l:T '…'}`, texte traduit dans les fichiers axaml. `TrimmedTextTips.cs` : infobulle du texte entier sur tout texte coupé par « … ». `FileClipboardHost.cs` : presse-papiers du système pour Couper / Copier / Coller (commandes dans `MainWindowViewModel.Clipboard.cs`). |
 | `ViewModels/` | État et commandes de chaque écran (onglets, marquage, opérations en cours…). |
 | `Services/` | Boîtes de dialogue, file des opérations, lancement des programmes externes, questions de connexion (clé du serveur, certificat, mots de passe), renvoi des fichiers distants édités. `WindowsShare.cs` : fenêtre de partage de Windows (appels directs, identifiants relevés dans les `.winmd` officiels). |
 | `Converters/` | Icônes et couleurs selon le type de fichier. |

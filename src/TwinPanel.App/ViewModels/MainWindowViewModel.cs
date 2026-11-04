@@ -481,23 +481,25 @@ public partial class MainWindowViewModel : ObservableObject
         return null;
     }
 
-    private async Task TransferAsync(bool move, IReadOnlyList<FileEntry> items, string? destination, bool fromPanel)
+    /// <param name="sourceFolder">Dossier d'où viennent les éléments s'il n'est plus affiché (Coller) ; null : le panneau actif.</param>
+    private async Task TransferAsync(bool move, IReadOnlyList<FileEntry> items, string? destination, bool fromPanel, string? sourceFolder = null)
     {
         if (items.Count == 0) return;
         var (go, forced) = await CheckSameNamesAsync(items, move ? L.T("Déplacer") : L.T("Copier"));
         if (!go) return;
         var defaultDestination = destination ?? OtherPanel.Current.CurrentPath;
         bool intoArchive = ArchivePath.TrySplit(defaultDestination, out _, out _);
-        if (await RemoteTransferAsync(move, items, destination, fromPanel, forced)) return;
+        var sourceDir = sourceFolder ?? ActivePanel.Current.CurrentPath;
+        if (await RemoteTransferAsync(move, items, destination, fromPanel, forced, sourceDir)) return;
 
-        if (fromPanel && ArchivePath.TrySplit(ActivePanel.Current.CurrentPath, out var archive, out var innerBase))
+        if (fromPanel && ArchivePath.TrySplit(sourceDir, out var archive, out var innerBase))
         {
             if (intoArchive)
             {
                 await _dialogs.ShowErrorAsync("Archive", L.T("D'une archive à l'autre : extrais d'abord les fichiers (F5 vers un dossier), puis ajoute-les."));
                 return;
             }
-            await ExtractFromArchiveAsync(archive, innerBase, items, defaultDestination, move);
+            await ExtractFromArchiveAsync(archive, innerBase, items, defaultDestination, move, sourceFolder);
             return;
         }
 
@@ -536,7 +538,7 @@ public partial class MainWindowViewModel : ObservableObject
             }
         }
 
-        ActivePanel.Current.MarkAll(false);
+        if (sourceFolder is null) ActivePanel.Current.MarkAll(false);
         var title = L.F("{0} de {1} vers {2}", (move ? L.T("Déplacement") : L.T("Copie")), what, dest);
         Operations.Start(new OperationJobViewModel(title, transfer: true, (progress, ct, pause) => move
             ? FileOperations.MoveAsync(sources, dest, policy, progress, ct, pause)
@@ -977,9 +979,9 @@ public partial class MainWindowViewModel : ObservableObject
     }
 
     /// <summary>F5 depuis une archive : extraction des éléments marqués vers l'autre panneau. F6 : ils sont ensuite retirés de l'archive.</summary>
-    private async Task ExtractFromArchiveAsync(string archive, string innerBase, IReadOnlyList<FileEntry> items, string? destination = null, bool move = false)
+    private async Task ExtractFromArchiveAsync(string archive, string innerBase, IReadOnlyList<FileEntry> items, string? destination = null, bool move = false, string? sourceFolder = null)
     {
-        if (move && await EditableArchiveAsync() is null) return;
+        if (move && await EditableArchiveAsync(sourceFolder) is null) return;
         var what = items.Count == 1 ? $"« {items[0].Name} »" : L.F("{0} éléments", items.Count);
         var request = await _dialogs.AskTransferAsync(move ? L.T("Déplacer hors de l'archive") : L.T("Extraire"), what, destination ?? OtherPanel.Current.CurrentPath);
         if (request is null || request.Destination.Length == 0) return;
@@ -997,7 +999,7 @@ public partial class MainWindowViewModel : ObservableObject
                 policy = chosen;
             }
         }
-        ActivePanel.Current.MarkAll(false);
+        if (sourceFolder is null) ActivePanel.Current.MarkAll(false);
         var dest = request.Destination;
         Operations.Start(new OperationJobViewModel(L.F("{0} de {1} depuis {2}", (move ? L.T("Déplacement") : L.T("Extraction")), what, Path.GetFileName(archive)), transfer: true,
             (progress, ct, pause) => move

@@ -106,6 +106,8 @@ public static class AppMenus
         files.Items.Add(new Separator());
         Add(files.Items, Cmd(vm, "Copy", L.T("Copier…")), Cmd(vm, "Move", L.T("Déplacer…")), Cmd(vm, "Rename", L.T("Renommer…")), Cmd(vm, "MakeDirectory", L.T("Nouveau dossier…")), Cmd(vm, "Delete", L.T("Supprimer…")));
         files.Items.Add(new Separator());
+        Add(files.Items, Cmd(vm, "ClipboardCut", L.T("Couper")), Cmd(vm, "ClipboardCopy", L.T("Copier")), Cmd(vm, "ClipboardPaste", L.T("Coller")));
+        files.Items.Add(new Separator());
         Add(files.Items, Cmd(vm, "MultiRenameFiles", L.T("Renommage multiple…")), Cmd(vm, "UndoRename"));
         files.Items.Add(new Separator());
         Add(files.Items, Cmd(vm, "PackArchive", L.T("Compresser…")), Cmd(vm, "UnpackArchive", L.T("Décompresser…")), Cmd(vm, "TestArchive"));
@@ -218,7 +220,10 @@ public static class AppMenus
         if (isArchive) Add(items, Cmd(vm, "UnpackArchive", L.T("Décompresser…")), Cmd(vm, "TestArchive"));
         if (file) Add(items, Cmd(vm, "Print", L.T("Imprimer")), Cmd(vm, "Share", L.T("Partager…")));
         items.Add(new Separator());
-        Add(items, Cmd(vm, "Copy", L.T("Copier…")), Cmd(vm, "Move", L.T("Déplacer…")));
+        if (any) Add(items, Cmd(vm, "ClipboardCut", L.T("Couper")), Cmd(vm, "ClipboardCopy", L.T("Copier")));
+        Add(items, Cmd(vm, "ClipboardPaste", L.T("Coller")));
+        items.Add(new Separator());
+        Add(items, Cmd(vm, "Copy", L.T("Copier vers l'autre panneau…")), Cmd(vm, "Move", L.T("Déplacer vers l'autre panneau…")));
         if (any) Add(items, Cmd(vm, "Rename", L.T("Renommer…")));
         Add(items, Cmd(vm, "MultiRenameFiles", L.T("Renommage multiple…")), Cmd(vm, "Delete", L.T("Supprimer…")));
         items.Add(new Separator());

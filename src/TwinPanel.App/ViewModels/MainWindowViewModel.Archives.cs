@@ -9,10 +9,10 @@ namespace TwinPanel.App.ViewModels;
 /// <summary>Modifier une archive affichée dans un panneau : F2 / Maj+F6, F5, F6, F7, F8.</summary>
 public partial class MainWindowViewModel
 {
-    /// <summary>Archive du panneau actif, si elle est modifiable ; sinon le refus est dit.</summary>
-    private async Task<(string Archive, string Inner)?> EditableArchiveAsync()
+    /// <summary>Archive du panneau actif (ou de ce dossier), si elle est modifiable ; sinon le refus est dit.</summary>
+    private async Task<(string Archive, string Inner)?> EditableArchiveAsync(string? folder = null)
     {
-        ArchivePath.TrySplit(ActivePanel.Current.CurrentPath, out var archive, out var inner);
+        ArchivePath.TrySplit(folder ?? ActivePanel.Current.CurrentPath, out var archive, out var inner);
         if (await EditRefusalAsync(archive) is not { } refusal) return (archive, inner);
         await _dialogs.ShowErrorAsync("Archive", refusal);
         return null;

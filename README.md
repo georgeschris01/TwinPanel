@@ -105,7 +105,7 @@ TwinPanel se pilote entièrement à la souris. Plusieurs gestes ne se devinent p
 | Maj + clic | Marquer une plage d'éléments |
 | Clic droit court | Marquer ou démarquer l'élément |
 | Bouton droit maintenu en glissant | Marquer ou démarquer tout ce que la souris survole |
-| Bouton droit maintenu ½ seconde | Ouvrir le menu de l'élément |
+| Bouton droit maintenu ½ seconde | Ouvrir le menu de l'élément (Couper, Copier, Coller…) |
 | Clic milieu sur un dossier | L'ouvrir dans un nouvel onglet, en arrière-plan |
 | Double-clic dans le vide | Revenir au dossier parent |
 | Boutons latéraux | Dossier précédent / suivant |
@@ -203,6 +203,7 @@ Tous les raccourcis se changent dans Options → Raccourcis. Dans le programme, 
 | `F4` | Éditer |
 | `Maj+F4` | Nouveau fichier texte |
 | `F5` / `F6` | Copier / déplacer |
+| `Ctrl+X` / `Ctrl+C` / `Ctrl+V` | Couper / copier / coller (presse-papiers, aussi avec l'Explorateur) |
 | `Maj+F6` | Renommer |
 | `Ctrl+M` | Renommage multiple |
 | `Ctrl+Z` | Annuler le dernier renommage multiple |
@@ -275,6 +276,7 @@ Marquez avec `Inser`, `Espace`, `Maj+flèches`, le clic droit, ou selon un masqu
 
 `F5` copie, `F6` déplace. La fenêtre permet de changer la destination et de choisir quoi faire si un élément existe déjà : demander, écraser, écraser les plus anciens, ignorer, ou garder les deux.
 
+- **Couper / Copier / Coller** (`Ctrl+X` / `Ctrl+C` / `Ctrl+V`, ou le menu du bouton droit maintenu) : ouvrez le dossier d'arrivée, dans n'importe quel panneau, puis collez. La même fenêtre que `F5` / `F6` confirme. Cela marche aussi pour les serveurs et les archives, et, pour les fichiers du PC, avec l'Explorateur dans les deux sens. Des éléments coupés ne se collent qu'une fois. Quand on tape du texte (chemin, nom, ligne de commande), ces touches gardent leur rôle habituel.
 - Le nombre de transferts en même temps se règle dans Options → Comportement (1 par défaut) : les suivants attendent leur tour.
 - Un transfert peut être mis en pause, repris ou annulé.
 - S'il n'y a plus de place, TwinPanel s'arrête sur le fichier en cause. Libérez de la place puis cliquez sur **Reprendre**.
