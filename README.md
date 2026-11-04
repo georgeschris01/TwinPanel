@@ -262,7 +262,7 @@ Clic droit sur l'onglet :
 
 Le tri par taille (`Ctrl+F6`) classe aussi les dossiers dont la taille est connue : calculée automatiquement (option **Taille des dossiers**) ou avec la barre d'espace. Les dossiers restent avant les fichiers.
 
-Le total en bas de la liste (« 98 dossier(s), 12 fichier(s) — 1,5 Go ») compte les fichiers du dossier affiché et la taille des dossiers déjà calculée. Sans l'option **Taille des dossiers**, un dossier qui ne contient que des sous-dossiers montre donc 0 o. « … » après le total : des calculs sont encore en cours.
+Le total en bas de la liste (« 98 dossier(s), 12 fichier(s) — 1,5 Go ») compte les fichiers du dossier affiché et la taille des dossiers déjà calculée. Sans l'option **Taille des dossiers**, un dossier qui ne contient que des sous-dossiers montre donc 0 o. « … » après le total : des calculs sont encore en cours. Sur un serveur SSH (SFTP, SCP), c'est le serveur qui mesure (`du`), beaucoup plus vite, avec ses sous-dossiers sur deux niveaux : en y entrant, les tailles sont déjà là. Les tailles connues sont gardées pendant toute la séance, tant que la date du dossier ne change pas ; le rafraîchissement automatique ne les recalcule pas. `Ctrl+R` les recalcule (utile quand un fichier a changé plus loin dans l'arborescence, ce qui ne change pas la date du dossier).
 
 ## Marquer et travailler sur les fichiers
 

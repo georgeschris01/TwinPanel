@@ -56,7 +56,7 @@ public partial class MainWindowViewModel
     /// Taille automatique des dossiers d'un serveur : une connexion à part (les panneaux restent utilisables),
     /// dossiers mesurés un par un, liens symboliques non suivis. Aucun identifiant n'est redemandé ni enregistré.
     /// </summary>
-    private async Task MeasureRemoteFoldersAsync(IReadOnlyList<FileEntry> folders, Action<FileEntry, long> report, CancellationToken ct)
+    private async Task MeasureRemoteFoldersAsync(IReadOnlyList<FileEntry> folders, Action<string, long> report, CancellationToken ct)
     {
         if (_remote is null || folders.Count == 0 || !PanelRemotePath.TryParse(folders[0].FullPath, out var first)) return;
         if (_remote.Find(first.Session) is not { } session) return;
@@ -65,13 +65,32 @@ public partial class MainWindowViewModel
             try
             {
                 await using var fs = await session.OpenWorkerAsync(ct);
+                bool useDu = fs is IServerFolderSizes;
                 foreach (var e in folders)
                 {
                     ct.ThrowIfCancellationRequested();
                     if (!PanelRemotePath.TryParse(e.FullPath, out var p)) continue;
-                    var (bytes, _, _) = await TwinPanel.Core.Rights.RightsApplier.MeasureAsync(fs,
-                        [new RemoteItem(e.Name, p.Path, true, 0, e.LastWriteTime)], null, ct);
-                    report(e, bytes);
+                    // SSH : le serveur mesure lui-même (« du »), avec ses sous-dossiers sur 2 niveaux, gardés pour plus tard.
+                    if (useDu && fs is IServerFolderSizes server)
+                    {
+                        if (await server.MeasureTreeOnServerAsync(p.Path, 2, ct) is { } tree)
+                        {
+                            var root = ServerFolderSizes.Normalize(p.Path);
+                            // Sous-dossiers d'abord : le dossier demandé arrive en dernier et termine sa ligne.
+                            foreach (var (path, size) in tree)
+                                if (!string.Equals(path, root, StringComparison.Ordinal)) report(p.WithPath(path).ToString(), size);
+                            report(e.FullPath, tree[root]);
+                            continue;
+                        }
+                        useDu = false; // pas de « du » sur ce serveur : lecture par le réseau pour la suite
+                    }
+                    try
+                    {
+                        var (bytes, _, _) = await TwinPanel.Core.Rights.RightsApplier.MeasureAsync(fs,
+                            [new RemoteItem(e.Name, p.Path, true, 0, e.LastWriteTime)], null, ct);
+                        report(e.FullPath, bytes);
+                    }
+                    catch (IOException) when (fs.IsConnected) { /* ce dossier seulement : on passe au suivant */ }
                 }
             }
             catch (OperationCanceledException) { throw; }

@@ -205,6 +205,9 @@ public partial class MainWindowViewModel : ObservableObject
     {
         Left.RefreshDrives();
         Right.RefreshDrives();
+        // Ctrl+R : tailles des dossiers recalculées (la relecture automatique, elle, garde celles qui sont connues).
+        Left.Current.ForgetFolderSizes();
+        Right.Current.ForgetFolderSizes();
         await Left.Current.RefreshAsync();
         await Right.Current.RefreshAsync();
     }

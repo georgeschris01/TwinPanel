@@ -295,7 +295,7 @@ public abstract class RemoteFileSystemBase : IRemoteFileSystem
 }
 
 /// <summary>SFTP (SSH File Transfer Protocol) avec SSH.NET.</summary>
-public sealed class SftpFileSystem : RemoteFileSystemBase, IServerSideMove
+public sealed class SftpFileSystem : RemoteFileSystemBase, IServerSideMove, IServerFolderSizes
 {
     private readonly SftpClient _client;
     private readonly SshConnector.Prepared _prepared;
@@ -343,6 +343,20 @@ public sealed class SftpFileSystem : RemoteFileSystemBase, IServerSideMove
             using var cmd = (await ShellAsync(ct).ConfigureAwait(false)).CreateCommand($"du -sb -- {ScpFileSystem.Quote(path)}");
             await cmd.ExecuteAsync(ct).ConfigureAwait(false);
             return cmd.ExitStatus == 0 ? RemoteTransfer.ParseDiskUsage(cmd.Result) : null;
+        }
+        catch (Exception ex) when (ex is SshException or System.Net.Sockets.SocketException or InvalidOperationException or ObjectDisposedException) { return null; }
+    }
+
+    /// <summary>Taille du dossier et de ses sous-dossiers, mesurée par le serveur (« du », lecture seule).</summary>
+    public async Task<IReadOnlyDictionary<string, long>?> MeasureTreeOnServerAsync(string path, int depth, CancellationToken ct)
+    {
+        if (_shellRefused) return null;
+        try
+        {
+            using var cmd = (await ShellAsync(ct).ConfigureAwait(false)).CreateCommand(ServerFolderSizes.Command(ScpFileSystem.Quote(path), depth));
+            await cmd.ExecuteAsync(ct).ConfigureAwait(false);
+            // Code 1 : une partie était illisible (lost+found…) ; les tailles lues restent bonnes.
+            return ServerFolderSizes.Parse(cmd.Result, path);
         }
         catch (Exception ex) when (ex is SshException or System.Net.Sockets.SocketException or InvalidOperationException or ObjectDisposedException) { return null; }
     }
@@ -661,7 +675,7 @@ public sealed class SftpFileSystem : RemoteFileSystemBase, IServerSideMove
 /// (find, mkdir, rm…). Les chemins sont toujours mis entre apostrophes (pas d'injection de commande).
 /// Utile quand le serveur n'a pas de SFTP ; sinon SFTP est préférable.
 /// </summary>
-public sealed class ScpFileSystem : RemoteFileSystemBase, IServerSideMove
+public sealed class ScpFileSystem : RemoteFileSystemBase, IServerSideMove, IServerFolderSizes
 {
     private readonly SshClient _shell;
     private readonly ScpClient _scp;
@@ -691,6 +705,18 @@ public sealed class ScpFileSystem : RemoteFileSystemBase, IServerSideMove
             using var cmd = _shell.CreateCommand($"du -sb -- {Quote(path)}");
             await cmd.ExecuteAsync(ct).ConfigureAwait(false);
             return cmd.ExitStatus == 0 ? RemoteTransfer.ParseDiskUsage(cmd.Result) : null;
+        }
+        catch (Exception ex) when (ex is SshException or System.Net.Sockets.SocketException or InvalidOperationException or ObjectDisposedException) { return null; }
+    }
+
+    /// <summary>Taille du dossier et de ses sous-dossiers, mesurée par le serveur (« du », lecture seule).</summary>
+    public async Task<IReadOnlyDictionary<string, long>?> MeasureTreeOnServerAsync(string path, int depth, CancellationToken ct)
+    {
+        try
+        {
+            using var cmd = _shell.CreateCommand(ServerFolderSizes.Command(Quote(path), depth));
+            await cmd.ExecuteAsync(ct).ConfigureAwait(false);
+            return ServerFolderSizes.Parse(cmd.Result, path);
         }
         catch (Exception ex) when (ex is SshException or System.Net.Sockets.SocketException or InvalidOperationException or ObjectDisposedException) { return null; }
     }

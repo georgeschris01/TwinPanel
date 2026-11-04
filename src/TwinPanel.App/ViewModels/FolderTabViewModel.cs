@@ -117,26 +117,37 @@ public partial class FolderTabViewModel : ObservableObject, IDisposable
 
     /// <summary>
     /// Taille des dossiers d'un serveur : branché par la fenêtre principale (connexion à part, la navigation reste libre).
-    /// Reçoit les dossiers à mesurer et rend chaque résultat dès qu'il est connu.
+    /// Reçoit les dossiers à mesurer et rend chaque résultat dès qu'il est connu (chemin complet, octets),
+    /// y compris la taille de leurs sous-dossiers quand le serveur la donne en même temps (« du »).
     /// </summary>
-    public static Func<IReadOnlyList<FileEntry>, Action<FileEntry, long>, CancellationToken, Task>? RemoteFolderSizer { get; set; }
+    public static Func<IReadOnlyList<FileEntry>, Action<string, long>, CancellationToken, Task>? RemoteFolderSizer { get; set; }
+
+    // Tailles déjà calculées, pour tous les onglets et toute la séance (clé : chemin complet).
+    // Reprises tant que la date du dossier ne change pas ; date inconnue (sous-dossier mesuré par « du ») : notée au premier affichage.
+    private static readonly Dictionary<string, (DateTime? Date, long Bytes)> s_folderSizes = new(PathText.Comparer);
+    private const int FolderSizeMemory = 200_000;
 
     private CancellationTokenSource _folderCts = new();
-    // Tailles déjà calculées dans le dossier affiché (clé : chemin ; reprises si la date du dossier n'a pas changé).
-    private readonly Dictionary<string, (DateTime Date, long Bytes)> _folderSizes = new(PathText.Comparer);
-    private string _folderSizesPath = string.Empty;
+    private bool _folderJobRunning, _folderJobAgain;
+    private string _folderJobPath = string.Empty;
+    private readonly HashSet<string> _folderJobPending = new(PathText.Comparer);
     private static readonly TimeSpan SizeSortDelay = TimeSpan.FromMilliseconds(400);
     private bool _sizeSortPending;
 
-    /// <summary>Calcule en arrière-plan, un par un, la taille des dossiers affichés (annulé dès qu'on change de dossier).</summary>
+    /// <summary>
+    /// Calcule en arrière-plan, un par un, la taille des dossiers affichés. Annulé quand on change de dossier,
+    /// mais pas par une relecture du même dossier (rafraîchissement automatique) : un gros dossier irait sinon
+    /// recommencer à chaque fois sans jamais finir.
+    /// </summary>
     private void StartFolderSizes()
     {
-        _folderCts.Cancel();
-        _folderCts = new CancellationTokenSource();
-        if (!string.Equals(_folderSizesPath, CurrentPath, PathText.Comparison))
+        bool continuing = _folderJobRunning && string.Equals(_folderJobPath, CurrentPath, PathText.Comparison);
+        if (!continuing)
         {
-            _folderSizes.Clear();
-            _folderSizesPath = CurrentPath;
+            _folderCts.Cancel();
+            _folderCts = new CancellationTokenSource();
+            _folderJobRunning = false;
+            _folderJobPending.Clear();
         }
         var todo = new List<FileItemViewModel>();
         foreach (var it in Items)
@@ -148,17 +159,74 @@ public partial class FolderTabViewModel : ObservableObject, IDisposable
             else todo.Add(it);
         }
         if (todo.Count == 0 || !ComputeFolderSizes || IsInsideArchive) { UpdateSelectionInfo(); ScheduleSummary(); return; }
+        if (continuing)
+        {
+            // Calcul en cours : les lignes relues reprennent leur « … » ; un dossier apparu entre-temps passera ensuite.
+            foreach (var it in todo)
+                if (_folderJobPending.Contains(it.FullPath)) it.IsComputingSize = true;
+                else _folderJobAgain = true;
+            ScheduleSummary();
+            return;
+        }
         var ct = _folderCts.Token;
-        _ = IsRemote ? RemoteFolderSizesAsync(todo, ct) : LocalFolderSizesAsync(todo, ct);
+        _folderJobRunning = true;
+        _folderJobAgain = false;
+        _folderJobPath = CurrentPath;
+        foreach (var t in todo) { _folderJobPending.Add(t.FullPath); t.IsComputingSize = true; } // « … » : en attente
+        _ = RunFolderSizesAsync(todo, ct);
         ScheduleSummary();
     }
 
-    private void StoreFolderSize(FileItemViewModel item, long bytes)
+    private async Task RunFolderSizesAsync(List<FileItemViewModel> todo, CancellationToken ct)
     {
-        item.ComputedSize = bytes;
-        _folderSizes[item.FullPath] = (item.Entry.LastWriteTime, bytes);
+        try
+        {
+            if (IsRemote) await RemoteFolderSizesAsync(todo, ct);
+            else await LocalFolderSizesAsync(todo, ct);
+        }
+        finally
+        {
+            if (!ct.IsCancellationRequested)
+            {
+                _folderJobRunning = false;
+                foreach (var it in Items) if (_folderJobPending.Contains(it.FullPath)) it.IsComputingSize = false;
+                _folderJobPending.Clear();
+                UpdateSelectionInfo();
+                ScheduleSummary();
+                if (_folderJobAgain) StartFolderSizes();
+            }
+        }
+    }
+
+    /// <summary>Résultat d'une mesure : retenu pour toute la séance, et montré sur la ligne de ce dossier si elle est affichée.</summary>
+    private void StoreFolderSize(string path, DateTime? date, long bytes)
+    {
+        if (s_folderSizes.Count >= FolderSizeMemory) s_folderSizes.Clear();
+        s_folderSizes[path] = (date, bytes);
+        _folderJobPending.Remove(path);
+        foreach (var it in Items)
+        {
+            if (!it.IsDirectory || !PathText.Comparer.Equals(it.FullPath, path)) continue;
+            it.ComputedSize = bytes;
+            it.IsComputingSize = false;
+            s_folderSizes[path] = (it.Entry.LastWriteTime, bytes);
+        }
         ScheduleSizeSort();
         ScheduleSummary();
+    }
+
+    private void StoreFolderSize(FileItemViewModel item, long bytes) => StoreFolderSize(item.FullPath, item.Entry.LastWriteTime, bytes);
+
+    /// <summary>Ctrl+R : les tailles de ce dossier et de tout ce qu'il contient sont recalculées.</summary>
+    public void ForgetFolderSizes()
+    {
+        if (CurrentPath.Length == 0) return;
+        var prefix = CurrentPath.TrimEnd('/', '\\');
+        foreach (var key in s_folderSizes.Keys.Where(k => k.StartsWith(prefix, PathText.Comparison)).ToList()) s_folderSizes.Remove(key);
+        _folderCts.Cancel();
+        _folderJobRunning = false;
+        _folderJobPending.Clear();
+        foreach (var it in Items) { it.ComputedSize = null; it.IsComputingSize = false; }
     }
 
     private bool _summaryPending;
@@ -175,8 +243,17 @@ public partial class FolderTabViewModel : ObservableObject, IDisposable
         }, TimeSpan.FromMilliseconds(200));
     }
 
-    private long? KnownFolderSize(FileEntry entry) =>
-        _folderSizes.TryGetValue(entry.FullPath, out var known) && known.Date == entry.LastWriteTime ? known.Bytes : null;
+    private static long? KnownFolderSize(FileEntry entry)
+    {
+        if (!s_folderSizes.TryGetValue(entry.FullPath, out var known)) return null;
+        if (known.Date is null)
+        {
+            // Mesuré avec son dossier parent : sa date est notée maintenant, pour voir ensuite s'il change.
+            s_folderSizes[entry.FullPath] = (entry.LastWriteTime, known.Bytes);
+            return known.Bytes;
+        }
+        return known.Date == entry.LastWriteTime ? known.Bytes : null;
+    }
 
     /// <summary>Tri par taille : les dossiers prennent leur place au fil des calculs, sans à-coup à chaque résultat.</summary>
     private void ScheduleSizeSort()
@@ -214,7 +291,6 @@ public partial class FolderTabViewModel : ObservableObject, IDisposable
         foreach (var it in todo)
         {
             if (ct.IsCancellationRequested) return;
-            it.IsComputingSize = true;
             try
             {
                 var r = await FolderSize.CalculateAsync(it.FullPath, ct);
@@ -222,38 +298,25 @@ public partial class FolderTabViewModel : ObservableObject, IDisposable
             }
             catch (OperationCanceledException) { return; }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException) { /* dossier illisible : reste <DIR> */ }
-            finally { it.IsComputingSize = false; }
         }
-        UpdateSelectionInfo();
-        ScheduleSummary();
     }
 
     private async Task RemoteFolderSizesAsync(List<FileItemViewModel> todo, CancellationToken ct)
     {
         if (RemoteFolderSizer is null) return;
-        var byPath = todo.ToDictionary(t => t.FullPath, StringComparer.Ordinal);
-        foreach (var t in todo) t.IsComputingSize = true; // « … » : en attente
         try
         {
-            await RemoteFolderSizer(todo.Select(t => t.Entry).ToList(), (entry, bytes) => Dispatcher.UIThread.Post(() =>
+            await RemoteFolderSizer(todo.Select(t => t.Entry).ToList(), (path, bytes) => Dispatcher.UIThread.Post(() =>
             {
-                if (ct.IsCancellationRequested || !byPath.TryGetValue(entry.FullPath, out var it)) return;
-                StoreFolderSize(it, bytes);
-                it.IsComputingSize = false;
+                if (!ct.IsCancellationRequested) StoreFolderSize(path, null, bytes);
             }), ct);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { /* connexion perdue : les dossiers restent <DIR> */ }
-        finally
-        {
-            // Les résultats arrivent par Post : on remet l'état après eux.
-            Dispatcher.UIThread.Post(() =>
-            {
-                foreach (var t in todo) t.IsComputingSize = false;
-                UpdateSelectionInfo();
-                ScheduleSummary();
-            });
-        }
+        // Les résultats arrivent par Post : la fin du calcul passe après eux.
+        var done = new TaskCompletionSource();
+        Dispatcher.UIThread.Post(() => done.SetResult());
+        await done.Task;
     }
 
     /// <summary>Vrai : l'onglet montre des miniatures au lieu de la liste (Ctrl+Maj+F1). Chaque onglet a son mode.</summary>
