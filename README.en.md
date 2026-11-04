@@ -262,7 +262,7 @@ Right click on the tab:
 
 Sorting by size (`Ctrl+F6`) also orders the folders whose size is known: calculated automatically (**Folder size** option) or with the space bar. Folders stay before files.
 
-The total at the bottom of the list (“98 folder(s), 12 file(s) — 1.5 GB”) counts the files of the folder shown and the size of the folders already calculated. Without the **Folder size** option, a folder that only contains subfolders therefore shows 0 B. “…” after the total: calculations are still running. On an SSH server (SFTP, SCP), the server measures by itself (`du`), much faster, together with its subfolders two levels down: when you go into them, the sizes are already there. Known sizes are kept for the whole session, as long as the folder's date does not change; the automatic refresh does not recalculate them. `Ctrl+R` recalculates them (useful when a file changed deeper in the tree, which does not change the folder's date).
+The total at the bottom of the list (“98 folder(s), 12 file(s) — 1.5 GB”) counts the files of the folder shown and the size of the folders already calculated. Without the **Folder size** option, a folder that only contains subfolders therefore shows 0 B. “…” after the total: calculations are still running. On an SSH server (SFTP, SCP), the server measures by itself (`du`), much faster and four folders at a time, together with its subfolders two levels down: when you go into them, the sizes are already there. Known sizes are kept for the whole session, as long as the folder's date does not change; the automatic refresh does not recalculate them. `Ctrl+R` recalculates them (useful when a file changed deeper in the tree, which does not change the folder's date).
 
 ## Marking and working on files
 

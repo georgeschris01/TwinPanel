@@ -325,13 +325,22 @@ public sealed class SftpFileSystem : RemoteFileSystemBase, IServerSideMove, ISer
     public Task<ServerMoveResult> TryCopyOnServerAsync(string from, string to, CancellationToken ct) =>
         RunServerCommandAsync($"cp -a -- {ScpFileSystem.Quote(from)} {ScpFileSystem.Quote(to)}", L.T("la copie"), to, ct);
 
+    private readonly SemaphoreSlim _shellOpen = new(1, 1);
+
+    /// <summary>Connexion pour les commandes, ouverte une seule fois même si plusieurs mesures la demandent en même temps.</summary>
     private async Task<SshClient> ShellAsync(CancellationToken ct)
     {
         if (_shell is not null) return _shell;
-        var shell = new SshClient(_prepared.Info);
-        try { await SshConnector.ConnectAsync(shell, _ctx, ct).ConfigureAwait(false); }
-        catch { shell.Dispose(); throw; }
-        return _shell = shell;
+        await _shellOpen.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            if (_shell is not null) return _shell;
+            var shell = new SshClient(_prepared.Info);
+            try { await SshConnector.ConnectAsync(shell, _ctx, ct).ConfigureAwait(false); }
+            catch { shell.Dispose(); throw; }
+            return _shell = shell;
+        }
+        finally { _shellOpen.Release(); }
     }
 
     /// <summary>« du » lit seulement les tailles. Pas de commandes, ou « du » sans -b : pas de mesure, la copie n'en a pas besoin.</summary>

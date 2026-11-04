@@ -54,7 +54,9 @@ public partial class MainWindowViewModel
 
     /// <summary>
     /// Taille automatique des dossiers d'un serveur : une connexion à part (les panneaux restent utilisables),
-    /// dossiers mesurés un par un, liens symboliques non suivis. Aucun identifiant n'est redemandé ni enregistré.
+    /// liens symboliques non suivis. Aucun identifiant n'est redemandé ni enregistré.
+    /// SSH : « du » sur le serveur, 4 dossiers en même temps (souvent un disque chacun : un disque lent ne fait plus
+    /// attendre les autres). Sinon, ou si « du » ne répond pas : lecture par le réseau, un dossier après l'autre.
     /// </summary>
     private async Task MeasureRemoteFoldersAsync(IReadOnlyList<FileEntry> folders, Action<string, long> report, CancellationToken ct)
     {
@@ -65,25 +67,34 @@ public partial class MainWindowViewModel
             try
             {
                 await using var fs = await session.OpenWorkerAsync(ct);
-                bool useDu = fs is IServerFolderSizes;
-                foreach (var e in folders)
+                var byNetwork = new System.Collections.Concurrent.ConcurrentQueue<FileEntry>();
+                if (fs is IServerFolderSizes server)
+                {
+                    bool noDu = false;
+                    await Parallel.ForEachAsync(folders, new ParallelOptions { MaxDegreeOfParallelism = 4, CancellationToken = ct }, async (e, token) =>
+                    {
+                        if (!PanelRemotePath.TryParse(e.FullPath, out var p)) return;
+                        var tree = Volatile.Read(ref noDu) ? null : await server.MeasureTreeOnServerAsync(p.Path, 2, token);
+                        if (tree is null)
+                        {
+                            Volatile.Write(ref noDu, true); // pas de « du » sur ce serveur : lecture par le réseau
+                            byNetwork.Enqueue(e);
+                            return;
+                        }
+                        var root = ServerFolderSizes.Normalize(p.Path);
+                        // Sous-dossiers d'abord (gardés pour plus tard) : le dossier demandé arrive en dernier et termine sa ligne.
+                        foreach (var (path, size) in tree)
+                            if (!string.Equals(path, root, StringComparison.Ordinal)) report(p.WithPath(path).ToString(), size);
+                        report(e.FullPath, tree[root]);
+                    });
+                }
+                else foreach (var e in folders) byNetwork.Enqueue(e);
+
+                var remaining = byNetwork.ToHashSet();
+                foreach (var e in folders.Where(remaining.Contains))
                 {
                     ct.ThrowIfCancellationRequested();
                     if (!PanelRemotePath.TryParse(e.FullPath, out var p)) continue;
-                    // SSH : le serveur mesure lui-même (« du »), avec ses sous-dossiers sur 2 niveaux, gardés pour plus tard.
-                    if (useDu && fs is IServerFolderSizes server)
-                    {
-                        if (await server.MeasureTreeOnServerAsync(p.Path, 2, ct) is { } tree)
-                        {
-                            var root = ServerFolderSizes.Normalize(p.Path);
-                            // Sous-dossiers d'abord : le dossier demandé arrive en dernier et termine sa ligne.
-                            foreach (var (path, size) in tree)
-                                if (!string.Equals(path, root, StringComparison.Ordinal)) report(p.WithPath(path).ToString(), size);
-                            report(e.FullPath, tree[root]);
-                            continue;
-                        }
-                        useDu = false; // pas de « du » sur ce serveur : lecture par le réseau pour la suite
-                    }
                     try
                     {
                         var (bytes, _, _) = await TwinPanel.Core.Rights.RightsApplier.MeasureAsync(fs,
