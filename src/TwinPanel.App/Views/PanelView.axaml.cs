@@ -47,6 +47,7 @@ public partial class PanelView : UserControl
         // Glisser-déposer : départ depuis la liste, arrivée n'importe où dans le panneau (liste, dossier, onglet, lecteur).
         DragDrop.SetAllowDrop(this, true);
         AddHandler(DragDrop.DragOverEvent, OnDragOver);
+        AddHandler(DragDrop.DragLeaveEvent, (_, _) => ShowDropRow(null));
         AddHandler(DragDrop.DropEvent, OnDrop);
         FileGrid.Sorting += OnSorting;
         FileGrid.ColumnReordered += OnColumnReordered;
@@ -61,7 +62,8 @@ public partial class PanelView : UserControl
         TabScroller.ScrollChanged += (_, _) => UpdateTabArrows();
         TabLeftButton.Click += (_, _) => ScrollTabs(-1);
         TabRightButton.Click += (_, _) => ScrollTabs(1);
-        PathBox.LostFocus += (_, _) => { if (_vm is not null) _vm.IsEditingPath = false; };
+        PathBox.LostFocus += (_, _) => Dispatcher.UIThread.Post(ClosePathBoxIfLeft);
+        FileGrid.LayoutUpdated += (_, _) => FitNameColumn();
 
         AddHandler(GotFocusEvent, (_, _) => _vm?.Activate(), RoutingStrategies.Bubble);
         AddHandler(PointerPressedEvent, (_, _) =>
@@ -128,6 +130,30 @@ public partial class PanelView : UserControl
         }
         catch (Exception ex) when (ex is ArgumentOutOfRangeException or InvalidOperationException) { /* grille pas encore prête : l'ordre sera remis au prochain affichage */ }
         finally { _applyingOrder = false; }
+    }
+
+    // ---- Largeur de la colonne Nom ------------------------------------------------------------
+    // Une colonne « * » bloque les autres : la grille ne laisse élargir une colonne qu'autant que les colonnes
+    // à sa droite peuvent rétrécir, donc plus rien quand la fenêtre est étroite. La colonne Nom a donc une
+    // largeur fixe, recalculée ici : elle remplit la place libre, jamais moins que sa largeur minimale
+    // (celle que l'utilisateur lui a donnée en la tirant, 150 au départ). Au-delà : barre de défilement.
+
+    private const double NameMinWidth = 150;
+    private double _nameMin = NameMinWidth;
+    private double _nameSet = -1;
+
+    private void FitNameColumn()
+    {
+        if (FileGrid.Columns.FirstOrDefault(c => c.SortMemberPath == "Name") is not { } name || name.ActualWidth <= 0) return;
+        var presenter = FileGrid.GetVisualDescendants().OfType<Avalonia.Controls.Primitives.DataGridRowsPresenter>().FirstOrDefault();
+        double available = presenter?.Bounds.Width ?? 0;
+        if (available <= 0) return;
+        // Largeur changée par quelqu'un d'autre que nous : l'utilisateur a tiré la colonne Nom.
+        if (_nameSet >= 0 && Math.Abs(name.ActualWidth - _nameSet) > 0.5) _nameMin = Math.Max(60, name.ActualWidth);
+        double others = FileGrid.Columns.Where(c => c.IsVisible && !ReferenceEquals(c, name)).Sum(c => c.ActualWidth);
+        double width = Math.Floor(Math.Max(_nameMin, available - others - 1));
+        _nameSet = width;
+        if (Math.Abs(name.ActualWidth - width) > 0.5) name.Width = new DataGridLength(width);
     }
 
     private void OnColumnReordered(object? sender, DataGridColumnEventArgs e)
@@ -378,7 +404,7 @@ public partial class PanelView : UserControl
         if (source?.FindAncestorOfType<ListBoxItem>(includeSelf: true)?.DataContext is FolderTabViewModel tab) return tab.CurrentPath;
         if (source?.FindAncestorOfType<Button>(includeSelf: true)?.DataContext is DriveButtonViewModel drive)
             return quiet ? (drive.Kind == DriveButtonKind.Drive ? drive.Key : drive.IsConnected ? "?" : null) : Main?.DriveDropTarget(drive);
-        if (RowAt(e.GetPosition(ActiveList)) is { IsDirectory: true } row)
+        if (DropFolderRowAt(e.GetPosition(ActiveList)) is { } row)
         {
             // Un dossier qu'on est en train de glisser ne peut pas se recevoir lui-même.
             if (s_drag is { } d && d.Entries.Any(x => x.FullPath == row.FullPath)) return null;
@@ -387,10 +413,37 @@ public partial class PanelView : UserControl
         return _vm.Current.CurrentPath;
     }
 
+    /// <summary>
+    /// Dossier de la liste qui recevra les fichiers : seulement quand la souris est sur sa colonne Nom (ou son icône).
+    /// Sur Ext, Taille, Date… d'une ligne de dossier, le dépôt se fait dans le dossier affiché, comme sur le vide.
+    /// En miniatures : toute la vignette.
+    /// </summary>
+    private FileItemViewModel? DropFolderRowAt(Point p)
+    {
+        if (IsThumbs) return ThumbList.ItemAt(p) is { IsDirectory: true } thumb ? thumb : null;
+        var hit = FileGrid.InputHitTest(p) as Visual;
+        if (hit?.FindAncestorOfType<DataGridRow>(includeSelf: true)?.DataContext is not FileItemViewModel { IsDirectory: true } row) return null;
+        if (hit.FindAncestorOfType<DataGridCell>(includeSelf: true) is not { } cell) return null;
+        var column = DataGridColumn.GetColumnContainingElement(cell);
+        return column is not null && (column.SortMemberPath == "Name" || string.IsNullOrEmpty(column.SortMemberPath)) ? row : null;
+    }
+
+    private FileItemViewModel? _dropRow;
+
+    /// <summary>Bordure sur le dossier visé pendant le glisser (null : aucun).</summary>
+    private void ShowDropRow(FileItemViewModel? row)
+    {
+        if (ReferenceEquals(row, _dropRow)) return;
+        if (_dropRow is not null) _dropRow.IsDropTarget = false;
+        _dropRow = row;
+        if (row is not null) row.IsDropTarget = true;
+    }
+
     private void OnDragOver(object? sender, DragEventArgs e)
     {
         if (IsTabDrag(e))
         {
+            ShowDropRow(null);
             e.DragEffects = TabDropIndex(e) is null ? DragDropEffects.None : DragDropEffects.Move;
             e.Handled = true;
             return;
@@ -398,6 +451,8 @@ public partial class PanelView : UserControl
         bool ours = IsOurDrag(e);
         bool files = !ours && e.DataTransfer.Contains(DataFormat.File);
         var target = (ours || files) ? DropTarget(e, quiet: true) : null;
+        var row = target is null ? null : DropFolderRowAt(e.GetPosition(ActiveList));
+        ShowDropRow(row is not null && string.Equals(row.FullPath, target, PathText.Comparison) ? row : null);
         // Lâcher au point de départ ne fait simplement rien : ce n'est pas interdit, et le curseur ne doit pas le laisser croire
         // (le glissement commence toujours là, sur l'élément qu'on tient).
         bool nothingToDo = ours && (target is null || (s_drag is { } d && string.Equals(target, d.FromDir, PathText.Comparison)));
@@ -421,6 +476,7 @@ public partial class PanelView : UserControl
 
     private async void OnDrop(object? sender, DragEventArgs e)
     {
+        ShowDropRow(null);
         if (await DropTabAsync(e)) return;
         if (Main is not { } main || _vm is null) return;
         // Maj = déplacer, Ctrl = copier sans demander ; sinon un petit menu demande « Copier ici / Déplacer ici ».
@@ -746,6 +802,36 @@ public partial class PanelView : UserControl
                 FocusList();
                 break;
         }
+    }
+
+    private bool _pathMenuHooked;
+
+    /// <summary>
+    /// Chemin en modification (crayon) : refermé quand on quitte la case, mais pas quand son propre menu
+    /// (clic droit : Couper, Copier, Coller…) s'ouvre ; refermé ensuite si ce menu se ferme ailleurs.
+    /// </summary>
+    private void ClosePathBoxIfLeft()
+    {
+        if (_vm is null || !_vm.IsEditingPath || PathBox.IsKeyboardFocusWithin) return;
+        if (PathBox.ContextFlyout is Avalonia.Controls.Primitives.PopupFlyoutBase { IsOpen: true } flyout)
+        {
+            if (!_pathMenuHooked)
+            {
+                _pathMenuHooked = true;
+                flyout.Closed += (_, _) => Dispatcher.UIThread.Post(ClosePathBoxIfLeft);
+            }
+            return;
+        }
+        if (PathBox.ContextMenu is { IsOpen: true } menu)
+        {
+            if (!_pathMenuHooked)
+            {
+                _pathMenuHooked = true;
+                menu.Closed += (_, _) => Dispatcher.UIThread.Post(ClosePathBoxIfLeft);
+            }
+            return;
+        }
+        _vm.IsEditingPath = false;
     }
 
     private void OnTabPropertyChanged(object? sender, PropertyChangedEventArgs e)

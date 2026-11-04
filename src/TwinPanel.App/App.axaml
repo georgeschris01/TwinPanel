@@ -132,6 +132,16 @@
     <Style Selector="TextBlock.colored">
       <Setter Property="Foreground" Value="{Binding NameColor}" />
     </Style>
+    <!-- Dossier visé pendant un glisser de fichiers (colonne Nom) -->
+    <Style Selector="Border.dropFrame">
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="CornerRadius" Value="4" />
+    </Style>
+    <Style Selector="Border.dropFrame.dropTarget">
+      <Setter Property="BorderBrush" Value="{DynamicResource SystemControlHighlightAccentBrush}" />
+      <Setter Property="Background" Value="{DynamicResource HoverFill}" />
+    </Style>
     <Style Selector="TextBlock.marked">
       <Setter Property="Foreground" Value="#E5534B" />
       <Setter Property="FontWeight" Value="SemiBold" />

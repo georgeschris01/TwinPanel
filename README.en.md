@@ -118,7 +118,7 @@ Click on the name can be turned off in Options → Behavior.
 
 Hold the left button on an item and move the mouse. If the item is marked, all marked items go with it.
 
-You can drop it on a folder, on the other panel, on a tab, on a drive or connection button, or in Windows File Explorer. The reverse direction from File Explorer works too. On Linux, it depends on the session type chosen at login:
+You can drop it on a folder, on the other panel, on a tab, on a drive or connection button, or in Windows File Explorer. The reverse direction from File Explorer works too. To go into a folder of the list, drop on its **name** (or its icon): a border shows it. On its other columns (Ext, Size, Date…), the files go into the folder shown in the panel. On Linux, it depends on the session type chosen at login:
 
 - **X11 session**: drag and drop works both ways, from TwinPanel to another application and back;
 - **Wayland session**: you cannot drop into another application. Dragging from another application into TwinPanel remains possible.
@@ -141,6 +141,7 @@ To find your session type, type `echo $XDG_SESSION_TYPE` in a desktop terminal. 
 | Wheel on the tabs | Scroll the tabs |
 | Click a column title | Sort by this column |
 | Drag a column title | Change the column order |
+| Drag the edge of a column title | Widen or narrow the column (Name takes the remaining space; if everything no longer fits, a scroll bar appears) |
 | Right click on the titles | Choose the displayed columns |
 | Right click on the Back button | Recent folders |
 
@@ -260,6 +261,8 @@ Right click on the tab:
 - **Flat view** (`Ctrl+B`): all the files from subfolders, on the PC and on a server. `Esc` stops reading.
 
 Sorting by size (`Ctrl+F6`) also orders the folders whose size is known: calculated automatically (**Folder size** option) or with the space bar. Folders stay before files.
+
+The total at the bottom of the list (“98 folder(s), 12 file(s) — 1.5 GB”) counts the files of the folder shown and the size of the folders already calculated. Without the **Folder size** option, a folder that only contains subfolders therefore shows 0 B. “…” after the total: calculations are still running.
 
 ## Marking and working on files
 

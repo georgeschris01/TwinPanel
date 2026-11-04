@@ -147,9 +147,10 @@ public partial class FolderTabViewModel : ObservableObject, IDisposable
             if (KnownFolderSize(it.Entry) is { } known) it.ComputedSize = known;
             else todo.Add(it);
         }
-        if (todo.Count == 0 || !ComputeFolderSizes || IsInsideArchive) { UpdateSelectionInfo(); return; }
+        if (todo.Count == 0 || !ComputeFolderSizes || IsInsideArchive) { UpdateSelectionInfo(); ScheduleSummary(); return; }
         var ct = _folderCts.Token;
         _ = IsRemote ? RemoteFolderSizesAsync(todo, ct) : LocalFolderSizesAsync(todo, ct);
+        ScheduleSummary();
     }
 
     private void StoreFolderSize(FileItemViewModel item, long bytes)
@@ -157,6 +158,21 @@ public partial class FolderTabViewModel : ObservableObject, IDisposable
         item.ComputedSize = bytes;
         _folderSizes[item.FullPath] = (item.Entry.LastWriteTime, bytes);
         ScheduleSizeSort();
+        ScheduleSummary();
+    }
+
+    private bool _summaryPending;
+
+    /// <summary>Total du bas de la liste : recalculé au plus toutes les 200 ms pendant les calculs de tailles.</summary>
+    private void ScheduleSummary()
+    {
+        if (_summaryPending) return;
+        _summaryPending = true;
+        DispatcherTimer.RunOnce(() =>
+        {
+            _summaryPending = false;
+            UpdateSummary();
+        }, TimeSpan.FromMilliseconds(200));
     }
 
     private long? KnownFolderSize(FileEntry entry) =>
@@ -209,6 +225,7 @@ public partial class FolderTabViewModel : ObservableObject, IDisposable
             finally { it.IsComputingSize = false; }
         }
         UpdateSelectionInfo();
+        ScheduleSummary();
     }
 
     private async Task RemoteFolderSizesAsync(List<FileItemViewModel> todo, CancellationToken ct)
@@ -234,6 +251,7 @@ public partial class FolderTabViewModel : ObservableObject, IDisposable
             {
                 foreach (var t in todo) t.IsComputingSize = false;
                 UpdateSelectionInfo();
+                ScheduleSummary();
             });
         }
     }
@@ -651,6 +669,7 @@ public partial class FolderTabViewModel : ObservableObject, IDisposable
         {
             item.IsComputingSize = false;
             UpdateSelectionInfo();
+            ScheduleSummary();
         }
     }
 
@@ -879,15 +898,23 @@ public partial class FolderTabViewModel : ObservableObject, IDisposable
     {
         int files = 0, dirs = 0;
         long size = 0;
+        bool computing = false;
         foreach (var e in Items)
         {
             if (e.IsParentLink) continue;
-            if (e.IsDirectory) dirs++;
+            if (e.IsDirectory)
+            {
+                dirs++;
+                // Taille des dossiers déjà calculée (automatique ou à la demande) : comptée dans le total.
+                size += e.ComputedSize ?? 0;
+                computing |= e.IsComputingSize;
+            }
             else { files++; size += e.Entry.Size; }
         }
+        var total = FileEntry.FormatSize(size) + (computing ? " …" : string.Empty);
         Summary = IsFlat
-            ? L.F("{0:N0} fichier(s) — {1}{2}", files, FileEntry.FormatSize(size), _flatNote)
-            : L.F("{0} dossier(s), {1} fichier(s) — {2}", dirs, files, FileEntry.FormatSize(size));
+            ? L.F("{0:N0} fichier(s) — {1}{2}", files, total, _flatNote)
+            : L.F("{0} dossier(s), {1} fichier(s) — {2}", dirs, files, total);
     }
 
     /// <summary>Titre de l'onglet : nom du dossier ; disque du PC : lettre devant (« C: Documents », « C: » à la racine).</summary>

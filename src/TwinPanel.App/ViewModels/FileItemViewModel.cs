@@ -12,6 +12,9 @@ public partial class FileItemViewModel(FileEntry entry) : ObservableObject
 
     [ObservableProperty] private bool _isMarked;
 
+    /// <summary>Dossier visé pendant un glisser de fichiers (bordure sur le nom).</summary>
+    [ObservableProperty] private bool _isDropTarget;
+
     /// <summary>Couleur de l'icône (règles des Options comprises).</summary>
     public Avalonia.Media.IBrush IconBrush => Converters.FileIcons.BrushFor(Entry);
 

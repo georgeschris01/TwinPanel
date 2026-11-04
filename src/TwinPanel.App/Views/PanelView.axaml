@@ -258,14 +258,18 @@
                   </DataTemplate>
                 </DataGridTemplateColumn.CellTemplate>
               </DataGridTemplateColumn>
-              <DataGridTemplateColumn Header="{l:T 'Nom'}" Width="*" SortMemberPath="Name">
+              <!-- Largeur fixe recalculée par le code (FitNameColumn) : une colonne « * » empêcherait d'élargir les autres. -->
+              <DataGridTemplateColumn Header="{l:T 'Nom'}" Width="300" SortMemberPath="Name">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
                     <!-- Le Panel accueille la case du renommage ; le texte n'occupe que sa largeur, pour distinguer un clic sur le nom. -->
+                    <!-- Bordure : dossier visé pendant un glisser (on n'y entre que sur la colonne Nom). -->
+                    <Border Classes="dropFrame" Classes.dropTarget="{Binding IsDropTarget}">
                     <Panel>
                       <TextBlock Text="{Binding DisplayName}" Classes="fileName" Classes.marked="{Binding IsMarked}" Classes.colored="{Binding HasNameColor}"
                                  HorizontalAlignment="Left" VerticalAlignment="Center" Margin="4,0" TextTrimming="CharacterEllipsis" />
                     </Panel>
+                    </Border>
                   </DataTemplate>
                 </DataGridTemplateColumn.CellTemplate>
               </DataGridTemplateColumn>

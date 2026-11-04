@@ -118,7 +118,7 @@ Le clic sur le nom se désactive dans Options → Comportement.
 
 Maintenez le bouton gauche sur un élément et déplacez la souris. Si l'élément est marqué, tous les éléments marqués partent avec lui.
 
-Vous pouvez le lâcher sur un dossier, sur l'autre panneau, sur un onglet, sur un bouton de lecteur ou de connexion, ou dans l'Explorateur de Windows. Depuis l'Explorateur, le chemin inverse marche aussi. Sous Linux, tout dépend du type de session choisi à la connexion :
+Vous pouvez le lâcher sur un dossier, sur l'autre panneau, sur un onglet, sur un bouton de lecteur ou de connexion, ou dans l'Explorateur de Windows. Depuis l'Explorateur, le chemin inverse marche aussi. Pour entrer dans un dossier de la liste, lâchez sur son **nom** (ou son icône) : une bordure le montre. Sur ses autres colonnes (Ext, Taille, Date…), les fichiers vont dans le dossier affiché du panneau. Sous Linux, tout dépend du type de session choisi à la connexion :
 
 - **session X11** : le glisser-déposer marche dans les deux sens, de TwinPanel vers une autre application et l'inverse ;
 - **session Wayland** : on ne peut pas lâcher dans une autre application. Depuis une autre application vers TwinPanel, le glissement reste possible.
@@ -141,6 +141,7 @@ Pour connaître votre session, tapez `echo $XDG_SESSION_TYPE` dans un terminal d
 | Molette sur les onglets | Faire défiler les onglets |
 | Clic sur un titre de colonne | Trier par cette colonne |
 | Glisser un titre de colonne | Changer l'ordre des colonnes |
+| Tirer le bord d'un titre de colonne | Élargir ou rétrécir la colonne (le Nom prend la place qui reste ; si tout ne tient plus, une barre de défilement apparaît) |
 | Clic droit sur les titres | Choisir les colonnes affichées |
 | Clic droit sur le bouton Précédent | Dossiers récents |
 
@@ -260,6 +261,8 @@ Clic droit sur l'onglet :
 - **Vue à plat** (`Ctrl+B`) : tous les fichiers des sous-dossiers, sur le PC et sur un serveur. `Échap` arrête la lecture.
 
 Le tri par taille (`Ctrl+F6`) classe aussi les dossiers dont la taille est connue : calculée automatiquement (option **Taille des dossiers**) ou avec la barre d'espace. Les dossiers restent avant les fichiers.
+
+Le total en bas de la liste (« 98 dossier(s), 12 fichier(s) — 1,5 Go ») compte les fichiers du dossier affiché et la taille des dossiers déjà calculée. Sans l'option **Taille des dossiers**, un dossier qui ne contient que des sous-dossiers montre donc 0 o. « … » après le total : des calculs sont encore en cours.
 
 ## Marquer et travailler sur les fichiers
 
