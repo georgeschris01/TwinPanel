@@ -131,6 +131,8 @@ public partial class MainWindowViewModel : ObservableObject
     public async Task InitializeAsync()
     {
         var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        // Fermé avant la fin du démarrage : les terminaux pas encore rouverts restent enregistrés.
+        _pendingTerminals = _settings.OpenTerminals;
         // Les onglets sur un serveur sont mis de côté : rouverts après l'affichage (il faut se reconnecter).
         var (left, leftRemote) = SplitRemoteTabs(_settings.Left);
         var (right, rightRemote) = SplitRemoteTabs(_settings.Right);
@@ -142,6 +144,7 @@ public partial class MainWindowViewModel : ObservableObject
         }
         await Left.InitializeAsync(left, ShowHidden, home);
         await Right.InitializeAsync(right, ShowHidden, home);
+        _startupTabsOpened = true;
         if (_settings.Startup.RestoreTabs) await RestoreRemoteTabsAsync(leftRemote, rightRemote);
         await RestoreTerminalsAsync();
         Left.ShowTree = _settings.LeftTreeVisible;
@@ -151,12 +154,17 @@ public partial class MainWindowViewModel : ObservableObject
         ShowStartupTip();
     }
 
+    /// <summary>Vrai une fois les onglets du PC rouverts au démarrage : avant, les panneaux sont encore vides ou incomplets.</summary>
+    private bool _startupTabsOpened;
+
     /// <summary>
     /// Onglets ouverts maintenant, dans les réglages. Sans cela, ils n'y sont qu'à la fermeture de TwinPanel :
     /// une sauvegarde faite depuis les Options gardait les onglets de la fermeture précédente.
     /// </summary>
     private void CaptureOpenTabs()
     {
+        // Fermé avant que les onglets du PC soient ouverts : on garde tels quels ceux de la dernière fois.
+        if (!_startupTabsOpened) return;
         _settings.Left = WithUnopenedTabs(Left, WithSavedRemoteTabs(Left.CaptureState()));
         _settings.Right = WithUnopenedTabs(Right, WithSavedRemoteTabs(Right.CaptureState()));
         _settings.OpenTerminals = CaptureTerminals();

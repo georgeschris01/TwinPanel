@@ -264,7 +264,11 @@ public partial class MainWindowViewModel
         if (saved is null || !IsTerminalEnabled) return;
         var tabs = saved.Restorable(id => _connections?.FindProfile(id) is not null);
         var mode = _settings.Startup.TerminalTabs;
-        if (tabs.Count == 0 || mode == RemoteTabsRestore.Never) return;
+        if (tabs.Count == 0 || mode == RemoteTabsRestore.Never)
+        {
+            _pendingTerminals = null; // rien à rouvrir, ou « Ne jamais rouvrir » : comme avant
+            return;
+        }
         if (mode == RemoteTabsRestore.Ask)
         {
             int servers = tabs.Count(t => t.ServerId is not null);
@@ -272,20 +276,21 @@ public partial class MainWindowViewModel
             if (servers > 0) message += "\n" + L.F("Dont {0} sur un serveur : il faudra se reconnecter.", servers);
             var choice = await _dialogs.ChooseAsync<int>(L.T("Terminaux"), message,
                 (L.T("Rouvrir"), 1), (L.T("Toujours rouvrir"), 2), (L.T("Ne jamais rouvrir"), 3), (L.T("Pas cette fois"), null));
-            if (choice is null)
-            {
-                _pendingTerminals = saved;
-                return;
-            }
+            if (choice is null) return; // « Pas cette fois » : gardés de côté (_pendingTerminals)
             if (choice is 2 or 3)
             {
                 // Le choix est retenu (modifiable dans Options → Démarrage).
                 _settings.Startup.TerminalTabs = choice == 2 ? RemoteTabsRestore.Always : RemoteTabsRestore.Never;
                 try { _store.Save(_settings); } catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
-                if (choice == 3) return;
+                if (choice == 3)
+                {
+                    _pendingTerminals = null;
+                    return;
+                }
             }
         }
 
+        _pendingTerminals = null; // rouverts maintenant : ce qui est ouvert sera enregistré
         var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         var reopened = new List<(SavedTerminalTab Saved, TerminalTabViewModel Tab)>();
         foreach (var right in new[] { false, true })

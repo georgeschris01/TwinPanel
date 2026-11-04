@@ -143,16 +143,9 @@ public partial class MainWindowViewModel
     /// <summary>Onglets de serveur pas rouverts (« Pas cette fois », serveur injoignable) : ils ne doivent pas disparaître pour autant.</summary>
     private readonly List<(FilePanelViewModel Panel, PendingRemoteTab Tab)> _unopenedTabs = [];
 
-    /// <summary>Remet à leur place les onglets qui n'ont pas pu être rouverts.</summary>
-    private PanelState WithUnopenedTabs(FilePanelViewModel panel, PanelState state)
-    {
-        var missing = _unopenedTabs.Where(x => ReferenceEquals(x.Panel, panel) && !state.Tabs.Contains(x.Tab.Saved))
-            .Select(x => (x.Tab.Position, x.Tab.Saved)).ToList();
-        if (missing.Count == 0) return state;
-        var tabs = state.Tabs.ToList();
-        int active = TabPositions.Merge(tabs, state.ActiveTab, missing);
-        return new PanelState { Tabs = tabs, ActiveTab = active, SortColumn = state.SortColumn, SortDescending = state.SortDescending };
-    }
+    /// <summary>Remet à leur place les onglets qui n'ont pas pu (ou pas encore pu) être rouverts.</summary>
+    private PanelState WithUnopenedTabs(FilePanelViewModel panel, PanelState state) =>
+        TabPositions.WithPending(state, _unopenedTabs.Where(x => ReferenceEquals(x.Panel, panel)).Select(x => (x.Tab.Position, x.Tab.Saved)));
 
     /// <summary>Sépare les onglets locaux (ouverts tout de suite) de ceux sur un serveur (rouverts ensuite).</summary>
     private static (PanelState Local, List<PendingRemoteTab> Remote) SplitRemoteTabs(PanelState state)
@@ -182,6 +175,9 @@ public partial class MainWindowViewModel
             .Where(x => _connections.FindProfile(x.Tab.ProfileId) is not null).ToList();
         var mode = _settings.Startup.RemoteTabs;
         if (all.Count == 0 || mode == RemoteTabsRestore.Never) return;
+        // Gardés de côté dès maintenant : si TwinPanel se ferme pendant la question ou la reconnexion
+        // (par exemple juste après une installation), ils restent enregistrés et reviendront.
+        _unopenedTabs.AddRange(all);
 
         var profiles = all.Select(x => x.Tab.ProfileId).Distinct().Select(id => _connections.FindProfile(id)!).ToList();
         if (mode == RemoteTabsRestore.Ask)
@@ -190,17 +186,17 @@ public partial class MainWindowViewModel
             var choice = await _dialogs.ChooseAsync<int>(L.T("Onglets sur un serveur"),
                 L.F("À la fermeture, {0} onglet(s) étaient ouverts sur : {1}.\nSe reconnecter pour les rouvrir ?", all.Count, names),
                 (L.T("Rouvrir"), 1), (L.T("Toujours rouvrir"), 2), (L.T("Ne jamais rouvrir"), 3), (L.T("Pas cette fois"), null));
-            if (choice is null)
-            {
-                _unopenedTabs.AddRange(all);
-                return;
-            }
+            if (choice is null) return; // déjà gardés de côté
             if (choice is 2 or 3)
             {
                 // Le choix est retenu (modifiable dans Options → Démarrage).
                 _settings.Startup.RemoteTabs = choice == 2 ? RemoteTabsRestore.Always : RemoteTabsRestore.Never;
                 try { _store.Save(_settings); } catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
-                if (choice == 3) return;
+                if (choice == 3)
+                {
+                    _unopenedTabs.Clear(); // « Ne jamais rouvrir » : on les laisse partir
+                    return;
+                }
             }
         }
 
@@ -226,13 +222,10 @@ public partial class MainWindowViewModel
         }
         foreach (var (panel, tab) in all.OrderBy(x => x.Tab.Position))
         {
-            if (!opened.TryGetValue(tab.ProfileId, out var session))
-            {
-                _unopenedTabs.Add((panel, tab));
-                continue;
-            }
+            if (!opened.TryGetValue(tab.ProfileId, out var session)) continue; // reste de côté
             await panel.AddTabAsync(session.PathFor(tab.Path).ToString(), panel.Current.SortColumn, panel.Current.SortDescending, select: tab.WasActive, tab.Lock, tab.Name,
                 insertAt: Math.Min(tab.Position, panel.Tabs.Count));
+            _unopenedTabs.Remove((panel, tab)); // ouvert : il est maintenant dans le panneau
         }
         StatusMessage = _unopenedTabs.Count > 0 ? L.F("{0} onglet(s) de serveur pas rouverts : ils reviendront au prochain démarrage.", _unopenedTabs.Count) : L.T("Onglets rouverts.");
     }

@@ -71,4 +71,4 @@ Name: "{autoprograms}\TwinPanel"; Filename: "{app}\TwinPanel.exe"
 Name: "{autodesktop}\TwinPanel"; Filename: "{app}\TwinPanel.exe"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\TwinPanel.exe"; Description: "{cm:LaunchProgram,TwinPanel}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\TwinPanel.exe"; Description: "{cm:LaunchProgram,TwinPanel}"; Flags: nowait postinstall skipifsilent runasoriginaluser

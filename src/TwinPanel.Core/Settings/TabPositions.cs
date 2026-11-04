@@ -19,4 +19,18 @@ public static class TabPositions
         }
         return active;
     }
+
+    /// <summary>
+    /// Onglets à enregistrer : ceux ouverts, plus ceux pas encore (ou pas pu être) rouverts, remis à leur rang.
+    /// Un onglet déjà ouvert n'est pas ajouté une deuxième fois. Sert aussi pendant le démarrage :
+    /// une fermeture avant la reconnexion aux serveurs ne doit faire perdre aucun onglet.
+    /// </summary>
+    public static PanelState WithPending(PanelState open, IEnumerable<(int Position, string Tab)> pending)
+    {
+        var missing = pending.Where(p => !open.Tabs.Contains(p.Tab)).ToList();
+        if (missing.Count == 0) return open;
+        var tabs = open.Tabs.ToList();
+        int active = Merge(tabs, open.ActiveTab, missing);
+        return new PanelState { Tabs = tabs, ActiveTab = active, SortColumn = open.SortColumn, SortDescending = open.SortDescending };
+    }
 }
