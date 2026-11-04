@@ -94,6 +94,26 @@ public partial class MainWindowViewModel
         AppearanceChanged?.Invoke(this, EventArgs.Empty);
     }
 
+    /// <summary>
+    /// Bouton de la barre des lecteurs glissé à la souris : nouvel ordre de son groupe (lecteurs réseau ou connexions),
+    /// enregistré et appliqué aux deux panneaux.
+    /// </summary>
+    public void MoveDriveButton(DriveButtonViewModel button, int index, IReadOnlyList<DriveButtonViewModel> shown)
+    {
+        if (button.MoveGroup is not { } group) return;
+        var keys = shown.Where(b => b.MoveGroup == group).Select(b => b.Key).ToList();
+        if (TwinPanel.Core.Customization.DriveBarOrder.Move(keys, button.Key, index) is not { } moved) return;
+        _settings.Appearance.DriveBarOrder = TwinPanel.Core.Customization.DriveBarOrder.Save(_settings.Appearance.DriveBarOrder, moved);
+        ApplyDriveBarOrder();
+    }
+
+    private void ApplyDriveBarOrder()
+    {
+        Left.DriveBarOrder = Right.DriveBarOrder = [.. _settings.Appearance.DriveBarOrder];
+        Left.ApplyDriveColors();
+        Right.ApplyDriveColors();
+    }
+
     /// <summary>Ctrl + molette sur une liste : texte des panneaux plus grand / plus petit (0 : taille des Options).</summary>
     public void ChangePanelZoom(int delta)
     {
@@ -136,6 +156,7 @@ public partial class MainWindowViewModel
         FolderTabViewModel.OpenArchivesWithEnter = _settings.Behavior.OpenArchivesWithEnter;
         if (_remoteEdits is not null) _remoteEdits.AutoUpload = _settings.Behavior.AutoReUpload;
         Left.ShowDriveBar = Right.ShowDriveBar = a.ShowDriveBar;
+        Left.DriveBarOrder = Right.DriveBarOrder = [.. a.DriveBarOrder];
         Left.ApplyDriveColors();
         Right.ApplyDriveColors();
         TwinPanel.App.Views.ColorPalette.SetCustom(a.CustomColors);

@@ -20,6 +20,8 @@ public partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            // Texte coupé par « … » : infobulle avec le texte entier, dans toutes les fenêtres.
+            Views.TrimmedTextTips.Install();
             var window = new MainWindow();
             var vm = new MainWindowViewModel(new DialogService(window), SettingsStore.Default, FileSourceRegistry.Default);
             vm.LoadSettings();

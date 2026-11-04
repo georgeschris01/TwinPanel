@@ -154,6 +154,8 @@ public sealed class AppearanceSettings
     public bool UseShellIcons { get; set; }
     /// <summary>Ordre des colonnes choisi en glissant les titres (clés : Name, Extension, Size, Date, Mode…) ; vide : ordre par défaut.</summary>
     public List<string> ColumnOrder { get; set; } = [];
+    /// <summary>Ordre des lecteurs réseau et des connexions dans la barre des lecteurs (racines et identifiants) ; vide : ordre d'origine.</summary>
+    public List<string> DriveBarOrder { get; set; } = [];
     /// <summary>Ctrl + molette : points ajoutés (ou retirés) au texte des panneaux, en plus de la taille de police.</summary>
     public int PanelZoom { get; set; }
     /// <summary>Côté des miniatures, en points (Ctrl + molette dans la vue Miniatures).</summary>

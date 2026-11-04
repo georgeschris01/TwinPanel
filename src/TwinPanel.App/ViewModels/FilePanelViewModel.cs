@@ -334,13 +334,20 @@ public partial class FilePanelViewModel : ObservableObject
     /// <summary>Couleurs des icônes de la barre des lecteurs changées dans les Options.</summary>
     public void ApplyDriveColors() => RebuildDriveBar();
 
+    /// <summary>Ordre des lecteurs réseau et des connexions choisi en les glissant (commun aux deux panneaux).</summary>
+    public IReadOnlyList<string> DriveBarOrder { get; set; } = [];
+
     private void RebuildDriveBar()
     {
         var items = new List<DriveButtonViewModel>();
-        foreach (var d in _drives)
-            items.Add(new DriveButtonViewModel { Kind = DriveButtonKind.Drive, Key = d.Root, Label = d.Label, Tooltip = d.Tooltip, IconKey = d.IconKey });
+        // Disques du PC à leur place ; lecteurs réseau ensuite, dans l'ordre choisi.
+        var drives = _drives.Select(d => new DriveButtonViewModel { Kind = DriveButtonKind.Drive, Key = d.Root, Label = d.Label, Tooltip = d.Tooltip, IconKey = d.IconKey }).ToList();
+        items.AddRange(drives.Where(d => d.MoveGroup is null));
+        var network = drives.Where(d => d.MoveGroup is not null).ToDictionary(d => d.Key, StringComparer.OrdinalIgnoreCase);
+        foreach (var key in TwinPanel.Core.Customization.DriveBarOrder.Arrange([.. network.Keys], DriveBarOrder)) items.Add(network[key]);
         if (_connections.Count > 0) items.Add(new DriveButtonViewModel { Kind = DriveButtonKind.Separator, Key = "|" });
-        foreach (var (p, alias) in _connections)
+        var connectionRank = TwinPanel.Core.Customization.DriveBarOrder.Arrange([.. _connections.Select(c => c.Profile.Id.ToString("N"))], DriveBarOrder);
+        foreach (var (p, alias) in _connections.OrderBy(c => connectionRank.IndexOf(c.Profile.Id.ToString("N"))))
             items.Add(new DriveButtonViewModel
             {
                 Kind = DriveButtonKind.Connection,

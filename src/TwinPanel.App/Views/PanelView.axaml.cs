@@ -58,6 +58,9 @@ public partial class PanelView : UserControl
         TabList.AddHandler(PointerPressedEvent, OnTabPointerPressed, RoutingStrategies.Tunnel);
         TabList.AddHandler(PointerMovedEvent, OnTabPointerMoved, RoutingStrategies.Tunnel);
         TabScroller.AddHandler(PointerWheelChangedEvent, OnTabWheel, RoutingStrategies.Tunnel);
+        // Lecteurs réseau et connexions : glisser pour les ranger.
+        DriveBarList.AddHandler(PointerPressedEvent, OnDrivePointerPressed, RoutingStrategies.Tunnel);
+        DriveBarList.AddHandler(PointerMovedEvent, OnDrivePointerMoved, RoutingStrategies.Tunnel);
         TabScroller.LayoutUpdated += (_, _) => UpdateTabArrows();
         TabScroller.ScrollChanged += (_, _) => UpdateTabArrows();
         TabLeftButton.Click += (_, _) => ScrollTabs(-1);
@@ -329,6 +332,81 @@ public partial class PanelView : UserControl
         return afterInRow ?? _vm.Tabs.Count;
     }
 
+    // ---- Barre des lecteurs : ranger les lecteurs réseau et les connexions en les glissant ----------
+
+    private static readonly DataFormat<string> DriveDragFormat = DataFormat.CreateStringApplicationFormat("TwinPanel.Lecteur");
+    private static (string Token, DriveButtonViewModel Button)? s_driveDrag;
+    private DriveButtonViewModel? _driveDragCandidate;
+    private PointerPressedEventArgs? _driveDragPress;
+    private Point _driveDragStart;
+
+    private void OnDrivePointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        _driveDragCandidate = null;
+        if (!e.GetCurrentPoint(DriveBarList).Properties.IsLeftButtonPressed) return;
+        if ((e.Source as Visual)?.FindAncestorOfType<Button>(includeSelf: true)?.DataContext is not DriveButtonViewModel { MoveGroup: not null } button) return;
+        _driveDragCandidate = button;
+        _driveDragPress = e;
+        _driveDragStart = e.GetPosition(DriveBarList);
+    }
+
+    private async void OnDrivePointerMoved(object? sender, PointerEventArgs e)
+    {
+        if (_driveDragCandidate is not { } button || _driveDragPress is not { } press) return;
+        if (!e.GetCurrentPoint(DriveBarList).Properties.IsLeftButtonPressed) { _driveDragCandidate = null; return; }
+        var d = e.GetPosition(DriveBarList) - _driveDragStart;
+        if (Math.Abs(d.X) + Math.Abs(d.Y) < 8) return;
+        _driveDragCandidate = null;
+        // Le bouton lâche la souris : pas de clic (connexion, changement de disque) à la fin du glisser.
+        e.Pointer.Capture(null);
+        var token = Guid.NewGuid().ToString("N");
+        s_driveDrag = (token, button);
+        try { await DragDrop.DoDragDropAsync(press, DragData(DriveDragFormat, token), DragDropEffects.Move); }
+        finally { s_driveDrag = null; }
+    }
+
+    private static bool IsDriveDrag(DragEventArgs e) =>
+        s_driveDrag is { } d && e.DataTransfer.TryGetValue(DriveDragFormat) == d.Token;
+
+    /// <summary>Place du bouton glissé parmi ceux de son groupe (0 à nombre de boutons) ; null : pas sur ce groupe.</summary>
+    private int? DriveDropIndex(DragEventArgs e)
+    {
+        if (_vm is null || s_driveDrag is not { } drag) return null;
+        var p = e.GetPosition(DriveBarList);
+        if (!new Rect(DriveBarList.Bounds.Size).Contains(p)) return null;
+        int j = 0;
+        int? afterInRow = null;
+        Rect? first = null, last = null;
+        for (int i = 0; i < _vm.DriveBar.Count; i++)
+        {
+            var b = _vm.DriveBar[i];
+            if (b.MoveGroup != drag.Button.MoveGroup) continue;
+            if (DriveBarList.ContainerFromIndex(i) is Control c && c.TranslatePoint(new Point(0, 0), DriveBarList) is { } topLeft)
+            {
+                var r = new Rect(topLeft, c.Bounds.Size);
+                first ??= r;
+                last = r;
+                if (p.Y >= r.Top - 2 && p.Y <= r.Bottom + 2)
+                {
+                    if (p.X < r.Center.X && p.X >= r.Left - 12) return j;
+                    if (p.X >= r.Center.X) afterInRow = j + 1;
+                }
+            }
+            j++;
+        }
+        // Juste après le dernier bouton du groupe (sur sa ligne) : à la fin ; plus loin (autre groupe) : nulle part.
+        if (afterInRow is { } after && last is { } l && (after < j || p.X <= l.Right + 12)) return after;
+        return null;
+    }
+
+    private bool DropDriveButton(DragEventArgs e)
+    {
+        if (!IsDriveDrag(e) || s_driveDrag is not { } drag || _vm is null) return false;
+        e.Handled = true;
+        if (DriveDropIndex(e) is { } index) Main?.MoveDriveButton(drag.Button, index, [.. _vm.DriveBar]);
+        return true;
+    }
+
     private async Task<bool> DropTabAsync(DragEventArgs e)
     {
         if (!IsTabDrag(e) || s_tabDrag is not { } drag || _vm is null) return false;
@@ -441,6 +519,13 @@ public partial class PanelView : UserControl
 
     private void OnDragOver(object? sender, DragEventArgs e)
     {
+        if (IsDriveDrag(e))
+        {
+            ShowDropRow(null);
+            e.DragEffects = DriveDropIndex(e) is null ? DragDropEffects.None : DragDropEffects.Move;
+            e.Handled = true;
+            return;
+        }
         if (IsTabDrag(e))
         {
             ShowDropRow(null);
@@ -477,6 +562,7 @@ public partial class PanelView : UserControl
     private async void OnDrop(object? sender, DragEventArgs e)
     {
         ShowDropRow(null);
+        if (DropDriveButton(e)) return;
         if (await DropTabAsync(e)) return;
         if (Main is not { } main || _vm is null) return;
         // Maj = déplacer, Ctrl = copier sans demander ; sinon un petit menu demande « Copier ici / Déplacer ici ».

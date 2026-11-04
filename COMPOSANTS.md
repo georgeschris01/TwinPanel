@@ -192,6 +192,7 @@ Les licences des bibliothèques livrées sont **permissives** (MIT, BSD, Apache 
 | `Tools/ExternalTools.cs` | Éditeurs et visionneuses externes : détection (sous Linux : VSCodium, Kate, gedit, Mousepad, GNOME Text Editor), arguments `%1 %L %N %D`, éditeur intégré. |
 | `Settings/TabTransfer.cs` | Onglets ouverts emportés par une sauvegarde ou une synchronisation : serveurs retrouvés par identifiant ou par adresse, dossiers du PC gardés seulement sur le même système. Contenu au choix : `TransferParts` (`Settings/ConfigSync.cs`). |
 | `Customization/DesktopTerminal.cs` | Terminal du bureau sous Linux : programme trouvé et options pour le dossier et la commande. |
+| `Customization/DriveBarOrder.cs` | Ordre des lecteurs réseau et des connexions dans la barre des lecteurs, choisi en les glissant (chaque groupe à part). |
 | `Tools/LinuxShare.cs` | Partager sous Linux : courriel (`xdg-email`), appareils KDE Connect (`kdeconnect-cli`). |
 | `Terminal/` | Terminal intégré. `VtParser` (découpe du flux), `TerminalEmulator` (écran, historique, couleurs, second écran), `TerminalKeys` (clavier, souris, collage), `TerminalSession` (écran + connexion), `TerminalBacklog` (lecture limitée d'un serveur trop rapide), `TerminalCommands` (commandes enregistrées), `ConPtyConnection` (programme du PC), `TerminalShells` (programmes installés). Serveurs : `Remote/SshTerminalConnection.cs`. |
 | `Settings/` | Réglages enregistrés en JSON. |
@@ -203,7 +204,7 @@ Les licences des bibliothèques livrées sont **permissives** (MIT, BSD, Apache 
 
 | Dossier | Rôle |
 |---|---|
-| `Views/` | Fenêtres : principale, panneau, visionneuse, éditeur, recherche, synchronisation, comparaison, renommage multiple, gestionnaire de connexions, guide (`HelpWindow`), terminal (`TerminalView`, dessin et saisie). `TExtension.cs` : `{l:T '…'}`, texte traduit dans les fichiers axaml. |
+| `Views/` | Fenêtres : principale, panneau, visionneuse, éditeur, recherche, synchronisation, comparaison, renommage multiple, gestionnaire de connexions, guide (`HelpWindow`), terminal (`TerminalView`, dessin et saisie). `TExtension.cs` : `{l:T '…'}`, texte traduit dans les fichiers axaml. `TrimmedTextTips.cs` : infobulle du texte entier sur tout texte coupé par « … ». |
 | `ViewModels/` | État et commandes de chaque écran (onglets, marquage, opérations en cours…). |
 | `Services/` | Boîtes de dialogue, file des opérations, lancement des programmes externes, questions de connexion (clé du serveur, certificat, mots de passe), renvoi des fichiers distants édités. `WindowsShare.cs` : fenêtre de partage de Windows (appels directs, identifiants relevés dans les `.winmd` officiels). |
 | `Converters/` | Icônes et couleurs selon le type de fichier. |

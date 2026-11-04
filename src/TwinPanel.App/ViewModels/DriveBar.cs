@@ -28,6 +28,14 @@ public partial class DriveButtonViewModel : ObservableObject
     public bool IsSeparator => Kind == DriveButtonKind.Separator;
     public bool IsButton => Kind != DriveButtonKind.Separator;
     public bool IsConnected => OpenAlias is not null;
+
+    /// <summary>Groupe de boutons qu'on peut ranger en les glissant : « network » (lecteurs réseau), « connection » ; null : bouton fixe.</summary>
+    public string? MoveGroup => Kind switch
+    {
+        DriveButtonKind.Connection => "connection",
+        DriveButtonKind.Drive when IconKey == "IconNetwork" => "network",
+        _ => null,
+    };
     public Geometry? Icon => Application.Current?.TryGetResource(IconKey, null, out var g) == true ? g as Geometry : null;
 
     // ---- Couleur de l'icône (Options → Couleurs ; décoché : couleur d'origine du thème) ----

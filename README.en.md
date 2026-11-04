@@ -143,6 +143,7 @@ To find your session type, type `echo $XDG_SESSION_TYPE` in a desktop terminal. 
 | Drag a column title | Change the column order |
 | Drag the edge of a column title | Widen or narrow the column (Name takes the remaining space; if everything no longer fits, a scroll bar appears) |
 | Right click on the titles | Choose the displayed columns |
+| Mouse over a text cut by “…” | Tooltip with the full text (names, columns, window lists) |
 | Right click on the Back button | Recent folders |
 
 ## The keyboard
@@ -321,7 +322,7 @@ TwinPanel connects over SFTP, SCP, FTP, FTPS and WebDAV. A server is used like a
 
 - `Ctrl+N`: quick connect, for example `user@192.168.0.10`, `ftps://…` or `https://…/remote.php/dav/files/me`.
 - `Ctrl+F`: connection manager, with entries, groups, SSH keys, identities, known servers and vault.
-- A button in the drive bar opens each saved connection.
+- A button in the drive bar opens each saved connection. Drag the connection buttons, like tabs, to put them in the order you want. Windows network drives (Z:…) can be ordered the same way, among themselves. The PC's disks keep their place. The order applies to both panels and is remembered.
 - Connections from FileZilla, WinSCP, PuTTY, OpenSSH and Total Commander can be imported.
 - A server that cannot be reached directly goes through a **jump server**, chosen in its entry. That jump server can itself go through another one, up to 8 in a row. The fingerprint of each server is checked.
 

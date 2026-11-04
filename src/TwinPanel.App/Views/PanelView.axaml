@@ -79,8 +79,9 @@
 
   <Border Classes="panel" Classes.active="{Binding IsActive}">
     <DockPanel>
-      <!-- Barre des lecteurs : disques puis connexions (Options → Affichage pour la masquer) -->
-      <ItemsControl DockPanel.Dock="Top" Margin="8,8,8,0" ItemsSource="{Binding DriveBar}" IsVisible="{Binding ShowDriveBar}">
+      <!-- Barre des lecteurs : disques puis connexions (Options → Affichage pour la masquer).
+           Lecteurs réseau et connexions : rangés en les glissant, chacun dans son groupe. -->
+      <ItemsControl x:Name="DriveBarList" DockPanel.Dock="Top" Margin="8,8,8,0" ItemsSource="{Binding DriveBar}" IsVisible="{Binding ShowDriveBar}">
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate>
             <WrapPanel Orientation="Horizontal" />

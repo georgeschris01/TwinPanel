@@ -143,6 +143,7 @@ Pour connaître votre session, tapez `echo $XDG_SESSION_TYPE` dans un terminal d
 | Glisser un titre de colonne | Changer l'ordre des colonnes |
 | Tirer le bord d'un titre de colonne | Élargir ou rétrécir la colonne (le Nom prend la place qui reste ; si tout ne tient plus, une barre de défilement apparaît) |
 | Clic droit sur les titres | Choisir les colonnes affichées |
+| Souris sur un texte coupé par « … » | Infobulle avec le texte entier (noms, colonnes, listes des fenêtres) |
 | Clic droit sur le bouton Précédent | Dossiers récents |
 
 ## Le clavier
@@ -321,7 +322,7 @@ TwinPanel se connecte en SFTP, SCP, FTP, FTPS et WebDAV. Un serveur s'utilise co
 
 - `Ctrl+N` : connexion rapide, par exemple `utilisateur@192.168.0.10`, `ftps://…` ou `https://…/remote.php/dav/files/moi`.
 - `Ctrl+F` : gestionnaire de connexions, avec fiches, groupes, clés SSH, identités, serveurs connus et coffre.
-- Un bouton dans la barre des lecteurs ouvre chaque connexion enregistrée.
+- Un bouton dans la barre des lecteurs ouvre chaque connexion enregistrée. Glissez les boutons des connexions, comme les onglets, pour les ranger dans l'ordre voulu. Les lecteurs réseau de Windows (Z:…) se rangent de la même façon, entre eux. Les disques du PC gardent leur place. L'ordre sert aux deux panneaux et il est retenu.
 - Les connexions de FileZilla, WinSCP, PuTTY, OpenSSH et Total Commander s'importent.
 - Un serveur inaccessible directement passe par un **serveur de rebond**, choisi dans sa fiche. Ce rebond peut lui-même passer par un autre, jusqu'à 8 à la suite. L'empreinte de chaque serveur est contrôlée.
 
