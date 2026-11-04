@@ -305,7 +305,7 @@ public partial class OptionsViewModel : ObservableObject
     public static IReadOnlyList<Choice<string>> Themes { get; } = [new("System", L.T("Comme le système")), new("Light", L.T("Clair")), new("Dark", L.T("Sombre"))];
     public static IReadOnlyList<Choice<double>> RowHeights { get; } = [new(22, L.T("Compacte")), new(28, L.T("Normale")), new(34, L.T("Aérée"))];
     public static IReadOnlyList<Choice<SizeMode>> SizeDisplays { get; } =
-        [new(SizeMode.Auto, L.T("Automatique (o, Ko, Mo, Go)")), new(SizeMode.Bytes, L.T("En octets (1 234 567 o)")), new(SizeMode.Kilobytes, L.T("En Ko (1 206 Ko)"))];
+        [new(SizeMode.Auto, L.T("Automatique (o, Ko, Mo, Go, To)")), new(SizeMode.Bytes, L.T("En octets (1 234 567 o)")), new(SizeMode.Kilobytes, L.T("En Ko (1 206 Ko)"))];
     public static IReadOnlyList<string> DateFormats { get; } =
         ["dd/MM/yyyy HH:mm", "dd/MM/yyyy HH:mm:ss", "dd/MM/yy HH:mm", "yyyy-MM-dd HH:mm", "d MMM yyyy HH:mm", "dddd d MMMM yyyy"];
     public IReadOnlyList<string> Fonts { get; }
