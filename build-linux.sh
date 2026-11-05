@@ -1,6 +1,6 @@
 #!/bin/bash
 # TwinPanel — © 2026 Georges Christophe (chrypox). Tous droits réservés.
-# Licence TwinPanel 1.0 (gratuit, non commercial, sans modification) : voir le fichier LICENSE.
+# Licence TwinPanel 1.1 (gratuit, non commercial, sans modification) : voir le fichier LICENSE.
 #
 # Fabrique les paquets de TwinPanel pour Linux 64 bits (x86-64) : .deb (Debian, Ubuntu) si dpkg-deb est là,
 # .rpm (Fedora) si rpmbuild est là, AppImage si appimagetool est là.
@@ -87,7 +87,7 @@ cat > "$DEB/usr/share/metainfo/be.chrypox.TwinPanel.metainfo.xml" <<EOF
     <p>TwinPanel is a two-panel file manager with tabs, archives, SFTP, FTP and WebDAV connections, an integrated terminal, search and batch renaming. The Linux version is a beta.</p>
     <p xml:lang="fr">TwinPanel est un gestionnaire de fichiers à deux panneaux, avec onglets, archives, connexions SFTP, FTP et WebDAV, terminal intégré, recherche et renommage par lot. La version Linux est une bêta.</p>
     <p>The source code is public. The TwinPanel 1.0 license allows free use, but forbids selling the software and distributing modified versions.</p>
-    <p xml:lang="fr">Le code source est public. La licence TwinPanel 1.0 permet un usage gratuit, mais interdit de vendre le logiciel et de diffuser des versions modifiées.</p>
+    <p xml:lang="fr">Le code source est public. La licence TwinPanel 1.1 permet un usage gratuit, mais interdit de vendre le logiciel et de diffuser des versions modifiées.</p>
   </description>
   <!-- Discover relie la fiche au paquet par ce nom : sans lui, l'application n'apparaît pas. -->
   <pkgname>twinpanel</pkgname>

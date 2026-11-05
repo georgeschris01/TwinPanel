@@ -1,5 +1,5 @@
 // TwinPanel — © 2026 Georges Christophe (chrypox). Tous droits réservés.
-// Licence TwinPanel 1.0 (gratuit, non commercial, sans modification) : voir le fichier LICENSE.
+// Licence TwinPanel 1.1 (gratuit, non commercial, sans modification) : voir le fichier LICENSE.
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -287,9 +287,9 @@ public sealed class DialogService(Window owner) : IDialogService
         }
         catch (Exception ex) when (ex is FileNotFoundException or InvalidOperationException or IOException) { }
         var badgeButton = new Button { Content = badge, Background = Brushes.Transparent, BorderThickness = new Thickness(0), Padding = new Thickness(0), HorizontalAlignment = HorizontalAlignment.Center, Cursor = new Cursor(StandardCursorType.Hand) };
-        ToolTip.SetTip(badgeButton, L.T("Licence TwinPanel 1.0 : lire le contrat complet"));
+        ToolTip.SetTip(badgeButton, L.T("Licence TwinPanel 1.1 : lire le contrat complet"));
         badgeButton.Click += async (_, _) => await ShowLicenseAsync(dialog);
-        var license = LinkButton(L.T("Licence TwinPanel 1.0 — © 2026 Georges Christophe (chrypox)"));
+        var license = LinkButton(L.T("Licence TwinPanel 1.1 — © 2026 Georges Christophe (chrypox)"));
         license.HorizontalAlignment = HorizontalAlignment.Center;
         license.Click += async (_, _) => await ShowLicenseAsync(dialog);
         dialog.Content = Layout(
@@ -330,7 +330,7 @@ public sealed class DialogService(Window owner) : IDialogService
         {
             text = L.T("Le texte de la licence est introuvable. Voir le fichier LICENSE.txt dans le dossier de TwinPanel.");
         }
-        var dialog = CreateWindow(L.T("Licence TwinPanel 1.0"));
+        var dialog = CreateWindow(L.T("Licence TwinPanel 1.1"));
         var ok = new Button { Content = "OK", IsDefault = true, IsCancel = true, MinWidth = 90, Classes = { "accent" } };
         ok.Click += (_, _) => dialog.Close();
         var box = new TextBox

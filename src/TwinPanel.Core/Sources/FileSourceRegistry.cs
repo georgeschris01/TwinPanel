@@ -1,5 +1,5 @@
 // TwinPanel — © 2026 Georges Christophe (chrypox). Tous droits réservés.
-// Licence TwinPanel 1.0 (gratuit, non commercial, sans modification) : voir le fichier LICENSE.
+// Licence TwinPanel 1.1 (gratuit, non commercial, sans modification) : voir le fichier LICENSE.
 namespace TwinPanel.Core.Sources;
 
 /// <summary>Choisit la source capable d'afficher un chemin. Les plugins s'enregistreront ici.</summary>

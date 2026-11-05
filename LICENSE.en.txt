@@ -5,7 +5,7 @@ that prevails.
 ======================================================================
 
 ======================================================================
-SOFTWARE LICENSE AGREEMENT: TwinPanel ("TwinPanel License 1.0")
+SOFTWARE LICENSE AGREEMENT: TwinPanel ("TwinPanel License 1.1")
 AUTHOR AND OWNER: Georges Christophe (chrypox)
 Copyright (c) 2026 Georges Christophe. All rights reserved.
 Contact: admin@chrypox.be

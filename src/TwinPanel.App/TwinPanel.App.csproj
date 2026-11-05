@@ -34,7 +34,7 @@
   <ItemGroup>
     <!-- Logo de TwinPanel (fenêtres, barre d'outils, À propos). -->
     <AvaloniaResource Include="Assets\**" />
-    <!-- Texte de la licence, affiché par « À propos » → « Licence TwinPanel 1.0 ». -->
+    <!-- Texte de la licence, affiché par « À propos » → « Licence TwinPanel 1.1 ». -->
     <AvaloniaResource Include="..\..\LICENSE" Link="Assets\LICENSE.txt" />
     <AvaloniaResource Include="..\..\LICENSE.en.txt" Link="Assets\LICENSE.en.txt" />
     <!-- Guide intégré (F1) : le même texte que sur GitHub. -->

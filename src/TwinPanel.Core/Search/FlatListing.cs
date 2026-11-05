@@ -1,5 +1,5 @@
 // TwinPanel — © 2026 Georges Christophe (chrypox). Tous droits réservés.
-// Licence TwinPanel 1.0 (gratuit, non commercial, sans modification) : voir le fichier LICENSE.
+// Licence TwinPanel 1.1 (gratuit, non commercial, sans modification) : voir le fichier LICENSE.
 namespace TwinPanel.Core.Search;
 
 /// <summary>Vue à plat (Ctrl+B) : tous les fichiers des sous-dossiers dans une seule liste.</summary>

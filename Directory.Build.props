@@ -14,7 +14,7 @@
     <Company>chrypox</Company>
     <Authors>Georges Christophe (chrypox)</Authors>
     <!-- Affiché dans les propriétés de TwinPanel.exe (clic droit → Propriétés → Détails). -->
-    <Copyright>© 2026 Georges Christophe (chrypox). Licence TwinPanel 1.0 : gratuit, non commercial, sans modification.</Copyright>
+    <Copyright>© 2026 Georges Christophe (chrypox). Licence TwinPanel 1.1 : gratuit, non commercial, sans modification.</Copyright>
   </PropertyGroup>
 
   <!-- Sous Linux, MediaInfo.Core.Native crée ses liens aussi dans le dossier de publication, même pour une simple

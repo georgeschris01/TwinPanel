@@ -599,7 +599,7 @@ Composants utilisés et plan du code : `COMPOSANTS.md`.
 
 ![Licence TwinPanel](logo/licence/licence-twinpanel.png)
 
-TwinPanel est publié sous la **Licence TwinPanel 1.0** — © 2026 Georges Christophe (chrypox). Le texte complet, seul à faire foi, est dans le fichier [`LICENSE`](LICENSE). En résumé :
+TwinPanel est publié sous la **Licence TwinPanel 1.1** — © 2026 Georges Christophe (chrypox). Le texte complet, seul à faire foi, est dans le fichier [`LICENSE`](LICENSE). En résumé :
 
 - **Gratuit** : utilisation libre et gratuite, aussi en entreprise et en interne ; interdit de le vendre, le louer ou l'intégrer dans une offre payante.
 - **Partage** : seulement la version d'origine, complète, gratuitement et avec la licence.

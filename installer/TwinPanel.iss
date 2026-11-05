@@ -1,4 +1,4 @@
-﻿; TwinPanel — © 2026 Georges Christophe (chrypox). Licence TwinPanel 1.0 : voir le fichier LICENSE.
+﻿; TwinPanel — © 2026 Georges Christophe (chrypox). Licence TwinPanel 1.1 : voir le fichier LICENSE.
 ; Installateur de TwinPanel (Inno Setup 6 ou 7, gratuit : https://jrsoftware.org/isdl.php).
 ; Compilé par build-installer.bat, qui publie d'abord TwinPanel dans publish\win-x64 et donne la version.
 ; Une nouvelle version = un nouveau TwinPanel-Setup-x.y.z.exe : lancé sur un PC où TwinPanel est déjà installé,

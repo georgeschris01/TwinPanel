@@ -1,5 +1,5 @@
 // TwinPanel — © 2026 Georges Christophe (chrypox). Tous droits réservés.
-// Licence TwinPanel 1.0 (gratuit, non commercial, sans modification) : voir le fichier LICENSE.
+// Licence TwinPanel 1.1 (gratuit, non commercial, sans modification) : voir le fichier LICENSE.
 namespace TwinPanel.Core.About;
 
 /// <summary>
@@ -28,6 +28,7 @@ public static class ReleaseNotes
             L.T("Barre d'adresse : le clic droit (Copier, Coller…) ne referme plus la case."),
             L.T("Colonnes : les colonnes s'élargissent même quand la fenêtre est étroite."),
             L.T("Glisser-déposer : on n'entre dans un dossier que sur son nom, et le dossier visé est entouré."),
+            L.T("Licence TwinPanel 1.1 : précisions ajoutées : usage comme outil de travail en entreprise permis (article 1), responsabilité gardée en cas de dol ou de faute lourde (article 9)."),
         ]);
         return list;
     }

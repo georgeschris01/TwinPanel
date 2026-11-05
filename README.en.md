@@ -599,7 +599,7 @@ Components used and code map: `COMPOSANTS.md` (in French).
 
 ![TwinPanel License](logo/licence/licence-twinpanel.png)
 
-TwinPanel is published under the **TwinPanel License 1.0** — © 2026 Georges Christophe (chrypox). The full French text in the [`LICENSE`](LICENSE) file is the only one that prevails; [`LICENSE.en.txt`](LICENSE.en.txt) is a courtesy translation. In short:
+TwinPanel is published under the **TwinPanel License 1.1** — © 2026 Georges Christophe (chrypox). The full French text in the [`LICENSE`](LICENSE) file is the only one that prevails; [`LICENSE.en.txt`](LICENSE.en.txt) is a courtesy translation. In short:
 
 - **Free**: free use, also in companies and internally; forbidden to sell it, rent it out or include it in a paid offering.
 - **Sharing**: only the original version, complete, free of charge and with the license.

@@ -1,5 +1,5 @@
 // TwinPanel — © 2026 Georges Christophe (chrypox). Tous droits réservés.
-// Licence TwinPanel 1.0 (gratuit, non commercial, sans modification) : voir le fichier LICENSE.
+// Licence TwinPanel 1.1 (gratuit, non commercial, sans modification) : voir le fichier LICENSE.
 namespace TwinPanel.Core.Terminal;
 
 /// <summary>Hauteur du panneau des terminaux : celle que l'utilisateur a choisie, gardée d'une fois à l'autre.</summary>
