@@ -17,3 +17,6 @@ JOURNAL.md
 CLAUDE.md
 .claude/
 dist/
+
+# Textes de promotion (Product Hunt), hors dépôt
+producthunt-*.txt
