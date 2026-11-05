@@ -21,7 +21,8 @@ agree to comply strictly with the following terms:
    Any person, association, public body or company may use it free of
    charge, including for their work and internally, provided they do not
    resell it, rent it out, charge for it or include it in a paid product
-   or service.
+   or service. Using TwinPanel as a work tool, including in a company that
+   makes a profit, is permitted.
 
 2. SHARING THE SOFTWARE: The software may be shared free of charge, in its
    original version published by the author, complete and unmodified,
@@ -78,8 +79,9 @@ agree to comply strictly with the following terms:
    possible: adding the required notice, replacing or removing the element.
 
 9. NO WARRANTY: The software is provided "as is", without warranty of any
-   kind. To the extent permitted by law, the author cannot be held liable
-   for damage or data loss related to its use.
+   kind. To the fullest extent permitted by applicable law, and except in
+   the case of fraud (dol) or gross negligence (faute lourde), the author
+   cannot be held liable for damage or data loss related to its use.
 
 10. TERMINATION: In the event of non-compliance with this agreement, the
     rights granted end automatically.
