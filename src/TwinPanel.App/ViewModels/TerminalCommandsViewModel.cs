@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using TwinPanel.App.Services;
+using TwinPanel.Core.Remote;
 using TwinPanel.Core.Settings;
 using TwinPanel.Core.Terminal;
 
@@ -14,7 +15,9 @@ public sealed class TerminalCommandRow(SavedTerminalCommand command)
 {
     public SavedTerminalCommand Command { get; } = command;
     public string Name => Command.Name;
-    public string Text => Command.Command;
+    /// <summary>Une commande secrète n'est jamais affichée.</summary>
+    public string Text => Command.Secret ? "••••••••" : Command.Command;
+    public bool IsSecret => Command.Secret;
     public string Scope => Command.ServerId is null ? string.Empty : L.F("Seulement sur {0}", Command.ServerName);
     public bool HasScope => Command.ServerId is not null;
 }
@@ -27,15 +30,20 @@ public sealed partial class TerminalCommandsViewModel : ObservableObject
     private readonly Func<TerminalSettings> _settings;
     private readonly Action _save;
     private readonly Action<string> _status;
+    private readonly Func<SecretVault?> _vault;
+    private readonly Func<SecretVault, Task<bool>> _unlock;
     private SavedTerminalCommand? _editing;
 
-    public TerminalCommandsViewModel(TerminalPanelViewModel panel, IDialogService dialogs, Func<TerminalSettings> settings, Action save, Action<string> status)
+    public TerminalCommandsViewModel(TerminalPanelViewModel panel, IDialogService dialogs, Func<TerminalSettings> settings, Action save, Action<string> status,
+                                     Func<SecretVault?> vault, Func<SecretVault, Task<bool>> unlock)
     {
         _panel = panel;
         _dialogs = dialogs;
         _settings = settings;
         _save = save;
         _status = status;
+        _vault = vault;
+        _unlock = unlock;
         panel.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(TerminalPanelViewModel.Selected)) Refresh();
@@ -49,6 +57,16 @@ public sealed partial class TerminalCommandsViewModel : ObservableObject
     [ObservableProperty] private string _editCommand = string.Empty;
     [ObservableProperty] private bool _editAskFirst;
     [ObservableProperty] private bool _editServerOnly;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(EditPasswordChar))] private bool _editSecret;
+    [ObservableProperty] private bool _editReveal;
+
+    /// <summary>Texte d'une commande secrète caché pendant qu'on le tape (sauf « Afficher »).</summary>
+    public char EditPasswordChar => EditSecret ? '•' : '\0';
+
+    partial void OnEditSecretChanged(bool value)
+    {
+        if (!value) EditReveal = false;
+    }
 
     public bool IsEmpty => Rows.Count == 0;
 
@@ -88,19 +106,58 @@ public sealed partial class TerminalCommandsViewModel : ObservableObject
         EditCommand = string.Empty;
         EditAskFirst = false;
         EditServerOnly = false;
+        EditSecret = false;
+        EditReveal = false;
         OpenForm();
     }
 
     [RelayCommand]
-    private void StartEdit(TerminalCommandRow? row)
+    private async Task StartEdit(TerminalCommandRow? row)
     {
         if (row is null) return;
+        // Une commande secrète : son texte est lu dans le coffre (déverrouillé si besoin). Perdu : on le retape.
+        string text;
+        if (!row.Command.Secret) text = row.Command.Command;
+        else if (await OpenVaultAsync() is null) return;
+        else text = await ReadTextAsync(row.Command) ?? string.Empty;
         _editing = row.Command;
         EditName = row.Command.Name;
-        EditCommand = row.Command.Command;
+        EditCommand = text;
         EditAskFirst = row.Command.AskFirst;
         EditServerOnly = row.Command.ServerId is not null;
+        EditSecret = row.Command.Secret;
+        EditReveal = false;
         OpenForm();
+    }
+
+    /// <summary>Le coffre ouvert ; null s'il n'est pas disponible ou que l'utilisateur renonce.</summary>
+    private async Task<SecretVault?> OpenVaultAsync()
+    {
+        if (_vault() is not { } vault)
+        {
+            _status(L.T("Le coffre des mots de passe n'est pas disponible."));
+            return null;
+        }
+        return vault.IsUnlocked || await _unlock(vault) ? vault : null;
+    }
+
+    /// <summary>Texte de la commande ; null (avec un message) s'il n'a pas pu être lu.</summary>
+    private async Task<string?> ReadTextAsync(SavedTerminalCommand command)
+    {
+        if (!command.Secret) return command.Command;
+        if (await OpenVaultAsync() is not { } vault) return null;
+        try
+        {
+            if (TerminalCommandSecrets.Text(command, vault) is { } text) return text;
+            _status(L.F("Le texte de « {0} » n'est plus dans le coffre : modifie la commande pour le retaper.", command.Name));
+            return null;
+        }
+        catch (Exception ex) when (ex is VaultLockedException or VaultKeyringException or InvalidOperationException
+                                       or System.Security.Cryptography.CryptographicException or FormatException)
+        {
+            _status(ex.Message);
+            return null;
+        }
     }
 
     private void OpenForm()
@@ -111,10 +168,15 @@ public sealed partial class TerminalCommandsViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void CancelEdit() => IsEditing = false;
+    private void CancelEdit()
+    {
+        IsEditing = false;
+        EditCommand = string.Empty;
+        EditReveal = false;
+    }
 
     [RelayCommand]
-    private void SaveEdit()
+    private async Task SaveEdit()
     {
         var text = EditCommand.TrimEnd();
         if (text.Trim().Length == 0)
@@ -122,15 +184,25 @@ public sealed partial class TerminalCommandsViewModel : ObservableObject
             _status(L.T("Écris d'abord la commande."));
             return;
         }
-        var command = _editing;
-        if (command is null)
+        if (EditSecret && EditName.Trim().Length == 0)
         {
-            command = new SavedTerminalCommand();
-            _settings().SavedCommands.Add(command);
+            // Sans nom, la commande elle-même servirait de nom : un mot de passe s'afficherait.
+            _status(L.T("Donne un nom à une commande secrète."));
+            return;
         }
+        var command = _editing ?? new SavedTerminalCommand();
+        SecretVault? vault = null;
+        if ((EditSecret || command.Secret) && (vault = await OpenVaultAsync()) is null) return;
+        try { TerminalCommandSecrets.Store(command, text, EditSecret, vault); }
+        catch (Exception ex) when (ex is VaultLockedException or VaultKeyringException or InvalidOperationException
+                                       or System.Security.Cryptography.CryptographicException or IOException or UnauthorizedAccessException)
+        {
+            _status(ex.Message);
+            return;
+        }
+        if (_editing is null) _settings().SavedCommands.Add(command);
         // Sans nom, la commande elle-même sert de nom.
         command.Name = EditName.Trim().Length > 0 ? EditName.Trim() : text.Split('\n')[0].Trim();
-        command.Command = text;
         command.AskFirst = EditAskFirst;
         if (!EditServerOnly)
         {
@@ -143,6 +215,8 @@ public sealed partial class TerminalCommandsViewModel : ObservableObject
             command.ServerName = tab.ServerName;
         }
         IsEditing = false;
+        EditCommand = string.Empty; // le secret ne reste pas dans le formulaire
+        EditReveal = false;
         _save();
         Refresh();
     }
@@ -152,6 +226,7 @@ public sealed partial class TerminalCommandsViewModel : ObservableObject
     {
         if (row is null || !await _dialogs.ConfirmAsync(L.T("Supprimer la commande"), L.F("Supprimer « {0} » ?", row.Name))) return;
         _settings().SavedCommands.Remove(row.Command);
+        TerminalCommandSecrets.Forget(row.Command, _vault());
         _save();
         Refresh();
     }
@@ -165,16 +240,18 @@ public sealed partial class TerminalCommandsViewModel : ObservableObject
             _status(L.T("Aucun terminal en marche pour lancer cette commande."));
             return;
         }
-        if (row.Command.AskFirst && !await _dialogs.ConfirmAsync(L.T("Lancer la commande"), L.F("Lancer cette commande ?\n\n{0}", row.Text))) return;
+        if (row.Command.AskFirst && !await _dialogs.ConfirmAsync(L.T("Lancer la commande"),
+                L.F("Lancer cette commande ?\n\n{0}", row.IsSecret ? row.Name : row.Text))) return;
+        if (await ReadTextAsync(row.Command) is not { } text) return;
         bool bracketed;
         lock (session.Gate) bracketed = session.Screen.BracketedPaste;
-        session.Send(TerminalCommands.Input(row.Text, bracketed));
+        session.Send(TerminalCommands.Input(text, bracketed));
         _panel.RequestFocus();
     }
 
     [RelayCommand]
-    private void CopyText(TerminalCommandRow? row)
+    private async Task CopyText(TerminalCommandRow? row)
     {
-        if (row is not null) _panel.RequestCopy(row.Text);
+        if (row is not null && await ReadTextAsync(row.Command) is { } text) _panel.RequestCopy(text);
     }
 }

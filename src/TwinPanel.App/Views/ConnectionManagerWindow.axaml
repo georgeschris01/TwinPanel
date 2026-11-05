@@ -452,6 +452,12 @@
           <Button Content="{l:T 'Retirer le mot de passe maître'}" Command="{Binding RemoveMasterPasswordCommand}" IsEnabled="{Binding HasMaster}" Margin="0,0,8,8" />
           <Button Content="{l:T 'Verrouiller maintenant'}" Command="{Binding LockVaultCommand}" IsEnabled="{Binding HasMaster}" Margin="0,0,8,8" />
         </WrapPanel>
+        <TextBlock Classes="section" Text="{l:T 'Code de secours'}" IsVisible="{Binding HasMaster}" />
+        <TextBlock Text="{Binding RecoveryStatus}" TextWrapping="Wrap" IsVisible="{Binding HasMaster}" />
+        <WrapPanel IsVisible="{Binding HasMaster}">
+          <Button Content="{l:T 'Créer un nouveau code de secours…'}" Command="{Binding CreateRecoveryCodeCommand}" Margin="0,0,8,8" />
+          <Button Content="{l:T 'Mot de passe maître oublié ?'}" Command="{Binding ForgotMasterPasswordCommand}" Margin="0,0,8,8" />
+        </WrapPanel>
         <StackPanel Orientation="Horizontal" Spacing="8" IsEnabled="{Binding HasMaster}">
           <TextBlock Text="{l:T 'Verrouiller automatiquement après'}" VerticalAlignment="Center" />
           <NumericUpDown Value="{Binding AutoLockMinutes}" Minimum="0" Maximum="1440" FormatString="0" Width="130" />

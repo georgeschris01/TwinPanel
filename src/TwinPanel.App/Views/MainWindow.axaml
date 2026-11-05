@@ -334,7 +334,10 @@
                 <!-- Ajouter ou modifier -->
                 <StackPanel Spacing="4" Margin="0,0,10,0" IsVisible="{Binding IsEditing}">
                   <TextBox Text="{Binding EditName}" PlaceholderText="{l:T 'Nom (facultatif)'}" />
-                  <TextBox Text="{Binding EditCommand}" PlaceholderText="{l:T 'Commande'}" AcceptsReturn="True" TextWrapping="Wrap" MaxHeight="90" FontFamily="Cascadia Mono, Consolas, Courier New" />
+                  <TextBox Text="{Binding EditCommand}" PlaceholderText="{l:T 'Commande'}" AcceptsReturn="True" TextWrapping="Wrap" MaxHeight="90" FontFamily="Cascadia Mono, Consolas, Courier New"
+                           PasswordChar="{Binding EditPasswordChar}" RevealPassword="{Binding EditReveal}" />
+                  <CheckBox Content="{l:T 'Secret (mot de passe) : rangé dans le coffre chiffré, caché à l\'écran'}" IsChecked="{Binding EditSecret}" />
+                  <CheckBox Content="{l:T 'Afficher'}" IsChecked="{Binding EditReveal}" IsVisible="{Binding EditSecret}" Margin="20,0,0,0" />
                   <CheckBox Content="{l:T 'Demander avant de lancer'}" IsChecked="{Binding EditAskFirst}" />
                   <CheckBox Content="{Binding ServerOnlyLabel}" IsChecked="{Binding EditServerOnly}" IsVisible="{Binding CanLimitToServer}" />
                   <TextBlock Classes="subtle" TextWrapping="Wrap" FontSize="11" Text="{l:T 'Enregistrée en clair : jamais de mot de passe ici.'}" />

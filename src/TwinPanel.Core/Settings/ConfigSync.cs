@@ -158,11 +158,15 @@ public static class ConfigSync
             package.Certificates = [.. store.KnownHosts.Certificates];
         }
         if (parts.HasFlag(TransferParts.Tabs)) package.Tabs = TabTransfer.Capture(settings.Left, settings.Right, id => store.FindProfile(id));
+        var secrets = new Dictionary<string, string>();
+        void Take(string id) { if (store.Vault.Get(id) is { } value) secrets[id] = value; }
+        // Commandes secrètes du terminal : leur texte voyage avec les réglages, chiffré comme les mots de passe.
+        if (package.HasSettings)
+            foreach (var c in settings.Terminal.SavedCommands.Where(c => c.Secret)) Take(TwinPanel.Core.Terminal.TerminalCommandSecrets.VaultId(c));
+        package.Secrets = secrets;
         if (!package.HasConnections) return package;
 
         var connections = store.CopyForSync();
-        var secrets = new Dictionary<string, string>();
-        void Take(string id) { if (store.Vault.Get(id) is { } value) secrets[id] = value; }
         foreach (var p in connections.Profiles)
         {
             Take(SecretIds.Password(p.Id));
@@ -176,7 +180,6 @@ public static class ConfigSync
         }
         foreach (var i in connections.Identities) Take(SecretIds.IdentityPassword(i.Id));
         package.Connections = connections;
-        package.Secrets = secrets;
         return package;
     }
 
@@ -249,6 +252,25 @@ public static class ConfigSync
         if (parts.HasFlag(TransferParts.KnownHosts) && package.HasKnownHosts) store.KnownHosts.Merge(package.KnownHosts, package.Certificates);
         return count;
     }
+
+    /// <summary>Range dans le coffre le texte des commandes secrètes reçues avec les réglages. Retourne leur nombre.</summary>
+    public static int ApplyCommandSecrets(SyncPackage package, ConnectionStore store)
+    {
+        int count = 0;
+        foreach (var c in package.Settings.SavedCommands.Where(c => c.Secret))
+        {
+            var id = TwinPanel.Core.Terminal.TerminalCommandSecrets.VaultId(c);
+            if (!package.Secrets.TryGetValue(id, out var text)) continue;
+            store.Vault.Set(id, text);
+            count++;
+        }
+        return count;
+    }
+
+    /// <summary>Une commande secrète part avec les réglages : il faut alors le coffre ouvert.</summary>
+    public static bool NeedsVault(AppSettings settings, TransferParts parts) =>
+        parts.HasFlag(TransferParts.Connections)
+        || (parts.HasFlag(TransferParts.Settings) && settings.Terminal.SavedCommands.Any(c => c.Secret));
 
     private static byte[] DeriveKey(string passphrase, byte[] salt, int iterations) =>
         Rfc2898DeriveBytes.Pbkdf2(passphrase, salt, iterations, HashAlgorithmName.SHA256, 32);

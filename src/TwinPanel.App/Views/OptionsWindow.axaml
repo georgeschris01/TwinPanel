@@ -445,6 +445,28 @@
           </StackPanel>
         </ScrollViewer>
       </TabItem>
+
+      <!-- ============ Sécurité ============ -->
+      <TabItem Header="{l:T 'Sécurité'}">
+        <ScrollViewer>
+          <StackPanel Margin="16,0" MaxWidth="640" HorizontalAlignment="Left" Spacing="10">
+            <TextBlock Classes="h" Text="{l:T 'Coffre des mots de passe'}" />
+            <TextBlock TextWrapping="Wrap" Text="{Binding VaultStatus}" />
+            <TextBlock TextWrapping="Wrap" Classes="subtle" Text="{l:T 'Mots de passe des connexions, clés privées, phrases de passe et commandes secrètes du terminal y sont chiffrés, jamais en clair.'}" />
+            <TextBlock Classes="label" Text="{l:T 'Mot de passe maître'}" />
+            <WrapPanel>
+              <Button Content="{l:T 'Définir / changer le mot de passe maître…'}" Classes="accent" Command="{Binding SetMasterPasswordCommand}" Margin="0,0,8,8" />
+              <Button Content="{l:T 'Mot de passe maître oublié ?'}" Command="{Binding ForgotMasterPasswordCommand}" IsEnabled="{Binding HasMaster}" Margin="0,0,8,8" />
+            </WrapPanel>
+            <TextBlock Classes="label" Text="{l:T 'Code de secours'}" />
+            <TextBlock TextWrapping="Wrap" Text="{Binding RecoveryStatus}" />
+            <WrapPanel>
+              <Button Content="{l:T 'Créer un nouveau code de secours…'}" Command="{Binding CreateRecoveryCodeCommand}" IsEnabled="{Binding HasMaster}" Margin="0,0,8,8" />
+            </WrapPanel>
+            <TextBlock TextWrapping="Wrap" Classes="subtle" Text="{l:T 'Retirer le mot de passe maître, verrouiller le coffre ou régler le verrouillage automatique : Gestionnaire de connexions (Ctrl+F), partie Coffre.'}" />
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
     </TabControl>
   </DockPanel>
 </Window>

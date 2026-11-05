@@ -19,6 +19,7 @@ public static class SecretIds
     public static string KeyMaterial(Guid key) => $"key:{key:N}";
     public static string KeyPassphrase(Guid key) => $"keypass:{key:N}";
     public static string IdentityPassword(Guid identity) => $"idpwd:{identity:N}";
+    public static string TerminalCommand(Guid command) => $"cmd:{command:N}";
 }
 
 /// <summary>Chiffrement lié au compte de l'utilisateur : DPAPI sous Windows, trousseau sous Linux. S'il est indisponible, le mot de passe maître devient obligatoire.</summary>
@@ -64,6 +65,7 @@ public sealed class SecretVault
     private VaultFile _file = new();
     private byte[]? _masterKey;
     private DateTime _lastUseUtc = DateTime.UtcNow;
+    private (DateTime, long)? _stamp;
 
     public SecretVault(string path, IUserDataProtector? protector = null)
     {
@@ -73,23 +75,27 @@ public sealed class SecretVault
     }
 
     /// <summary>Un mot de passe maître protège le coffre.</summary>
-    public bool HasMasterPassword => _file.Master is not null;
+    public bool HasMasterPassword { get { lock (_gate) { Refresh(); return _file.Master is not null; } } }
     /// <summary>Vrai si les secrets sont lisibles maintenant.</summary>
-    public bool IsUnlocked { get { lock (_gate) { CheckAutoLock(); return _file.Master is null || _masterKey is not null; } } }
+    public bool IsUnlocked { get { lock (_gate) { Refresh(); CheckAutoLock(); return _file.Master is null || _masterKey is not null; } } }
     /// <summary>Le coffre peut-il fonctionner sans mot de passe maître ?</summary>
     public bool CanWorkWithoutMaster => _protector.IsAvailable;
     /// <summary>Les secrets sont aussi protégés par le compte de l'utilisateur.</summary>
-    public bool UsesAccountProtection { get { lock (_gate) return Layered; } }
+    public bool UsesAccountProtection { get { lock (_gate) { Refresh(); return Layered; } } }
     /// <summary>Verrouillage automatique après ce délai sans utilisation (0 : jamais).</summary>
-    public int AutoLockMinutes { get => _file.AutoLockMinutes; set { lock (_gate) { _file.AutoLockMinutes = Math.Max(0, value); Save(); } } }
+    public int AutoLockMinutes { get { lock (_gate) { Refresh(); return _file.AutoLockMinutes; } } set { lock (_gate) { Refresh(); _file.AutoLockMinutes = Math.Max(0, value); Save(); } } }
 
-    public bool Contains(string id) { lock (_gate) return _file.Items.ContainsKey(id); }
+    /// <summary>Un code de secours permet de retrouver le coffre si le mot de passe maître est oublié.</summary>
+    public bool HasRecoveryCode { get { lock (_gate) { Refresh(); return _file.Master?.Recovery is not null; } } }
+
+    public bool Contains(string id) { lock (_gate) { Refresh(); return _file.Items.ContainsKey(id); } }
 
     /// <summary>Lit un secret ; null s'il n'existe pas. Lève <see cref="VaultLockedException"/> si le coffre est verrouillé.</summary>
     public string? Get(string id)
     {
         lock (_gate)
         {
+            Refresh();
             CheckAutoLock();
             if (!_file.Items.TryGetValue(id, out var b64)) return null;
             var plain = Decrypt(Convert.FromBase64String(b64));
@@ -103,6 +109,7 @@ public sealed class SecretVault
     {
         lock (_gate)
         {
+            Refresh();
             CheckAutoLock();
             if (string.IsNullOrEmpty(value)) { if (_file.Items.Remove(id)) Save(); return; }
             var plain = Encoding.UTF8.GetBytes(value);
@@ -114,7 +121,7 @@ public sealed class SecretVault
 
     public void Remove(string id)
     {
-        lock (_gate) { if (_file.Items.Remove(id)) Save(); }
+        lock (_gate) { Refresh(); if (_file.Items.Remove(id)) Save(); }
     }
 
     /// <summary>Supprime tous les secrets dont le nom commence par ce préfixe… pour un identifiant donné (ex. tous ceux d'une connexion).</summary>
@@ -123,6 +130,7 @@ public sealed class SecretVault
         var suffix = ":" + owner.ToString("N");
         lock (_gate)
         {
+            Refresh();
             var ids = _file.Items.Keys.Where(k => k.EndsWith(suffix, StringComparison.Ordinal)).ToList();
             foreach (var k in ids) _file.Items.Remove(k);
             if (ids.Count > 0) Save();
@@ -134,6 +142,7 @@ public sealed class SecretVault
     {
         lock (_gate)
         {
+            Refresh();
             if (_file.Master is not { } m) return true;
             var key = DeriveKey(masterPassword, Convert.FromBase64String(m.Salt), m.Iterations);
             try
@@ -153,6 +162,88 @@ public sealed class SecretVault
         }
     }
 
+    /// <summary>
+    /// Crée un nouveau code de secours (l'ancien ne marche plus) et le rend : il n'est montré qu'une fois.
+    /// Il ouvre la clé du mot de passe maître, mais pas la protection du compte (Windows / trousseau) : volé seul, il ne sert à rien.
+    /// Le coffre doit avoir un mot de passe maître et être déverrouillé.
+    /// </summary>
+    public string CreateRecoveryCode()
+    {
+        lock (_gate)
+        {
+            Refresh();
+            CheckAutoLock();
+            if (_file.Master is not { } master) throw new InvalidOperationException(L.T("Il faut d'abord un mot de passe maître."));
+            if (_masterKey is null) throw new VaultLockedException();
+            var code = RecoveryCodes.New();
+            var salt = RandomNumberGenerator.GetBytes(16);
+            var key = DeriveKey(RecoveryCodes.Normalize(code), salt, Iterations);
+            try
+            {
+                master.Recovery = new RecoveryInfo
+                {
+                    Salt = Convert.ToBase64String(salt),
+                    Iterations = Iterations,
+                    Wrapped = Convert.ToBase64String(AesSeal(key, _masterKey)),
+                };
+            }
+            finally { CryptographicOperations.ZeroMemory(key); }
+            Save();
+            return code;
+        }
+    }
+
+    /// <summary>Mot de passe maître oublié : déverrouille avec le code de secours. Retourne false s'il est faux (ou s'il n'y en a pas).</summary>
+    public bool UnlockWithRecoveryCode(string code)
+    {
+        lock (_gate)
+        {
+            Refresh();
+            if (_file.Master is not { Recovery: { } recovery } master) return false;
+            if (recovery.Iterations is < 1 or > 10_000_000) return false;
+            var key = DeriveKey(RecoveryCodes.Normalize(code), Convert.FromBase64String(recovery.Salt), recovery.Iterations);
+            byte[]? masterKey = null;
+            try
+            {
+                masterKey = AesOpen(key, Convert.FromBase64String(recovery.Wrapped));
+                var check = AesOpen(masterKey, Convert.FromBase64String(master.Check));
+                if (!CryptographicOperations.FixedTimeEquals(check, CheckPlain)) { CryptographicOperations.ZeroMemory(masterKey); return false; }
+            }
+            catch (Exception ex) when (ex is CryptographicException or ArgumentException or FormatException)
+            {
+                if (masterKey is not null) CryptographicOperations.ZeroMemory(masterKey);
+                return false;
+            }
+            finally { CryptographicOperations.ZeroMemory(key); }
+            ForgetKey();
+            _masterKey = masterKey;
+            _lastUseUtc = DateTime.UtcNow;
+            return true;
+        }
+    }
+
+    /// <summary>
+    /// Mot de passe maître oublié, sans code de secours : tous les secrets sont effacés et le coffre repart vide, sans mot de passe maître.
+    /// L'ancien fichier est d'abord copié à côté (au cas où le mot de passe reviendrait) : son chemin est rendu.
+    /// </summary>
+    public string? ResetForgotten()
+    {
+        lock (_gate)
+        {
+            Refresh();
+            string? kept = null;
+            if (File.Exists(_path))
+            {
+                kept = $"{_path}.oublie-{DateTime.Now:yyyyMMdd-HHmmss}";
+                File.Copy(_path, kept, overwrite: true);
+            }
+            ForgetKey();
+            _file = new VaultFile { AutoLockMinutes = _file.AutoLockMinutes };
+            Save();
+            return kept;
+        }
+    }
+
     /// <summary>Oublie la clé maître en mémoire (les secrets redeviennent illisibles jusqu'au prochain déverrouillage).</summary>
     public void Lock()
     {
@@ -167,6 +258,7 @@ public sealed class SecretVault
     {
         lock (_gate)
         {
+            Refresh();
             CheckAutoLock();
             if (string.IsNullOrEmpty(newPassword) && !_protector.IsAvailable)
                 throw new InvalidOperationException(L.T("Sur ce système, le mot de passe maître est obligatoire."));
@@ -281,6 +373,7 @@ public sealed class SecretVault
 
     private void Load()
     {
+        _stamp = Stamp();
         if (!File.Exists(_path)) return;
         try { _file = JsonSerializer.Deserialize<VaultFile>(File.ReadAllText(_path)) ?? new VaultFile(); }
         catch (JsonException)
@@ -289,6 +382,38 @@ public sealed class SecretVault
             File.Copy(_path, _path + ".illisible", overwrite: true);
             _file = new VaultFile();
         }
+    }
+
+    /// <summary>Date et taille du fichier : un changement veut dire qu'un autre TwinPanel ouvert l'a réécrit.</summary>
+    private (DateTime, long)? Stamp()
+    {
+        try
+        {
+            var info = new FileInfo(_path);
+            return info.Exists ? (info.LastWriteTimeUtc, info.Length) : null;
+        }
+        catch (IOException) { return _stamp; }
+        catch (UnauthorizedAccessException) { return _stamp; }
+    }
+
+    /// <summary>
+    /// Relit le coffre s'il a été réécrit par un autre TwinPanel ouvert : sinon, le dernier qui enregistre effacerait les changements de l'autre.
+    /// Si le mot de passe maître a changé entre-temps, le coffre se verrouille : il faudra le nouveau.
+    /// Un fichier illisible pour un instant (en cours de remplacement) est relu à la prochaine occasion.
+    /// </summary>
+    private void Refresh()
+    {
+        var stamp = Stamp();
+        if (stamp == _stamp) return;
+        VaultFile fresh;
+        try
+        {
+            fresh = stamp is null ? new VaultFile() : JsonSerializer.Deserialize<VaultFile>(File.ReadAllText(_path)) ?? new VaultFile();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException) { return; }
+        if (fresh.Master?.Salt != _file.Master?.Salt || fresh.Master?.Check != _file.Master?.Check) ForgetKey();
+        _file = fresh;
+        _stamp = stamp;
     }
 
     private void Save()
@@ -302,6 +427,7 @@ public sealed class SecretVault
         if (!OperatingSystem.IsWindows()) options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
         using (var writer = new StreamWriter(tmp, Encoding.UTF8, options)) writer.Write(text);
         File.Move(tmp, _path, overwrite: true);
+        _stamp = Stamp();
     }
 
     private sealed class VaultFile
@@ -319,5 +445,14 @@ public sealed class SecretVault
         public string Salt { get; set; } = string.Empty;
         public int Iterations { get; set; }
         public string Check { get; set; } = string.Empty;
+        /// <summary>Clé du mot de passe maître, chiffrée avec le code de secours ; null sans code. Remise à zéro à chaque changement de mot de passe maître.</summary>
+        public RecoveryInfo? Recovery { get; set; }
+    }
+
+    private sealed class RecoveryInfo
+    {
+        public string Salt { get; set; } = string.Empty;
+        public int Iterations { get; set; }
+        public string Wrapped { get; set; } = string.Empty;
     }
 }

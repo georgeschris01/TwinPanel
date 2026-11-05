@@ -18,7 +18,7 @@ namespace TwinPanel.App.Services;
 public sealed class ConnectionPrompts : IConnectionPrompts
 {
     /// <summary>Fenêtre active (le gestionnaire de connexions si ouvert, sinon la fenêtre principale).</summary>
-    private static Window Owner()
+    internal static Window Owner()
     {
         if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             return desktop.Windows.LastOrDefault(w => w.IsActive) ?? desktop.Windows.LastOrDefault(w => w.IsVisible) ?? desktop.MainWindow!;
@@ -124,6 +124,9 @@ public sealed class ConnectionPrompts : IConnectionPrompts
         var error = Dialogs.Text(string.Empty, color: Brushes.IndianRed);
         var unlock = new Button { Content = L.T("Déverrouiller"), IsDefault = true, Classes = { "accent" } };
         var cancel = new Button { Content = L.T("Annuler"), IsCancel = true };
+        var forgot = new Button { Content = L.T("Mot de passe maître oublié ?") };
+        bool wantsHelp = false;
+        forgot.Click += (_, _) => { wantsHelp = true; w.Close(); };
         unlock.Click += async (_, _) =>
         {
             unlock.IsEnabled = false;
@@ -137,9 +140,11 @@ public sealed class ConnectionPrompts : IConnectionPrompts
         cancel.Click += (_, _) => w.Close();
         w.Content = Dialogs.Stack(
             Dialogs.Text(L.T("Les mots de passe enregistrés sont protégés par ton mot de passe maître."), bold: true),
-            box, Dialogs.ShowToggle(box), error, Dialogs.Buttons(unlock, cancel));
+            box, Dialogs.ShowToggle(box), error, Dialogs.Buttons(forgot, unlock, cancel));
         w.Opened += (_, _) => box.Focus();
         await w.ShowDialog(Owner());
+        // Code de secours, ou tout effacer : le coffre est ensuite utilisable.
+        if (wantsHelp) return await new VaultActions(vault).ForgotAsync() && vault.IsUnlocked;
         return ok;
     });
 

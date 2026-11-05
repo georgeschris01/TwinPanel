@@ -28,7 +28,8 @@ public partial class MainWindowViewModel
 
     private TerminalCommandsViewModel CreateTerminalCommands()
     {
-        var commands = new TerminalCommandsViewModel(Terminal, _dialogs, () => _settings.Terminal, SaveTerminalCommands, text => StatusMessage = text);
+        var commands = new TerminalCommandsViewModel(Terminal, _dialogs, () => _settings.Terminal, SaveTerminalCommands, text => StatusMessage = text,
+            () => _connections?.Vault, vault => _prompts?.UnlockVaultAsync(vault) ?? Task.FromResult(false));
         commands.Refresh();
         return commands;
     }

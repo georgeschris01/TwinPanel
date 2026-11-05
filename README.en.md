@@ -335,6 +335,8 @@ TwinPanel connects over SFTP, SCP, FTP, FTPS and WebDAV. A server is used like a
 
 Saved passwords are encrypted in a vault tied to your Windows account, or to the desktop keyring on Linux, with an optional master password. Exported connections contain no secret.
 
+The master password is set or changed in Options → Security (or Connection manager, Vault section). TwinPanel then gives a **recovery code** of 24 characters (letters, digits and special characters), shown only once: write it down, copy it or **save it** to a file, preferably away from the PC (USB stick). If you forget the master password, click **Forgot the master password?** in the window that asks for it: with the recovery code, you choose a new password without losing anything. A new code replaces the old one each time the master password changes.
+
 At the first SSH connection, compare the server fingerprint before accepting it. If it changes later, TwinPanel blocks the connection and warns you.
 
 ### Files on a server
@@ -436,7 +438,9 @@ The **Commands** button shows or hides a panel to the right of the terminal.
 - **Ask before running**: a confirmation, useful for `rm` or `reboot`.
 - **Only on this server**: the command only appears on that server. Otherwise it appears everywhere.
 
-Commands are saved as plain text in your settings: never put a password in them.
+- **Secret (password)**: the text of the command is kept in the encrypted vault, never in the settings, and it is hidden on screen (tick **Show** to see it while typing). Give it a name: that is what is displayed. If the vault is locked, TwinPanel asks for the master password before sending the command.
+
+Without the Secret box, commands are saved as plain text in your settings: for a password, always tick **Secret**. A secret command travels with synchronization (encrypted), but not with the settings backup: on another PC, edit it to type its text again.
 
 ### Scrolling back
 
@@ -471,6 +475,7 @@ Everything is set in ≡ → Tools → Options.
 | Terminal | Terminal to open |
 | Backup | Settings, list of connections and open tabs in a single file, as you choose |
 | Synchronization | Encrypted configuration shared between your machines, contents as you choose |
+| Security | Vault master password, recovery code, forgotten master password |
 
 Parameters for buttons and the menu: `%P` active folder, `%N` item name, `%F` its full path, `%T` folder of the other panel, `%S` marked items.
 
@@ -518,7 +523,10 @@ They are encrypted, never written in clear text, and only your account on this P
 
 ### I forgot my master password.
 
-It cannot be recovered: the passwords and keys in the vault are lost. Your connections remain. To start again with an empty vault, close TwinPanel and delete `secrets.dat` in the settings folder.
+Click **Forgot the master password?** ("Vault locked" window, or Options → Security).
+
+- **With your recovery code**: type it (dashes, spaces and capitals do not matter), then choose a new master password. Nothing is lost, and a new recovery code is given to you.
+- **Without a recovery code**: nobody can read the vault back. **Erase everything and start over** empties the vault: passwords will be asked again and private keys will have to be imported again. Your connections remain, and the old vault is kept alongside (`secrets.dat.oublie-…`), in case the password comes back to you.
 
 ### I changed a file from a server, but the server did not change.
 

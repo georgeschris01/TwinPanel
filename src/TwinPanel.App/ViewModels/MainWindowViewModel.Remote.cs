@@ -48,7 +48,12 @@ public partial class MainWindowViewModel
         ThumbnailLoader.RemoteIdle = CloseThumbnailConnectionAsync;
         // Barre des lecteurs : toutes les connexions enregistrées (point vert pour celles qui sont ouvertes).
         store.Changed += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(UpdateConnectionButtons);
-        sessions.SessionsChanged += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(UpdateConnectionButtons);
+        sessions.SessionsChanged += (_, _) =>
+        {
+            RememberSessionProfiles();
+            Avalonia.Threading.Dispatcher.UIThread.Post(UpdateConnectionButtons);
+        };
+        RememberSessionProfiles();
         UpdateConnectionButtons();
     }
 
@@ -156,14 +161,26 @@ public partial class MainWindowViewModel
             var path = saved.Path;
             if (PanelRemotePath.TryParse(path, out var remote))
             {
-                var session = _remote?.Find(remote.Session);
-                if (session is null || _connections?.FindProfile(session.Profile.Id) is null) continue;
-                path = SavedRemoteTab.Encode(session.Profile.Id, remote.Path);
+                // Fiche lue aussi dans la mémoire des connexions : quand Windows ferme TwinPanel (installateur,
+                // arrêt du PC), les connexions sont fermées AVANT l'enregistrement des onglets.
+                Guid? profileId = _remote?.Find(remote.Session)?.Profile.Id
+                    ?? (_sessionProfiles.TryGetValue(remote.Session, out var known) ? known : null);
+                if (profileId is not { } id || _connections?.FindProfile(id) is null) continue;
+                path = SavedRemoteTab.Encode(id, remote.Path);
             }
             if (i == state.ActiveTab) active = tabs.Count;
             tabs.Add((saved with { Path = path }).Encode());
         }
         return new PanelState { Tabs = tabs, ActiveTab = active, SortColumn = state.SortColumn, SortDescending = state.SortDescending };
+    }
+
+    /// <summary>Nom court de chaque connexion ouverte depuis le démarrage → sa fiche (gardé après la fermeture de la connexion).</summary>
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, Guid> _sessionProfiles = new(StringComparer.OrdinalIgnoreCase);
+
+    private void RememberSessionProfiles()
+    {
+        if (_remote is null) return;
+        foreach (var s in _remote.Sessions) _sessionProfiles[s.Alias] = s.Profile.Id;
     }
 
     /// <param name="Position">Son rang dans le panneau à la fermeture.</param>
@@ -415,6 +432,7 @@ public partial class MainWindowViewModel
         }
         _remoteEdits?.Forget(session);
         await _remote.CloseAsync(session);
+        _sessionProfiles.TryRemove(session.Alias, out _); // déconnexion voulue : ses onglets partent vers le dossier personnel
         var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         foreach (var panel in new[] { Left, Right })
             foreach (var tab in panel.Tabs.Where(t => (PanelRemotePath.TryParse(t.CurrentPath, out var p) && p.Session.Equals(session.Alias, StringComparison.OrdinalIgnoreCase))

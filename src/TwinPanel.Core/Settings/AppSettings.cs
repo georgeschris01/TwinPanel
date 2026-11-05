@@ -308,8 +308,13 @@ public sealed class TerminalSettings
 /// <summary>Commande enregistrée du terminal.</summary>
 public sealed class SavedTerminalCommand
 {
+    /// <summary>Sert de nom au texte d'une commande secrète dans le coffre.</summary>
+    public Guid Id { get; set; } = Guid.NewGuid();
     public string Name { get; set; } = string.Empty;
+    /// <summary>Vide pour une commande secrète : son texte est dans le coffre.</summary>
     public string Command { get; set; } = string.Empty;
+    /// <summary>Texte rangé dans le coffre chiffré et caché à l'écran (un mot de passe, par exemple).</summary>
+    public bool Secret { get; set; }
     /// <summary>Confirmation avant de lancer (rm, reboot…).</summary>
     public bool AskFirst { get; set; }
     /// <summary>Réservée à ce serveur ; nulle : proposée partout.</summary>

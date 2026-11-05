@@ -274,7 +274,7 @@ public partial class OptionsViewModel : ObservableObject
     private IOptionsHost? _host;
 
     public static IReadOnlyList<string> Pages { get; } =
-        ["Display", "Colors", "Behavior", "Startup", "Shortcuts", "ButtonBar", "StartMenu", "Editors", "Terminal", "Backup", "Sync"];
+        ["Display", "Colors", "Behavior", "Startup", "Shortcuts", "ButtonBar", "StartMenu", "Editors", "Terminal", "Backup", "Sync", "Security"];
 
     public OptionsViewModel(AppSettings settings, ConnectionStore? connections, IDialogService dialogs, string? page = null)
     {
@@ -288,6 +288,7 @@ public partial class OptionsViewModel : ObservableObject
         HangWatchdog.Step($"Options : {Fonts.Count} polices ; chargement des réglages");
         LoadFrom(settings);
         if (connections is not null) SyncFolder = SyncState.Load(connections.Directory).Folder;
+        RefreshVault();
         HangWatchdog.Step("Options : réglages chargés");
         SelectedPage = Math.Max(0, page is null ? 0 : Pages.ToList().IndexOf(page));
     }
@@ -1000,6 +1001,48 @@ public partial class OptionsViewModel : ObservableObject
         await _dialogs.ShowListAsync(L.T("Restaurer les réglages"), msg, details);
     }
 
+    // ---- Sécurité : coffre des mots de passe ----------------------------------------------------------------
+
+    [ObservableProperty] private string _vaultStatus = string.Empty;
+    [ObservableProperty] private string _recoveryStatus = string.Empty;
+    [ObservableProperty] private bool _hasMaster;
+
+    private void RefreshVault()
+    {
+        if (_connections?.Vault is not { } v) { VaultStatus = L.T("Coffre indisponible."); return; }
+        HasMaster = v.HasMasterPassword;
+        VaultStatus = !v.HasMasterPassword
+            ? L.T("Aucun mot de passe maître : les secrets sont protégés par ton compte sur cette machine.")
+            : v.IsUnlocked ? L.T("Protégé par un mot de passe maître. Le coffre est ouvert.") : L.T("Protégé par un mot de passe maître. Le coffre est verrouillé.");
+        RecoveryStatus = !v.HasMasterPassword ? L.T("Il sert quand un mot de passe maître est défini : un code est donné à ce moment-là.")
+            : v.HasRecoveryCode ? L.T("Code de secours : créé. Il permet de choisir un nouveau mot de passe maître si tu l'oublies.")
+            : L.T("Aucun code de secours : si tu oublies ton mot de passe maître, les secrets seront perdus. Crée-en un.");
+    }
+
+    [RelayCommand]
+    private async Task SetMasterPassword()
+    {
+        if (_connections is null) return;
+        if (await new VaultActions(_connections.Vault).ChangeMasterAsync() is { } done) Message = done;
+        RefreshVault();
+    }
+
+    [RelayCommand]
+    private async Task CreateRecoveryCode()
+    {
+        if (_connections is null) return;
+        if (await new VaultActions(_connections.Vault).CreateRecoveryCodeAsync() is { } done) Message = done;
+        RefreshVault();
+    }
+
+    [RelayCommand]
+    private async Task ForgotMasterPassword()
+    {
+        if (_connections is null) return;
+        await new VaultActions(_connections.Vault).ForgotAsync();
+        RefreshVault();
+    }
+
     // ---- Synchronisation entre machines ---------------------------------------------------------------------
 
     [ObservableProperty] private string _syncFolder = string.Empty;
@@ -1080,7 +1123,7 @@ public partial class OptionsViewModel : ObservableObject
         ], L.T("Envoyer"));
         if (chosen is null) return;
         var parts = Parts(chosen);
-        if (parts.HasFlag(TransferParts.Connections) && !await SyncVaultReadyAsync()) return;
+        if (ConfigSync.NeedsVault(_settings, parts) && !await SyncVaultReadyAsync()) return;
         bool isNew = !ConfigSync.Exists(state.Folder);
         if (isNew && !await _dialogs.ConfirmAsync(L.T("Synchronisation"), L.T("Tes connexions, tes clés SSH et tes mots de passe enregistrés vont être chiffrés dans un fichier, avec une phrase secrète que tu vas choisir.\n\nElle te sera demandée à chaque envoi et sur chaque machine. TwinPanel ne la garde pas et ne l'envoie nulle part.\n\nSi tu l'oublies, personne ne pourra plus ouvrir ce fichier. Note-la en lieu sûr.\n\nContinuer ?"))) return;
         if (await AskSyncPassphraseAsync(isNew) is not { } phrase) return;
@@ -1139,6 +1182,7 @@ public partial class OptionsViewModel : ObservableObject
             var restored = SettingsStore.Clone(_settings);
             SaveTo(restored); // ce qui vient d'être modifié ici et ne voyage pas reste affiché
             package.Settings.ApplyTo(restored);
+            ConfigSync.ApplyCommandSecrets(package, connections);
             _settings.Terminal.SavedCommands = restored.Terminal.SavedCommands;
             LoadFrom(restored);
         }

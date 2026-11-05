@@ -53,6 +53,38 @@ public sealed class ConfigSyncTests : IDisposable
     }
 
     [Fact]
+    public void A_secret_terminal_command_travels_with_the_settings_only_inside_the_encrypted_file()
+    {
+        var settings = new AppSettings();
+        var command = new SavedTerminalCommand { Name = "mot de passe" };
+        TwinPanel.Core.Terminal.TerminalCommandSecrets.Store(command, "texte-secret-de-test", secret: true, _windows.Vault);
+        settings.Terminal.SavedCommands.Add(command);
+
+        Send(_windows, settings);
+        Assert.DoesNotContain("texte-secret-de-test", File.ReadAllText(ConfigSync.FilePath(_folder)));
+        var received = ConfigSync.Read(_folder, Phrase);
+        var here = new AppSettings();
+        received.Settings.ApplyTo(here);
+        Assert.Equal(1, ConfigSync.ApplyCommandSecrets(received, _linux));
+
+        var arrived = Assert.Single(here.Terminal.SavedCommands);
+        Assert.True(arrived.Secret);
+        Assert.Equal(string.Empty, arrived.Command);
+        Assert.Equal("texte-secret-de-test", TwinPanel.Core.Terminal.TerminalCommandSecrets.Text(arrived, _linux.Vault));
+    }
+
+    [Fact]
+    public void A_secret_command_needs_the_vault_to_be_sent()
+    {
+        var settings = new AppSettings();
+        Assert.False(ConfigSync.NeedsVault(settings, TransferParts.Settings));
+        settings.Terminal.SavedCommands.Add(new SavedTerminalCommand { Name = "x", Secret = true });
+        Assert.True(ConfigSync.NeedsVault(settings, TransferParts.Settings));
+        Assert.False(ConfigSync.NeedsVault(settings, TransferParts.Tabs));
+        Assert.True(ConfigSync.NeedsVault(new AppSettings(), TransferParts.Connections));
+    }
+
+    [Fact]
     public void A_password_saved_on_one_machine_is_readable_on_the_other()
     {
         var p = SavedServer();

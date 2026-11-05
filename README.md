@@ -335,6 +335,8 @@ TwinPanel se connecte en SFTP, SCP, FTP, FTPS et WebDAV. Un serveur s'utilise co
 
 Les mots de passe enregistrés sont chiffrés dans un coffre lié à votre compte Windows, ou au trousseau du bureau sous Linux, avec un mot de passe maître facultatif. L'export des connexions ne contient aucun secret.
 
+Le mot de passe maître se définit ou se change dans Options → Sécurité (ou Gestionnaire de connexions, partie Coffre). TwinPanel donne alors un **code de secours** de 24 caractères (lettres, chiffres et caractères spéciaux), montré une seule fois : notez-le, copiez-le ou **enregistrez-le** dans un fichier, de préférence hors du PC (clé USB). Si vous oubliez le mot de passe maître, cliquez sur **Mot de passe maître oublié ?** dans la fenêtre qui le demande : avec le code de secours, vous choisissez un nouveau mot de passe sans rien perdre. Un nouveau code remplace l'ancien à chaque changement du mot de passe maître.
+
 À la première connexion SSH, comparez l'empreinte du serveur avant de l'accepter. Si elle change ensuite, TwinPanel bloque la connexion et vous prévient.
 
 ### Fichiers sur un serveur
@@ -436,7 +438,9 @@ Le bouton **Commandes** affiche ou cache un panneau à droite du terminal.
 - **Demander avant de lancer** : une confirmation, utile pour `rm` ou `reboot`.
 - **Seulement sur ce serveur** : la commande n'apparaît que sur ce serveur. Sinon, elle apparaît partout.
 
-Les commandes sont enregistrées en clair dans tes réglages : n'y mets jamais de mot de passe.
+- **Secret (mot de passe)** : le texte de la commande est rangé dans le coffre chiffré, jamais dans les réglages, et il est caché à l'écran (case **Afficher** pour le voir en le tapant). Donne-lui un nom : c'est lui qui s'affiche. Si le coffre est verrouillé, TwinPanel demande le mot de passe maître avant d'envoyer la commande.
+
+Sans la case Secret, les commandes sont enregistrées en clair dans tes réglages : pour un mot de passe, coche toujours **Secret**. Une commande secrète voyage avec la synchronisation (chiffrée), mais pas avec la sauvegarde des réglages : sur un autre PC, modifie-la pour retaper son texte.
 
 ### Remonter dans le texte
 
@@ -471,6 +475,7 @@ Tout se règle dans ≡ → Outils → Options.
 | Terminal | Terminal à ouvrir |
 | Sauvegarde | Réglages, liste des connexions et onglets ouverts dans un seul fichier, au choix |
 | Synchronisation | Configuration chiffrée partagée entre vos machines, contenu au choix |
+| Sécurité | Mot de passe maître du coffre, code de secours, mot de passe maître oublié |
 
 Paramètres des boutons et du menu : `%P` dossier actif, `%N` nom de l'élément, `%F` son chemin complet, `%T` dossier de l'autre panneau, `%S` éléments marqués.
 
@@ -518,7 +523,10 @@ Ils sont chiffrés, jamais écrits en clair, et seul votre compte sur ce PC peut
 
 ### J'ai oublié mon mot de passe maître.
 
-Il ne peut pas être récupéré : les mots de passe et les clés du coffre sont perdus. Vos connexions restent. Pour repartir d'un coffre vide, fermez TwinPanel et supprimez `secrets.dat` dans le dossier des réglages.
+Cliquez sur **Mot de passe maître oublié ?** (fenêtre « Coffre verrouillé », ou Options → Sécurité).
+
+- **Avec votre code de secours** : tapez-le (tirets, espaces et majuscules ne comptent pas), puis choisissez un nouveau mot de passe maître. Rien n'est perdu, et un nouveau code de secours vous est donné.
+- **Sans code de secours** : personne ne peut relire le coffre. **Tout effacer et recommencer** vide le coffre : les mots de passe seront redemandés et les clés privées seront à réimporter. Vos connexions restent, et l'ancien coffre est gardé à côté (`secrets.dat.oublie-…`), au cas où le mot de passe vous reviendrait.
 
 ### J'ai modifié un fichier d'un serveur, mais le serveur n'a pas changé.
 

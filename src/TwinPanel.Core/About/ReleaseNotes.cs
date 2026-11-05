@@ -15,6 +15,8 @@ public static class ReleaseNotes
         var list = new List<string>
         {
             L.T("Les onglets de serveur et les terminaux ne sont plus perdus si TwinPanel se ferme pendant le démarrage."),
+            L.T("Les onglets de serveur ne sont plus perdus quand le système ferme TwinPanel (installation d'une nouvelle version, arrêt de l'ordinateur)."),
+            L.T("Deux fenêtres TwinPanel ouvertes en même temps n'effacent plus les mots de passe enregistrés par l'autre ; un changement du mot de passe maître dans l'une verrouille l'autre."),
         };
         if (windows) list.Add(L.T("« Lancer TwinPanel » à la fin de l'installation l'ouvre avec les droits de l'utilisateur, plus en administrateur."));
         list.AddRange(
@@ -41,6 +43,9 @@ public static class ReleaseNotes
         L.T("Lecteurs réseau et connexions de la barre des lecteurs : rangés en les glissant."),
         L.T("Tailles en To à partir de 1 024 Go."),
         L.T("Précédent / Suivant (bouton, souris, Alt+← / Alt+→) : le curseur revient sur l'élément où on était, souvent le dossier dans lequel on était entré, montré au milieu de la liste."),
+        L.T("Commandes enregistrées du terminal : case « Secret » pour un mot de passe, rangé dans le coffre chiffré et caché à l'écran."),
+        L.T("Coffre des mots de passe : code de secours donné avec le mot de passe maître (à noter, copier ou enregistrer), et « Mot de passe maître oublié ? »."),
+        L.T("Options → Sécurité : mot de passe maître, code de secours, mot de passe maître oublié."),
         L.T("« Nouveautés de cette version » dans « À propos »."),
         L.T("« À propos » : total des téléchargements de TwinPanel pour le système utilisé (toutes versions), lu sur GitHub (rien n'est envoyé)."),
     ];

@@ -111,6 +111,7 @@ public partial class ConnectionManagerViewModel : ObservableObject
     [ObservableProperty] private TrustedCertificate? _selectedCertificate;
     [ObservableProperty] private string _vaultStatus = string.Empty;
     [ObservableProperty] private bool _hasMaster;
+    [ObservableProperty] private string _recoveryStatus = string.Empty;
     [ObservableProperty] private decimal? _autoLockMinutes;
 
     // Identité en cours de modification (onglet Trousseau)
@@ -762,6 +763,9 @@ public partial class ConnectionManagerViewModel : ObservableObject
         var v = _store.Vault;
         HasMaster = v.HasMasterPassword;
         AutoLockMinutes = v.AutoLockMinutes;
+        RecoveryStatus = !v.HasMasterPassword ? string.Empty
+            : v.HasRecoveryCode ? L.T("Code de secours : créé. Il permet de choisir un nouveau mot de passe maître si tu l'oublies.")
+            : L.T("Aucun code de secours : si tu oublies ton mot de passe maître, les secrets seront perdus. Crée-en un.");
         VaultStatus = OperatingSystem.IsLinux() ? LinuxVaultStatus(v)
             : !v.HasMasterPassword
                 ? L.T("Les secrets sont chiffrés par Windows (DPAPI) : seul ton compte Windows, sur ce PC, peut les lire. Aucun mot de passe maître.")
@@ -793,17 +797,26 @@ public partial class ConnectionManagerViewModel : ObservableObject
     [RelayCommand]
     private async Task SetMasterPassword()
     {
-        if (_store.Vault.HasMasterPassword && !_store.Vault.IsUnlocked && !await _prompts.UnlockVaultAsync(_store.Vault)) return;
-        var first = await _prompts.AskSecretAsync(new SecretRequest(L.T("Mot de passe maître"),
-            L.T("Nouveau mot de passe maître (au moins 8 caractères). ATTENTION : s'il est oublié, les mots de passe enregistrés seront perdus."), false));
-        if (first is null) return;
-        if (first.Value.Length < 8) { Message = L.T("Le mot de passe maître doit avoir au moins 8 caractères."); return; }
-        var second = await _prompts.AskSecretAsync(new SecretRequest(L.T("Mot de passe maître"), L.T("Retape-le pour confirmer :"), false));
-        if (second is null) return;
-        if (second.Value != first.Value) { Message = L.T("Les deux mots de passe ne sont pas identiques."); return; }
         IsBusy = true;
-        try { await Task.Run(() => _store.Vault.SetMasterPassword(first.Value)); Message = L.T("Mot de passe maître enregistré."); }
+        try { if (await new VaultActions(_store.Vault).ChangeMasterAsync() is { } done) Message = done; }
         finally { IsBusy = false; RefreshVault(); }
+    }
+
+    /// <summary>Nouveau code de secours (l'ancien ne marche plus).</summary>
+    [RelayCommand]
+    private async Task CreateRecoveryCode()
+    {
+        if (await new VaultActions(_store.Vault).CreateRecoveryCodeAsync() is { } done) Message = done;
+        RefreshVault();
+    }
+
+    /// <summary>Mot de passe maître oublié : code de secours, sinon tout effacer.</summary>
+    [RelayCommand]
+    private async Task ForgotMasterPassword()
+    {
+        await new VaultActions(_store.Vault).ForgotAsync();
+        RefreshVault();
+        RefreshAll();
     }
 
     [RelayCommand]
