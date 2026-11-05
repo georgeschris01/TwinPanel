@@ -206,6 +206,7 @@ public partial class MainWindowViewModel
         await Left.ReplaceTabsAsync(left, leftActive, set.Left.SortColumn, set.Left.SortDescending);
         await Right.ReplaceTabsAsync(right, rightActive, set.Right.SortColumn, set.Right.SortDescending);
         _unopenedTabs.Clear(); // ils appartenaient à la disposition remplacée
+        _waitingTabs.Clear();
         return leftSkipped + rightSkipped;
     }
 

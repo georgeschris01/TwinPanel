@@ -391,12 +391,18 @@ public sealed class ConnectionStore
 
     public void Save()
     {
-        System.IO.Directory.CreateDirectory(Directory);
-        var tmp = _path + ".tmp";
-        File.WriteAllText(tmp, JsonSerializer.Serialize(_doc, Json));
-        File.Move(tmp, _path, overwrite: true);
+        // Plusieurs connexions peuvent s'ouvrir en même temps (démarrage) : une seule écriture à la fois.
+        lock (_saveGate)
+        {
+            System.IO.Directory.CreateDirectory(Directory);
+            var tmp = _path + ".tmp";
+            File.WriteAllText(tmp, JsonSerializer.Serialize(_doc, Json));
+            File.Move(tmp, _path, overwrite: true);
+        }
         Changed?.Invoke(this, EventArgs.Empty);
     }
+
+    private readonly object _saveGate = new();
 }
 
 /// <summary>Bilan d'une restauration de connexions : noms ajoutés, refusés, à compléter.</summary>

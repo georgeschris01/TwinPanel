@@ -124,6 +124,8 @@
                   <PathIcon Data="{StaticResource IconFolder}" Width="13" Height="13" Foreground="#F2B84B" IsVisible="{Binding !IsLocked}" />
                   <PathIcon Data="{StaticResource IconLock}" Width="12" Height="12" Foreground="#E08A3C" IsVisible="{Binding IsLocked}" ToolTip.Tip="{Binding LockTooltip}" />
                   <views:ScrollingText Text="{Binding DisplayTitle}" VerticalAlignment="Center" MaxWidth="160" ToolTip.Tip="{Binding CurrentPath}" />
+                  <!-- Onglet de serveur qui attend sa connexion au démarrage. -->
+                  <TextBlock Classes="subtle" FontStyle="Italic" Text="{Binding WaitingText}" IsVisible="{Binding IsWaiting}" VerticalAlignment="Center" />
                   <Button Classes="icon small" Width="20" Height="20" Padding="4"
                           ToolTip.Tip="{l:T 'Fermer l\'onglet (Ctrl+W)'}"
                           Command="{Binding $parent[ListBox].DataContext.CloseTabCommand}"
@@ -265,7 +267,7 @@
                   <DataTemplate>
                     <!-- Le Panel accueille la case du renommage ; le texte n'occupe que sa largeur, pour distinguer un clic sur le nom. -->
                     <!-- Bordure : dossier visé pendant un glisser (on n'y entre que sur la colonne Nom). -->
-                    <Border Classes="dropFrame" Classes.dropTarget="{Binding IsDropTarget}">
+                    <Border Classes="dropFrame" Classes.dropTarget="{Binding IsDropTarget}" Classes.arrived="{Binding IsJustArrived}">
                     <Panel>
                       <TextBlock Text="{Binding DisplayName}" Classes="fileName" Classes.marked="{Binding IsMarked}" Classes.colored="{Binding HasNameColor}"
                                  HorizontalAlignment="Left" VerticalAlignment="Center" Margin="4,0" TextTrimming="CharacterEllipsis" />

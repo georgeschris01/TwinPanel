@@ -15,6 +15,9 @@ public partial class FileItemViewModel(FileEntry entry) : ObservableObject
     /// <summary>Dossier visé pendant un glisser de fichiers (bordure sur le nom).</summary>
     [ObservableProperty] private bool _isDropTarget;
 
+    /// <summary>Vient d'arriver par une copie / un déplacement : mis en valeur quelques secondes (rien d'autre ne change).</summary>
+    [ObservableProperty] private bool _isJustArrived;
+
     /// <summary>Couleur de l'icône (règles des Options comprises).</summary>
     public Avalonia.Media.IBrush IconBrush => Converters.FileIcons.BrushFor(Entry);
 

@@ -142,8 +142,8 @@ public partial class MainWindowViewModel : ObservableObject
             left = new PanelState { Tabs = [_settings.Startup.LeftPath], SortColumn = left.SortColumn, SortDescending = left.SortDescending };
             right = new PanelState { Tabs = [_settings.Startup.RightPath], SortColumn = right.SortColumn, SortDescending = right.SortDescending };
         }
-        await Left.InitializeAsync(left, ShowHidden, home);
-        await Right.InitializeAsync(right, ShowHidden, home);
+        // Les deux panneaux en même temps (avant : la droite attendait que toute la gauche soit lue).
+        await Task.WhenAll(Left.InitializeAsync(left, ShowHidden, home), Right.InitializeAsync(right, ShowHidden, home));
         _startupTabsOpened = true;
         if (_settings.Startup.RestoreTabs) await RestoreRemoteTabsAsync(leftRemote, rightRemote);
         await RestoreTerminalsAsync();
@@ -540,9 +540,35 @@ public partial class MainWindowViewModel : ObservableObject
 
         if (sourceFolder is null) ActivePanel.Current.MarkAll(false);
         var title = L.F("{0} de {1} vers {2}", (move ? L.T("Déplacement") : L.T("Copie")), what, dest);
-        Operations.Start(new OperationJobViewModel(title, transfer: true, (progress, ct, pause) => move
+        var job = new OperationJobViewModel(title, transfer: true, (progress, ct, pause) => move
             ? FileOperations.MoveAsync(sources, dest, policy, progress, ct, pause)
-            : FileOperations.CopyAsync(sources, dest, policy, progress, ct, pause)));
+            : FileOperations.CopyAsync(sources, dest, policy, progress, ct, pause));
+        FollowTransfer(job, items, sourceDir, dest);
+        Operations.Start(job);
+    }
+
+    /// <summary>
+    /// Curseur après une copie / un déplacement : dans le panneau d'origine, il reste sur l'élément transféré
+    /// (déplacé : sur la ligne qui le suivait) ; à la fin, dans le panneau qui montre la destination, il va sur l'élément arrivé.
+    /// Le clavier reste dans le panneau d'origine.
+    /// </summary>
+    private void FollowTransfer(OperationJobViewModel job, IReadOnlyList<FileEntry> items, string sourceDir, string destination)
+    {
+        var names = items.Select(i => i.Name).ToList();
+        if (TwinPanel.Core.Navigation.TransferCursor.SameFolder(ActivePanel.Current.CurrentPath, sourceDir))
+            ActivePanel.Current.PointAt(names);
+        job.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName != nameof(OperationJobViewModel.State) || job.State is not (JobState.Done or JobState.Failed)) return;
+            // Même en échec, une partie a pu arriver.
+            Avalonia.Threading.Dispatcher.UIThread.Post(async () =>
+            {
+                foreach (var panel in new[] { Left, Right })
+                    if (TwinPanel.Core.Navigation.TransferCursor.SameFolder(panel.Current.CurrentPath, destination)
+                        && !TwinPanel.Core.Navigation.TransferCursor.SameFolder(destination, sourceDir))
+                        await panel.Current.RevealArrivedAsync(names);
+            });
+        };
     }
 
     [RelayCommand]
@@ -1217,17 +1243,31 @@ public partial class MainWindowViewModel : ObservableObject
         var version = (System.Reflection.CustomAttributeExtensions.GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>(typeof(MainWindowViewModel).Assembly)?.InformationalVersion ?? "?").Split('+')[0];
         return _dialogs.ShowAboutAsync($"TwinPanel {version}",
             L.T("Gestionnaire de fichiers à deux panneaux, gratuit.\nCréé par chrypox, avec l'aide de l'IA Claude Code."),
-            [$".NET {Environment.Version} — {Environment.OSVersion.VersionString}", L.F("Réglages : {0}", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "TwinPanel"))]);
+            [$".NET {Environment.Version} — {Environment.OSVersion.VersionString}", L.F("Réglages : {0}", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "TwinPanel"))],
+            DownloadsTextAsync);
+    }
+
+    /// <summary>« À propos » : total des téléchargements pour ce système, toutes versions, lu sur GitHub (rien n'est envoyé).</summary>
+    private static async Task<string> DownloadsTextAsync(CancellationToken ct)
+    {
+        bool windows = OperatingSystem.IsWindows();
+        if (await TwinPanel.Core.About.DownloadCount.FetchTotalAsync(windows, ct) is not { } total)
+            return L.T("Nombre de téléchargements indisponible (pas d'accès à Internet ou GitHub ne répond pas).");
+        return windows
+            ? L.F("Téléchargements pour Windows : {0:N0}", total)
+            : L.F("Téléchargements pour Linux : {0:N0}", total);
     }
 
     // ---- Menu des onglets (clic droit sur un onglet) ------------------------------------------
 
     public async Task RenameTabAsync(FolderTabViewModel tab)
     {
-        var name = await _dialogs.PromptAsync(L.T("Renommer l'onglet"), L.T("Nom de l'onglet (vide : nom du dossier) :"), tab.CustomName.Length > 0 ? tab.CustomName : tab.Title);
+        // Nom sans nom personnel : celui du dossier verrouillé pour un onglet verrouillé, sinon celui du dossier affiché.
+        var folderName = TwinPanel.Core.Navigation.TabTitle.Display(string.Empty, tab.LockMode, tab.LockedPath, tab.Title);
+        var name = await _dialogs.PromptAsync(L.T("Renommer l'onglet"), L.T("Nom de l'onglet (vide : nom du dossier) :"), tab.DisplayTitle);
         if (name is null) return;
         name = name.Trim();
-        tab.CustomName = name == tab.Title ? string.Empty : name;
+        tab.CustomName = name == folderName ? string.Empty : name;
     }
 
     public async Task CloseTabAsync(FilePanelViewModel panel, FolderTabViewModel tab)

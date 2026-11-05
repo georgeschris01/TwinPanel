@@ -15,6 +15,7 @@
           <SolidColorBrush x:Key="SubtleText">#6B7280</SolidColorBrush>
           <SolidColorBrush x:Key="ChipBackground">#E6EAF0</SolidColorBrush>
           <SolidColorBrush x:Key="HoverFill">#14000000</SolidColorBrush>
+          <SolidColorBrush x:Key="ArrivedFill">#3329A35A</SolidColorBrush>
         </ResourceDictionary>
         <ResourceDictionary x:Key="Dark">
           <SolidColorBrush x:Key="AppBackground">#16181D</SolidColorBrush>
@@ -23,6 +24,7 @@
           <SolidColorBrush x:Key="SubtleText">#9AA3AF</SolidColorBrush>
           <SolidColorBrush x:Key="ChipBackground">#2A2F38</SolidColorBrush>
           <SolidColorBrush x:Key="HoverFill">#1AFFFFFF</SolidColorBrush>
+          <SolidColorBrush x:Key="ArrivedFill">#4D3FB96E</SolidColorBrush>
         </ResourceDictionary>
       </ResourceDictionary.ThemeDictionaries>
 
@@ -137,6 +139,10 @@
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="BorderBrush" Value="Transparent" />
       <Setter Property="CornerRadius" Value="4" />
+    </Style>
+    <!-- Éléments qui viennent d'arriver (copie, déplacement) : mis en valeur quelques secondes. -->
+    <Style Selector="Border.dropFrame.arrived">
+      <Setter Property="Background" Value="{DynamicResource ArrivedFill}" />
     </Style>
     <Style Selector="Border.dropFrame.dropTarget">
       <Setter Property="BorderBrush" Value="{DynamicResource SystemControlHighlightAccentBrush}" />

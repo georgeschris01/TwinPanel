@@ -178,6 +178,11 @@ Les licences des bibliothèques livrées sont **permissives** (MIT, BSD, Apache 
 | `TransferGate.cs` | Nombre de transferts en même temps, ordre d'arrivée, une seule opération par archive ; choix des lignes de progression. |
 | `Settings/TabPositions.cs` | Remettre les onglets de serveur à leur rang à la réouverture. |
 | `Navigation/` | Tri, historique précédent / suivant, dossiers récents (`RecentFolders`, fichier `history.json`), fil d'Ariane. |
+| `Navigation/TabTitle.cs` | Nom de la pastille d'un onglet : nom personnel, sinon dossier verrouillé (gardé même ailleurs), sinon dossier affiché. |
+| `Navigation/TransferCursor.cs` | Curseur après une copie / un déplacement : même dossier (PC ou serveur), ligne suivante si l'élément a disparu, premier élément arrivé. |
+| `Remote/OneAtATimePrompts.cs` | Serveurs connectés en même temps au démarrage : leurs questions (empreinte, mot de passe, phrase secrète, mot de passe maître) une à la fois ; mot de passe maître demandé une seule fois. |
+| `About/DownloadCount.cs` | « À propos » : total des téléchargements pour le système utilisé (Windows : `.exe` ; Linux : `.deb`, `.rpm`, AppImage), toutes Releases, lu sur l'API publique de GitHub (sans compte ; seul l'en-tête « TwinPanel » est envoyé ; 5 s au plus par page). |
+| `About/ReleaseNotes.cs` | « À propos » → Nouveautés de cette version : corrections de bug et nouvelles fonctionnalités, à réécrire à chaque version. |
 | `Selection/MaskMatcher.cs` | Masques `*.jpg;*.png \| *.tmp`. |
 | `Operations/` | Taille des dossiers, renommage multiple (masques, compteur, regex, annulation). |
 | `Search/` | Recherche (nom, texte, taille, date), doublons, vue à plat (`FlatListing`). |

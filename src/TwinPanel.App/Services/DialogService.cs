@@ -249,7 +249,7 @@ public sealed class DialogService(Window owner) : IDialogService
         }
     }
 
-    public async Task ShowAboutAsync(string title, string text, IReadOnlyList<string> details)
+    public async Task ShowAboutAsync(string title, string text, IReadOnlyList<string> details, Func<CancellationToken, Task<string>>? downloads = null)
     {
         var dialog = CreateWindow(L.T("À propos de TwinPanel"));
         var ok = new Button { Content = "OK", IsDefault = true, IsCancel = true, MinWidth = 90, Classes = { "accent" } };
@@ -265,6 +265,19 @@ public sealed class DialogService(Window owner) : IDialogService
         var components = LinkButton(L.T("Bibliothèques utilisées et leurs licences"));
         components.HorizontalAlignment = HorizontalAlignment.Center;
         components.Click += async (_, _) => await ShowComponentsAsync(dialog);
+        // Nombre de téléchargements de cette version, lu sur GitHub sans bloquer la fenêtre.
+        var downloadsText = new TextBlock { Text = L.T("Téléchargements : recherche…"), Classes = { "subtle" }, HorizontalAlignment = HorizontalAlignment.Center, IsVisible = downloads is not null };
+        using var downloadsCts = new CancellationTokenSource();
+        if (downloads is not null)
+            dialog.Opened += async (_, _) =>
+            {
+                try { downloadsText.Text = await downloads(downloadsCts.Token); }
+                catch (OperationCanceledException) { }
+            };
+        dialog.Closed += (_, _) => downloadsCts.Cancel();
+        var notes = LinkButton(L.T("Nouveautés de cette version"));
+        notes.HorizontalAlignment = HorizontalAlignment.Center;
+        notes.Click += async (_, _) => await ShowReleaseNotesAsync(dialog, title);
         // Symbole de la licence (clic : texte complet du contrat).
         var badge = new Image { Width = 305, Height = 80, HorizontalAlignment = HorizontalAlignment.Center };
         try
@@ -283,8 +296,10 @@ public sealed class DialogService(Window owner) : IDialogService
             logo,
             new TextBlock { Text = title, FontSize = 22, FontWeight = FontWeight.SemiBold, HorizontalAlignment = HorizontalAlignment.Center },
             new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap, MaxWidth = 460, HorizontalAlignment = HorizontalAlignment.Center, TextAlignment = TextAlignment.Center },
+            downloadsText,
             badgeButton,
             license,
+            notes,
             components,
             detailsText,
             Buttons(ok));
@@ -329,6 +344,28 @@ public sealed class DialogService(Window owner) : IDialogService
             FontFamily = new FontFamily("Consolas,Menlo,monospace"),
         };
         dialog.Content = Layout(box, Buttons(ok));
+        dialog.Opened += (_, _) => ok.Focus();
+        await dialog.ShowDialog(parent);
+    }
+
+    /// <summary>Nouveautés de la version installée : corrections de bug, puis nouvelles fonctionnalités.</summary>
+    private static async Task ShowReleaseNotesAsync(Window parent, string versionTitle)
+    {
+        var dialog = CreateWindow(L.T("Nouveautés de cette version"));
+        var ok = new Button { Content = "OK", IsDefault = true, IsCancel = true, MinWidth = 90, Classes = { "accent" } };
+        ok.Click += (_, _) => dialog.Close();
+        var content = new StackPanel { Spacing = 6, Width = 620 };
+        content.Children.Add(new TextBlock { Text = versionTitle, FontSize = 18, FontWeight = FontWeight.SemiBold });
+        void Section(string header, IReadOnlyList<string> lines)
+        {
+            content.Children.Add(new TextBlock { Text = header, FontWeight = FontWeight.SemiBold, Margin = new Thickness(0, 10, 0, 2) });
+            foreach (var line in lines)
+                content.Children.Add(new TextBlock { Text = "•  " + line, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(8, 0, 0, 0) });
+        }
+        Section(L.T("Corrections de bug"), TwinPanel.Core.About.ReleaseNotes.Fixes(OperatingSystem.IsWindows()));
+        Section(L.T("Nouvelles fonctionnalités"), TwinPanel.Core.About.ReleaseNotes.Features());
+        var scroll = new ScrollViewer { Content = content, MaxHeight = 520, HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled };
+        dialog.Content = Layout(scroll, Buttons(ok));
         dialog.Opened += (_, _) => ok.Focus();
         await dialog.ShowDialog(parent);
     }

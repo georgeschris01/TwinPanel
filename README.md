@@ -160,7 +160,7 @@ Tous les raccourcis se changent dans Options → Raccourcis. Dans le programme, 
 | `Retour arrière` | Dossier parent |
 | `Ctrl+T` / `Ctrl+W` | Nouvel onglet / fermer l'onglet |
 | `Ctrl+Tab` / `Ctrl+Maj+Tab` | Onglet suivant / précédent |
-| `Alt+←` / `Alt+→` | Dossier précédent / suivant |
+| `Alt+←` / `Alt+→` | Dossier précédent / suivant (le curseur revient sur l'élément où on était, au milieu de la liste) |
 | `Alt+↓` | Dossiers récents |
 | `Ctrl+Maj+J` | Jeux d'onglets |
 | `Ctrl+PgUp` / `Ctrl+\` | Dossier parent / racine |
@@ -242,7 +242,7 @@ Tous les raccourcis se changent dans Options → Raccourcis. Dans le programme, 
 
 ## Onglets et vues
 
-Chaque panneau a ses onglets : `Ctrl+T` pour en ouvrir un, `Ctrl+W` pour le fermer. Ils sont rouverts au démarrage suivant, y compris ceux sur un serveur (Options → Démarrage).
+Chaque panneau a ses onglets : `Ctrl+T` pour en ouvrir un, `Ctrl+W` pour le fermer. Ils sont rouverts au démarrage suivant, y compris ceux sur un serveur (Options → Démarrage). Les onglets d'un serveur apparaissent tout de suite avec « connexion… », puis s'ouvrent dès que leur serveur répond ; les serveurs se connectent en même temps, et leurs questions (mot de passe, phrase secrète) viennent une à la fois. Un serveur qui ne répond pas laisse ses onglets « non connecté » : clic droit sur l'onglet → **Reconnecter**.
 
 ### Verrouiller un onglet
 
@@ -250,6 +250,8 @@ Clic droit sur l'onglet :
 
 - **Verrouiller cet onglet** : aller ailleurs ouvre un nouvel onglet.
 - **Verrouiller avec changement de dossier** : vous pouvez naviguer, et l'onglet revient à son dossier quand vous le reprenez.
+
+Un onglet verrouillé garde le nom de son dossier verrouillé, même quand il affiche un autre dossier.
 
 ### Jeux d'onglets
 
@@ -279,6 +281,7 @@ Marquez avec `Inser`, `Espace`, `Maj+flèches`, le clic droit, ou selon un masqu
 - **Couper / Copier / Coller** (`Ctrl+X` / `Ctrl+C` / `Ctrl+V`, ou le menu du bouton droit maintenu) : ouvrez le dossier d'arrivée, dans n'importe quel panneau, puis collez. La même fenêtre que `F5` / `F6` confirme. Cela marche aussi pour les serveurs et les archives, et, pour les fichiers du PC, avec l'Explorateur dans les deux sens. Des éléments coupés ne se collent qu'une fois. Quand on tape du texte (chemin, nom, ligne de commande), ces touches gardent leur rôle habituel.
 - Le nombre de transferts en même temps se règle dans Options → Comportement (1 par défaut) : les suivants attendent leur tour.
 - Un transfert peut être mis en pause, repris ou annulé.
+- Après une copie ou un déplacement (`F5`, `F6`, glisser-déposer), la barre de couleur reste sur l'élément transféré (déplacé : sur la première ligne restante qui le suivait, même pour plusieurs éléments). Dans le panneau d'arrivée, elle va sur le premier élément arrivé, et tous les éléments arrivés sont mis en valeur (fond vert sur leur nom) pendant 5 secondes ou jusqu'au premier clic, sans être marqués. Le clavier reste dans le panneau de départ.
 - S'il n'y a plus de place, TwinPanel s'arrête sur le fichier en cause. Libérez de la place puis cliquez sur **Reprendre**.
 
 ### Voir, éditer, supprimer
@@ -558,6 +561,14 @@ Clic droit sur son onglet → **Reconnecter** : le terminal repart dans le même
 ### Pourquoi les copies se font-elles l'une après l'autre ?
 
 C'est le réglage par défaut. Augmentez « Transferts en même temps » dans Options → Comportement.
+
+### TwinPanel se connecte-t-il à Internet ?
+
+Seulement pour ce que vous lui demandez (vos connexions à des serveurs), et en ouvrant « À propos » : TwinPanel y lit sur GitHub le total des téléchargements de TwinPanel pour votre système (Windows ou Linux, toutes versions). Rien n'est envoyé : ni réglages, ni fichiers, ni identifiant. Sans Internet, la ligne indique simplement que le nombre est indisponible.
+
+### Qu'est-ce qui a changé dans cette version ?
+
+Cliquez sur le logo en haut à gauche (À propos), puis sur **Nouveautés de cette version** : corrections de bug et nouvelles fonctionnalités de la version installée.
 
 ### Comment demander une fonction ou signaler un problème ?
 

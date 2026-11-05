@@ -500,10 +500,27 @@ public partial class FolderTabViewModel : ObservableObject, IDisposable
     [NotifyPropertyChangedFor(nameof(DisplayTitle))]
     private string _customName = string.Empty;
 
+    /// <summary>
+    /// Onglet de serveur montré dès le démarrage, en attente de sa connexion : « connexion… », ou « non connecté »
+    /// si le serveur n'a pas répondu (clic droit → Reconnecter). Vide : onglet ordinaire.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsWaiting))]
+    private string _waitingText = string.Empty;
+    public bool IsWaiting => WaitingText.Length > 0;
+
+    /// <summary>Met l'onglet en attente de son serveur ; le message s'affiche aussi en bas du panneau.</summary>
+    public void SetWaiting(string pill, string summary)
+    {
+        WaitingText = pill;
+        Summary = summary;
+    }
+
     /// <summary>Dossier de l'onglet verrouillé.</summary>
     public string LockedPath { get; private set; } = string.Empty;
     public bool IsLocked => LockMode != TwinPanel.Core.Settings.TabLock.None;
-    public string DisplayTitle => CustomName.Length > 0 ? CustomName : Title;
+    /// <summary>Verrouillé : le nom reste celui du dossier verrouillé, même si l'onglet affiche un autre dossier.</summary>
+    public string DisplayTitle => TwinPanel.Core.Navigation.TabTitle.Display(CustomName, LockMode, LockedPath, Title);
     public string LockTooltip => LockMode switch
     {
         TwinPanel.Core.Settings.TabLock.Locked => L.F("Onglet verrouillé sur {0} (aller ailleurs ouvre un nouvel onglet)", LockedPath),
@@ -519,6 +536,7 @@ public partial class FolderTabViewModel : ObservableObject, IDisposable
         LockedPath = mode == TwinPanel.Core.Settings.TabLock.None ? string.Empty : path ?? CurrentPath;
         LockMode = mode;
         OnPropertyChanged(nameof(LockTooltip));
+        OnPropertyChanged(nameof(DisplayTitle));
     }
 
     /// <summary>withView : retient aussi le mode d'affichage (jeux d'onglets ; au démarrage, les onglets rouvrent en liste normale).</summary>
@@ -584,12 +602,62 @@ public partial class FolderTabViewModel : ObservableObject, IDisposable
 
     private const int PollSlowdown = 10;
 
+    /// <summary>Copie / déplacement : met le curseur sur le premier des éléments transférés encore affichés (panneau d'origine).</summary>
+    public void PointAt(IEnumerable<string> names)
+    {
+        var name = TwinPanel.Core.Navigation.TransferCursor.FirstArrived(Items.Select(i => i.Name), names, IsRemote);
+        if (name is not null && Items.FirstOrDefault(i => i.Name == name) is { } item) CurrentItem = item;
+    }
+
+    /// <summary>Fin d'une copie / d'un déplacement vers ce dossier : relu, curseur sur le premier élément arrivé.</summary>
+    public async Task RevealArrivedAsync(IReadOnlyList<string> names)
+    {
+        if (CurrentPath.Length == 0 || IsFlat) return;
+        // Une autre relecture (surveillance du dossier) peut finir après celle-ci : elle pointera aussi les arrivés.
+        _arrived = names;
+        _arrivedUntil = DateTime.UtcNow.AddSeconds(3);
+        await LoadAsync(CurrentPath, CurrentItem?.Name, recordHistory: false, quiet: true);
+        // Pas encore posé par une relecture (dossier déjà à jour, relecture dépassée) : on le pose maintenant.
+        if (_arrived is not null && DateTime.UtcNow <= _arrivedUntil)
+        {
+            PointAt(names);
+            HighlightArrived(names);
+        }
+    }
+
+    private IDisposable? _arrivedTimer;
+
+    /// <summary>Tous les éléments arrivés sont mis en valeur (pas marqués) ; ça s'efface après 5 s ou au premier clic.</summary>
+    private void HighlightArrived(IEnumerable<string> names)
+    {
+        var set = new HashSet<string>(names, IsRemote ? StringComparer.Ordinal : PathText.Comparer);
+        foreach (var item in Items) item.IsJustArrived = set.Contains(item.Name);
+        _arrivedTimer?.Dispose();
+        _arrivedTimer = DispatcherTimer.RunOnce(ClearArrivedHighlight, TimeSpan.FromSeconds(5));
+    }
+
+    public void ClearArrivedHighlight()
+    {
+        _arrivedTimer?.Dispose();
+        _arrivedTimer = null;
+        foreach (var item in Items) item.IsJustArrived = false;
+    }
+
+    private IReadOnlyList<string>? _arrived;
+    private DateTime _arrivedUntil;
+
+    /// <summary>Vrai juste avant que le curseur soit posé en arrivant dans un dossier : la liste le montre au milieu (lu et remis à faux par la vue).</summary>
+    public bool CenterOnCursor { get; set; }
+
     public async Task RefreshAsync()
     {
         if (CurrentPath.Length == 0) return;
         if (IsFlat) { _ = ScanFlatAsync(CurrentItem?.FullPath); return; }
+        int started = _loadVersion;
         if (await LoadAsync(CurrentPath, CurrentItem?.Name, recordHistory: false, quiet: true)) return;
         if (IsRemote) return; // serveur : le message d'erreur a déjà été donné à la navigation
+        // Relecture dépassée par une autre (fin d'une copie, surveillance du dossier) : le dossier est toujours là.
+        if (_loadVersion > started + 1 || Directory.Exists(CurrentPath)) return;
 
         // Le dossier a disparu : on remonte jusqu'au premier parent existant.
         var dir = new DirectoryInfo(CurrentPath).Parent;
@@ -606,13 +674,14 @@ public partial class FolderTabViewModel : ObservableObject, IDisposable
 
     public async Task GoBackAsync()
     {
-        if (_history.Back() is { } p && !await LoadAsync(p, null, recordHistory: false)) _history.Undo(wasBack: true);
+        // Le curseur revient sur l'élément qu'on avait laissé (souvent le dossier dans lequel on était entré).
+        if (_history.Back() is { } p && !await LoadAsync(p, _history.CursorFor(p, CurrentPath), recordHistory: false)) _history.Undo(wasBack: true);
         UpdateHistoryFlags();
     }
 
     public async Task GoForwardAsync()
     {
-        if (_history.Forward() is { } p && !await LoadAsync(p, null, recordHistory: false)) _history.Undo(wasBack: false);
+        if (_history.Forward() is { } p && !await LoadAsync(p, _history.CursorFor(p, CurrentPath), recordHistory: false)) _history.Undo(wasBack: false);
         UpdateHistoryFlags();
     }
 
@@ -817,6 +886,8 @@ public partial class FolderTabViewModel : ObservableObject, IDisposable
                 // Changement de dossier : on arrête les calculs de taille en cours.
                 _sizeCts.Cancel();
                 _sizeCts = new CancellationTokenSource();
+                // Pour Précédent / Suivant : l'élément sous le curseur dans le dossier qu'on quitte.
+                if (!IsFlat && CurrentPath.Length > 0) _history.RememberCursor(CurrentPath, CurrentItem?.Name);
                 if (IsFlat) LeaveFlat();
             }
             _rawEntries = entries;
@@ -857,6 +928,8 @@ public partial class FolderTabViewModel : ObservableObject, IDisposable
         // Nom sous le curseur AVANT la mise à jour : quand la ligne courante est remplacée (fichier modifié),
         // la grille déplace sa sélection sur la ligne suivante ; on remet le curseur au bon endroit ensuite.
         keepName ??= CursorKey;
+        int oldIndex = CurrentItem is null ? -1 : Items.IndexOf(CurrentItem);
+        List<string> oldKeys = fullReset ? [] : [.. Items.Select(i => IsFlat ? i.FullPath : i.Name)];
 
         if (fullReset)
         {
@@ -881,9 +954,33 @@ public partial class FolderTabViewModel : ObservableObject, IDisposable
         StartFolderSizes();
         StartShellIcons();
         var keep = keepName is null ? null : Items.FirstOrDefault(e => IsCursorKey(e, keepName));
+        // Fin d'une copie / d'un déplacement vers ce dossier : le curseur va sur le premier élément arrivé.
+        if (_arrived is { } arrived)
+        {
+            if (DateTime.UtcNow > _arrivedUntil) _arrived = null;
+            else if (!fullReset && TwinPanel.Core.Navigation.TransferCursor.FirstArrived(Items.Select(i => i.Name), arrived, IsRemote) is { } first)
+            {
+                keep = Items.First(i => i.Name == first);
+                HighlightArrived(arrived);
+                _arrived = null;
+            }
+        }
+        // Arrivée dans un dossier sur un élément précis (Précédent, dossier parent…) : la vue le montre au milieu.
+        CenterOnCursor = fullReset && keep is not null;
+        // Même dossier relu, la ligne du curseur a disparu (déplacée, supprimée) : le curseur reste à sa place,
+        // sur la ligne qui la suivait, au lieu de remonter en haut de la liste.
+        if (keep is null && !fullReset && oldIndex >= 0)
+        {
+            // Plusieurs lignes ont pu partir ensemble : on prend la première ligne restante après le curseur.
+            var present = new Dictionary<string, FileItemViewModel>();
+            foreach (var i in Items) present.TryAdd(IsFlat ? i.FullPath : i.Name, i);
+            if (TwinPanel.Core.Navigation.TransferCursor.NextRemaining(oldKeys, oldIndex, present.ContainsKey) is { } next)
+                keep = present[next];
+        }
         if (fullReset || CurrentItem is null || !Items.Contains(CurrentItem)
             || (keep is not null && !ReferenceEquals(CurrentItem, keep)))
             CurrentItem = keep ?? Items.FirstOrDefault();
+        CenterOnCursor = false; // lu par la vue pendant le changement de curseur, pas au-delà
         if (keepView) ListUpdated?.Invoke();
     }
 
@@ -981,15 +1078,7 @@ public partial class FolderTabViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>Titre de l'onglet : nom du dossier ; disque du PC : lettre devant (« C: Documents », « C: » à la racine).</summary>
-    public static string MakeTitle(string path)
-    {
-        var trimmed = path.TrimEnd('\\', '/');
-        var name = Path.GetFileName(trimmed);
-        if (string.IsNullOrEmpty(name)) return trimmed;
-        bool driveLetter = trimmed.Length >= 2 && trimmed[1] == ':' && char.IsAsciiLetter(trimmed[0])
-                           && (trimmed.Length == 2 || trimmed[2] is '\\' or '/');
-        return driveLetter ? $"{char.ToUpperInvariant(trimmed[0])}: {name}" : name;
-    }
+    public static string MakeTitle(string path) => TwinPanel.Core.Navigation.TabTitle.FromPath(path);
 
     private void DisposeWatcher()
     {

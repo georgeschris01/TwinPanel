@@ -160,7 +160,7 @@ All shortcuts can be changed in Options → Shortcuts. In the program, the list 
 | `Backspace` | Parent folder |
 | `Ctrl+T` / `Ctrl+W` | New tab / close tab |
 | `Ctrl+Tab` / `Ctrl+Shift+Tab` | Next / previous tab |
-| `Alt+←` / `Alt+→` | Previous / next folder |
+| `Alt+←` / `Alt+→` | Previous / next folder (the cursor returns to the item where you were, in the middle of the list) |
 | `Alt+↓` | Recent folders |
 | `Ctrl+Shift+J` | Tab sets |
 | `Ctrl+PgUp` / `Ctrl+\` | Parent folder / root |
@@ -242,7 +242,7 @@ All shortcuts can be changed in Options → Shortcuts. In the program, the list 
 
 ## Tabs and views
 
-Each panel has its tabs: `Ctrl+T` opens one, `Ctrl+W` closes it. They are reopened at the next startup, including those on a server (Options → Startup).
+Each panel has its tabs: `Ctrl+T` opens one, `Ctrl+W` closes it. They are reopened at the next startup, including those on a server (Options → Startup). Server tabs appear right away with “connecting…”, then open as soon as their server answers; servers connect at the same time, and their questions (password, passphrase) come one at a time. A server that does not answer leaves its tabs “not connected”: right-click the tab → **Reconnect**.
 
 ### Locking a tab
 
@@ -250,6 +250,8 @@ Right click on the tab:
 
 - **Lock this tab**: going elsewhere opens a new tab.
 - **Lock this tab, folder changes allowed**: you can navigate, and the tab returns to its folder when you come back to it.
+
+A locked tab keeps the name of its locked folder, even when it shows another folder.
 
 ### Tab sets
 
@@ -279,6 +281,7 @@ Mark with `Ins`, `Space`, `Shift+arrows`, the right click, or by mask with `Num+
 - **Cut / Copy / Paste** (`Ctrl+X` / `Ctrl+C` / `Ctrl+V`, or the menu of the held right button): open the destination folder, in either panel, then paste. The same window as `F5` / `F6` confirms. This also works for servers and archives and, for PC files, with Explorer in both directions. Cut items can be pasted only once. While typing text (path, name, command line), these keys keep their usual role.
 - The number of simultaneous transfers is set in Options → Behavior (1 by default): the next ones wait their turn.
 - A transfer can be paused, resumed or canceled.
+- After a copy or a move (`F5`, `F6`, drag and drop), the colored bar stays on the transferred item (moved: on the first remaining line after it, even for several items). In the destination panel, it goes to the first item that arrived, and all arrived items are highlighted (green background on their name) for 5 seconds or until the first click, without being marked. The keyboard stays in the starting panel.
 - When space runs out, TwinPanel stops on the file concerned. Free some space then click **Resume**.
 
 ### View, edit, delete
@@ -558,6 +561,14 @@ Right-click its tab → **Reconnect**: the terminal starts again in the same tab
 ### Why are copies done one after the other?
 
 That is the default setting. Increase “Simultaneous transfers” in Options → Behavior.
+
+### Does TwinPanel connect to the Internet?
+
+Only for what you ask it to do (your server connections), and when you open “About”: TwinPanel reads there, from GitHub, the total downloads of TwinPanel for your system (Windows or Linux, all versions). Nothing is sent: no settings, no files, no identifier. Without Internet, the line simply says the number is unavailable.
+
+### What changed in this version?
+
+Click the logo at the top left (About), then **What's new in this version**: bug fixes and new features of the installed version.
 
 ### How do I request a feature or report a problem?
 

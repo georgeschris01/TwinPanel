@@ -23,6 +23,38 @@ public sealed class NavigationHistory(int capacity = 100)
         _index = _items.Count - 1;
     }
 
+    // ---- Place du curseur au retour (Précédent / Suivant) ----
+
+    private readonly Dictionary<string, string> _cursors = new(PathText.Comparer);
+
+    /// <summary>On quitte ce dossier : on retient l'élément sous le curseur, pour le retrouver en y revenant.</summary>
+    public void RememberCursor(string path, string? name)
+    {
+        if (path.Length == 0) return;
+        if (string.IsNullOrEmpty(name) || name == "..") _cursors.Remove(path);
+        else _cursors[path] = name;
+        if (_cursors.Count > capacity * 2) _cursors.Clear(); // jamais sans fin
+    }
+
+    /// <summary>
+    /// Élément à pointer en revenant dans « target » depuis « current » : celui qu'on y avait laissé ;
+    /// sinon, si on était plus bas, le dossier par lequel on était descendu ; sinon null (haut de la liste).
+    /// </summary>
+    public string? CursorFor(string target, string current) =>
+        _cursors.TryGetValue(target, out var name) ? name : ChildToward(target, current);
+
+    /// <summary>« C:\A » et « C:\A\B\C » → « B » ; « sftp://s/home » et « sftp://s/home/u/x » → « u » ; sinon null.</summary>
+    public static string? ChildToward(string parent, string current)
+    {
+        var p = parent.TrimEnd('\\', '/');
+        var comparison = parent.Contains("://", StringComparison.Ordinal) ? StringComparison.Ordinal : PathText.Comparison;
+        if (current.Length <= p.Length + 1 || !current.StartsWith(p, comparison) || current[p.Length] is not ('\\' or '/')) return null;
+        var rest = current[(p.Length + 1)..];
+        int sep = rest.IndexOfAny(['\\', '/']);
+        var child = sep < 0 ? rest : rest[..sep];
+        return child.Length > 0 ? child : null;
+    }
+
     public string? Back() => CanGoBack ? _items[--_index] : null;
     public string? Forward() => CanGoForward ? _items[++_index] : null;
 

@@ -103,34 +103,73 @@ public partial class FilePanelViewModel : ObservableObject
     {
         ShowHidden = showHidden;
         RefreshDrives();
+        // Dossiers encore là ? Vérifiés tous en même temps, hors de l'interface (un lecteur réseau absent peut être lent).
+        var decoded = state.Tabs.Select(TwinPanel.Core.Settings.SavedTab.Decode).ToList();
+        var exists = await Task.WhenAll(decoded.Select(t => Task.Run(() => CanReopen(t.Path))));
         var saved = new List<TwinPanel.Core.Settings.SavedTab>();
         int active = 0;
-        for (int i = 0; i < state.Tabs.Count; i++)
+        for (int i = 0; i < decoded.Count; i++)
         {
-            var tab = TwinPanel.Core.Settings.SavedTab.Decode(state.Tabs[i]);
-            if (!CanReopen(tab.Path)) continue;
+            if (!exists[i]) continue;
             if (i == state.ActiveTab) active = saved.Count; // l'onglet actif, même si un onglet disparu le précédait
-            saved.Add(tab);
+            saved.Add(decoded[i]);
         }
         if (saved.Count == 0) saved.Add(new TwinPanel.Core.Settings.SavedTab(fallbackPath));
 
-        foreach (var t in saved)
-            await AddTabAsync(t.Path, state.SortColumn, state.SortDescending, select: false, t.Lock, t.Name);
-
-        SelectedTab = Tabs[Math.Clamp(active, 0, Tabs.Count - 1)];
+        // Toutes les pastilles tout de suite (avec leur nom), puis les dossiers lus en même temps, l'onglet actif d'abord.
+        var tabs = saved.Select(t => CreateTab(t.Name, state.SortColumn, state.SortDescending, insertAt: null, presetPath: t.Path)).ToList();
+        active = Math.Clamp(active, 0, tabs.Count - 1);
+        SelectedTab = tabs[active];
+        var order = Enumerable.Range(0, tabs.Count).OrderBy(i => i == active ? 0 : 1);
+        await Task.WhenAll(order.Select(i => LoadTabAsync(tabs[i], saved[i].Path, saved[i].Lock)));
+        SyncFromCurrent();
     }
 
     private static bool CanReopen(string path) => Directory.Exists(path)
         || (TwinPanel.Core.Archives.ArchivePath.TrySplit(path, out var archive, out _) && File.Exists(archive));
 
-    public PanelState CaptureState(bool withView = false) => new()
+    public PanelState CaptureState(bool withView = false)
     {
         // Tous les onglets, y compris sur un serveur : la fenêtre principale remplace ces derniers par la fiche de connexion.
-        Tabs = Tabs.Where(t => t.CurrentPath.Length > 0).Select(t => t.ToSaved(withView).Encode()).ToList(),
-        ActiveTab = SelectedTab is null ? 0 : Tabs.IndexOf(SelectedTab),
-        SortColumn = Current.SortColumn,
-        SortDescending = Current.SortDescending,
-    };
+        // Un onglet pas encore ouvert (serveur en attente) n'a pas de dossier : la fenêtre principale le remet à son rang.
+        var open = Tabs.Where(t => t.CurrentPath.Length > 0).ToList();
+        int active = 0;
+        if (SelectedTab is not null)
+        {
+            // Rang parmi les onglets enregistrés ; onglet en attente choisi : celui juste avant lui.
+            int before = Tabs.Take(Math.Max(0, Tabs.IndexOf(SelectedTab))).Count(t => t.CurrentPath.Length > 0);
+            active = open.Contains(SelectedTab) ? before : Math.Max(0, before - 1);
+        }
+        return new()
+        {
+            Tabs = open.Select(t => t.ToSaved(withView).Encode()).ToList(),
+            ActiveTab = active,
+            SortColumn = Current.SortColumn,
+            SortDescending = Current.SortDescending,
+        };
+    }
+
+    /// <summary>Onglet de serveur montré tout de suite au démarrage, rempli quand son serveur répond.</summary>
+    public FolderTabViewModel AddWaitingTab(string title, string name, int insertAt, bool select, string pill, string summary)
+    {
+        var tab = CreateTab(name, Current.SortColumn, Current.SortDescending, insertAt, presetPath: null);
+        tab.Title = title;
+        tab.SetWaiting(pill, summary);
+        if (select) SelectedTab = tab;
+        return tab;
+    }
+
+    /// <summary>Le serveur a répondu : l'onglet en attente ouvre son dossier (false : onglet fermé entre-temps).</summary>
+    public async Task<bool> FillWaitingTabAsync(FolderTabViewModel tab, string path, TwinPanel.Core.Settings.TabLock lockMode)
+    {
+        if (!Tabs.Contains(tab)) return false;
+        tab.SetWaiting(string.Empty, string.Empty);
+        if (!await tab.NavigateAsync(path))
+            await tab.NavigateAsync(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
+        if (lockMode != TwinPanel.Core.Settings.TabLock.None) tab.SetLock(lockMode);
+        if (ReferenceEquals(tab, SelectedTab)) SyncFromCurrent();
+        return true;
+    }
 
     // ---- Onglets ---------------------------------------------------------------
 
@@ -180,7 +219,25 @@ public partial class FilePanelViewModel : ObservableObject
     public async Task<FolderTabViewModel> AddTabAsync(string path, SortColumn sort, bool descending, bool select,
         TwinPanel.Core.Settings.TabLock lockMode = TwinPanel.Core.Settings.TabLock.None, string name = "", int? insertAt = null)
     {
+        var tab = CreateTab(name, sort, descending, insertAt, presetPath: null);
+        await LoadTabAsync(tab, path, lockMode);
+        if (select) SelectedTab = tab;
+        return tab;
+    }
+
+    /// <summary>Ouvre le dossier de l'onglet (dossier personnel s'il n'existe plus), puis pose son verrou.</summary>
+    private static async Task LoadTabAsync(FolderTabViewModel tab, string path, TwinPanel.Core.Settings.TabLock lockMode)
+    {
+        if (!await tab.NavigateAsync(path))
+            await tab.NavigateAsync(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
+        if (lockMode != TwinPanel.Core.Settings.TabLock.None) tab.SetLock(lockMode);
+    }
+
+    /// <summary>Crée l'onglet et l'ajoute à la barre, sans lire son dossier. presetPath : nom affiché avant la lecture.</summary>
+    private FolderTabViewModel CreateTab(string name, SortColumn sort, bool descending, int? insertAt, string? presetPath)
+    {
         var tab = new FolderTabViewModel(_sources, sort, descending) { ShowHidden = ShowHidden, CustomName = name };
+        if (presetPath is not null) tab.Title = FolderTabViewModel.MakeTitle(presetPath);
         tab.ErrorOccurred += (_, msg) => ErrorOccurred?.Invoke(this, msg);
         // Onglet verrouillé qui veut aller ailleurs : nouvel onglet juste à droite.
         tab.LockedNavigation += (s, target) =>
@@ -194,10 +251,6 @@ public partial class FilePanelViewModel : ObservableObject
             }
         };
         if (insertAt is { } at && at >= 0 && at <= Tabs.Count) Tabs.Insert(at, tab); else Tabs.Add(tab);
-        if (!await tab.NavigateAsync(path))
-            await tab.NavigateAsync(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
-        if (lockMode != TwinPanel.Core.Settings.TabLock.None) tab.SetLock(lockMode);
-        if (select) SelectedTab = tab;
         return tab;
     }
 

@@ -652,6 +652,29 @@ public partial class PanelView : UserControl
         else FileGrid.ScrollIntoView(item, null);
     }
 
+    /// <summary>
+    /// Arrivée dans un dossier sur un élément précis (Précédent, dossier parent…) : il est montré au milieu de la liste,
+    /// pas collé en bas. La grille ne sait qu'aligner une ligne sur un bord : on montre d'abord la ligne une demi-page
+    /// plus bas (elle se cale en bas), la ligne voulue se trouve alors au milieu.
+    /// </summary>
+    private void RevealCentered(FolderTabViewModel tab, FileItemViewModel item)
+    {
+        FileGrid.ScrollIntoView(item, null);
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (tab != _tab || IsThumbs || !ReferenceEquals(tab.CurrentItem, item)) return;
+            int index = tab.Items.IndexOf(item);
+            double rowHeight = FileGrid.RowHeight > 0 ? FileGrid.RowHeight : 28;
+            int half = (int)(FileGrid.Bounds.Height / rowHeight / 2);
+            if (index < 0 || half < 1 || index < half) return; // dans la première page : rien à centrer
+            FileGrid.ScrollIntoView(tab.Items[0], null);
+            FileGrid.UpdateLayout();
+            FileGrid.ScrollIntoView(tab.Items[Math.Min(index + half - 1, tab.Items.Count - 1)], null);
+            FileGrid.UpdateLayout();
+            FileGrid.ScrollIntoView(item, null);
+        }, DispatcherPriority.Loaded);
+    }
+
     private void StartRightDrag(FileItemViewModel item, PointerPressedEventArgs e)
     {
         if (_tab is null) return;
@@ -735,13 +758,20 @@ public partial class PanelView : UserControl
             mi.Click += (_, _) => action();
             menu.Items.Add(mi);
         }
-        Add(L.T("Dupliquer cet onglet"), () => _ = panel.DuplicateTabAsync(tab));
+        // Onglet de serveur pas encore ouvert (démarrage) : on peut le reconnecter, pas le dupliquer ni le verrouiller.
+        bool waiting = main.IsWaitingServerTab(tab);
+        if (waiting)
+        {
+            Add(L.T("Reconnecter"), () => _ = main.ReconnectWaitingTabAsync(tab), tab.WaitingText != L.T("connexion…"));
+            menu.Items.Add(new Separator());
+        }
+        Add(L.T("Dupliquer cet onglet"), () => _ = panel.DuplicateTabAsync(tab), !waiting);
         Add(L.T("Renommer…"), () => _ = main.RenameTabAsync(tab));
         menu.Items.Add(new Separator());
         Add(tab.LockMode == TwinPanel.Core.Settings.TabLock.Locked ? L.T("Déverrouiller cet onglet") : L.T("Verrouiller cet onglet"),
-            () => panel.ToggleLock(tab, TwinPanel.Core.Settings.TabLock.Locked));
+            () => panel.ToggleLock(tab, TwinPanel.Core.Settings.TabLock.Locked), !waiting);
         Add(tab.LockMode == TwinPanel.Core.Settings.TabLock.LockedAllowChange ? L.T("Déverrouiller cet onglet") : L.T("Verrouiller cet onglet avec changement de dossier"),
-            () => panel.ToggleLock(tab, TwinPanel.Core.Settings.TabLock.LockedAllowChange));
+            () => panel.ToggleLock(tab, TwinPanel.Core.Settings.TabLock.LockedAllowChange), !waiting);
         menu.Items.Add(new Separator());
         Add(L.T("Fermer cet onglet"), () => _ = main.CloseTabAsync(panel, tab), panel.Tabs.Count > 1);
         Add(L.T("Fermer tous les onglets"), () => _ = main.CloseAllTabsAsync(panel), panel.Tabs.Count > 1);
@@ -925,7 +955,8 @@ public partial class PanelView : UserControl
         switch (e.PropertyName)
         {
             case nameof(FolderTabViewModel.CurrentItem) when _tab?.CurrentItem is { } item:
-                Reveal(item);
+                if (_tab.CenterOnCursor && !IsThumbs) RevealCentered(_tab, item);
+                else Reveal(item);
                 break;
             case nameof(FolderTabViewModel.SortColumn) or nameof(FolderTabViewModel.SortDescending):
                 UpdateSortHeaders();
@@ -1117,6 +1148,7 @@ public partial class PanelView : UserControl
 
     private void OnGridPointerPressed(object? sender, PointerPressedEventArgs e)
     {
+        _tab?.ClearArrivedHighlight(); // premier clic : la mise en valeur des éléments arrivés s'efface
         CancelClickRename();
         if (_renameBox is not null)
         {

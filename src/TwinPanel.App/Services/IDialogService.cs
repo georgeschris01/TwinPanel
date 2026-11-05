@@ -35,7 +35,8 @@ public interface IDialogService
     void ShowHelp(IReadOnlyList<TwinPanel.App.Views.HelpShortcut> shortcuts, bool atShortcuts);
 
     /// <summary>Fenêtre « À propos » avec le logo.</summary>
-    Task ShowAboutAsync(string title, string text, IReadOnlyList<string> details);
+    /// <param name="downloads">Lit le texte « Téléchargements de cette version… » (Internet) ; null : pas de ligne.</param>
+    Task ShowAboutAsync(string title, string text, IReadOnlyList<string> details, Func<CancellationToken, Task<string>>? downloads = null);
     /// <summary>
     /// Cases à cocher (une case grisée n'est pas modifiable). Null si annulé ; sinon l'état de chaque case.
     /// Le bouton de validation n'est actif que si une case au moins est cochée.

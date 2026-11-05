@@ -174,8 +174,11 @@ public partial class MainWindowViewModel
     private readonly List<(FilePanelViewModel Panel, PendingRemoteTab Tab)> _unopenedTabs = [];
 
     /// <summary>Remet à leur place les onglets qui n'ont pas pu (ou pas encore pu) être rouverts.</summary>
+    /// <remarks>Un onglet en attente que l'utilisateur a fermé n'est plus gardé.</remarks>
     private PanelState WithUnopenedTabs(FilePanelViewModel panel, PanelState state) =>
-        TabPositions.WithPending(state, _unopenedTabs.Where(x => ReferenceEquals(x.Panel, panel)).Select(x => (x.Tab.Position, x.Tab.Saved)));
+        TabPositions.WithPending(state, _unopenedTabs
+            .Where(x => ReferenceEquals(x.Panel, panel) && (!_waitingTabs.TryGetValue(x.Tab, out var waiting) || panel.Tabs.Contains(waiting)))
+            .Select(x => (x.Tab.Position, x.Tab.Saved)));
 
     /// <summary>Sépare les onglets locaux (ouverts tout de suite) de ceux sur un serveur (rouverts ensuite).</summary>
     private static (PanelState Local, List<PendingRemoteTab> Remote) SplitRemoteTabs(PanelState state)
@@ -197,7 +200,11 @@ public partial class MainWindowViewModel
         return (new PanelState { Tabs = local, ActiveTab = active, SortColumn = state.SortColumn, SortDescending = state.SortDescending }, remote);
     }
 
-    /// <summary>Options → Démarrage : rouvre (après accord, ou toujours) les onglets qui étaient sur un serveur.</summary>
+    /// <summary>
+    /// Options → Démarrage : rouvre (après accord, ou toujours) les onglets qui étaient sur un serveur.
+    /// Leurs pastilles sont montrées tout de suite (« connexion… ») ; tous les serveurs se connectent en même temps,
+    /// leurs questions venant une à la fois ; chaque serveur remplit ses onglets dès qu'il répond.
+    /// </summary>
     private async Task RestoreRemoteTabsAsync(List<PendingRemoteTab> left, List<PendingRemoteTab> right)
     {
         if (_connections is null || _remote is null || _prompts is null) return;
@@ -209,6 +216,15 @@ public partial class MainWindowViewModel
         // (par exemple juste après une installation), ils restent enregistrés et reviendront.
         _unopenedTabs.AddRange(all);
 
+        // Les pastilles tout de suite, chacune à son rang.
+        foreach (var (panel, tab) in all.OrderBy(x => x.Tab.Position))
+        {
+            var profile = _connections.FindProfile(tab.ProfileId)!;
+            var title = TwinPanel.Core.Navigation.TabTitle.FromPath(tab.Path);
+            _waitingTabs[tab] = panel.AddWaitingTab(title.Length > 0 && title != "/" ? title : profile.Name, tab.Name,
+                Math.Min(tab.Position, panel.Tabs.Count), select: tab.WasActive, L.T("connexion…"), L.F("Connexion à {0}…", profile.Name));
+        }
+
         var profiles = all.Select(x => x.Tab.ProfileId).Distinct().Select(id => _connections.FindProfile(id)!).ToList();
         if (mode == RemoteTabsRestore.Ask)
         {
@@ -216,7 +232,11 @@ public partial class MainWindowViewModel
             var choice = await _dialogs.ChooseAsync<int>(L.T("Onglets sur un serveur"),
                 L.F("À la fermeture, {0} onglet(s) étaient ouverts sur : {1}.\nSe reconnecter pour les rouvrir ?", all.Count, names),
                 (L.T("Rouvrir"), 1), (L.T("Toujours rouvrir"), 2), (L.T("Ne jamais rouvrir"), 3), (L.T("Pas cette fois"), null));
-            if (choice is null) return; // déjà gardés de côté
+            if (choice is null)
+            {
+                RemoveWaitingTabs(all); // déjà gardés de côté : ils reviendront au prochain démarrage
+                return;
+            }
             if (choice is 2 or 3)
             {
                 // Le choix est retenu (modifiable dans Options → Démarrage).
@@ -224,40 +244,76 @@ public partial class MainWindowViewModel
                 try { _store.Save(_settings); } catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
                 if (choice == 3)
                 {
+                    RemoveWaitingTabs(all);
                     _unopenedTabs.Clear(); // « Ne jamais rouvrir » : on les laisse partir
                     return;
                 }
             }
         }
 
-        // Toutes les connexions d'abord : chaque onglet reprend ensuite son rang, quel que soit l'ordre des serveurs.
-        var opened = new Dictionary<Guid, RemoteSession>();
-        foreach (var profile in profiles)
+        var prompts = new OneAtATimePrompts(_prompts);
+        await Task.WhenAll(profiles.Select(p => ConnectAndFillAsync(p, all.Where(x => x.Tab.ProfileId == p.Id).ToList(), prompts)));
+        int notOpened = _unopenedTabs.Count(x => _waitingTabs.ContainsKey(x.Tab));
+        StatusMessage = notOpened > 0
+            ? L.F("{0} onglet(s) de serveur pas rouverts : clic droit sur l'onglet → Reconnecter, sinon ils reviendront au prochain démarrage.", notOpened)
+            : L.T("Onglets rouverts.");
+    }
+
+    /// <summary>Onglets montrés en attente de leur serveur (retirés de la liste quand ils sont ouverts).</summary>
+    private readonly Dictionary<PendingRemoteTab, FolderTabViewModel> _waitingTabs = [];
+
+    private void RemoveWaitingTabs(IEnumerable<(FilePanelViewModel Panel, PendingRemoteTab Tab)> tabs)
+    {
+        foreach (var (panel, tab) in tabs)
+            if (_waitingTabs.Remove(tab, out var waiting)) panel.CloseTab(waiting);
+    }
+
+    /// <summary>Connecte un serveur, puis ouvre tous ses onglets en attente en même temps. Sans réponse : ils restent « non connecté ».</summary>
+    private async Task ConnectAndFillAsync(ConnectionProfile profile, List<(FilePanelViewModel Panel, PendingRemoteTab Tab)> mine, IConnectionPrompts prompts)
+    {
+        if (_remote is null || _connections is null) return;
+        void Show(string pill, string summary)
         {
-            if (RemoteProtocols.IsUnencrypted(profile.Protocol) && !profile.AcceptUnencrypted) continue; // jamais sans prévenir
-            StatusMessage = L.F("Reconnexion à {0}…", profile.Name);
-            RemoteSession? session;
-            try
-            {
-                using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(2));
-                session = await Task.Run(() => _remote.ConnectAsync(profile, _connections, _prompts, cts.Token));
-            }
-            catch (Exception ex) when (ex is RemoteException or IOException or InvalidOperationException or OperationCanceledException or UnauthorizedAccessException)
-            {
-                StatusMessage = L.F("Impossible de rouvrir {0} : {1}", profile.Name, ex.Message);
-                continue;
-            }
-            if (session is null) continue; // mot de passe refusé de donner : on n'insiste pas
-            opened[profile.Id] = session;
+            foreach (var (_, tab) in mine)
+                if (_waitingTabs.TryGetValue(tab, out var waiting)) waiting.SetWaiting(pill, summary);
         }
-        foreach (var (panel, tab) in all.OrderBy(x => x.Tab.Position))
+        void Failed(string why) =>
+            Show(L.T("non connecté"), L.F("{0} : {1} Clic droit sur l'onglet → Reconnecter.", profile.Name, why));
+
+        // Jamais sans prévenir : une connexion non chiffrée doit avoir été acceptée dans sa fiche.
+        if (RemoteProtocols.IsUnencrypted(profile.Protocol) && !profile.AcceptUnencrypted) { Failed(L.T("connexion non chiffrée pas acceptée.")); return; }
+        Show(L.T("connexion…"), L.F("Connexion à {0}…", profile.Name));
+        RemoteSession? session;
+        try
         {
-            if (!opened.TryGetValue(tab.ProfileId, out var session)) continue; // reste de côté
-            await panel.AddTabAsync(session.PathFor(tab.Path).ToString(), panel.Current.SortColumn, panel.Current.SortDescending, select: tab.WasActive, tab.Lock, tab.Name,
-                insertAt: Math.Min(tab.Position, panel.Tabs.Count));
-            _unopenedTabs.Remove((panel, tab)); // ouvert : il est maintenant dans le panneau
+            using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(2));
+            session = await Task.Run(() => _remote.ConnectAsync(profile, _connections, prompts, cts.Token));
         }
-        StatusMessage = _unopenedTabs.Count > 0 ? L.F("{0} onglet(s) de serveur pas rouverts : ils reviendront au prochain démarrage.", _unopenedTabs.Count) : L.T("Onglets rouverts.");
+        catch (Exception ex) when (ex is RemoteException or IOException or InvalidOperationException or OperationCanceledException or UnauthorizedAccessException)
+        {
+            Failed(ex.Message);
+            return;
+        }
+        if (session is null) { Failed(L.T("connexion annulée.")); return; } // mot de passe refusé de donner : on n'insiste pas
+        await Task.WhenAll(mine.Select(async x =>
+        {
+            if (!_waitingTabs.Remove(x.Tab, out var waiting)) return;
+            await x.Panel.FillWaitingTabAsync(waiting, session.PathFor(x.Tab.Path).ToString(), x.Tab.Lock);
+            _unopenedTabs.Remove(x); // ouvert (ou fermé entre-temps) : il n'est plus en attente
+        }));
+    }
+
+    /// <summary>Vrai pour un onglet de serveur qui attend encore sa connexion (menu : Reconnecter).</summary>
+    public bool IsWaitingServerTab(FolderTabViewModel tab) => _waitingTabs.ContainsValue(tab);
+
+    /// <summary>Clic droit sur un onglet « non connecté » → Reconnecter : le serveur est rappelé pour tous ses onglets en attente.</summary>
+    public async Task ReconnectWaitingTabAsync(FolderTabViewModel tab)
+    {
+        if (_connections is null || _prompts is null) return;
+        var entry = _waitingTabs.FirstOrDefault(kv => ReferenceEquals(kv.Value, tab)).Key;
+        if (entry is null || _connections.FindProfile(entry.ProfileId) is not { } profile) return;
+        var mine = _unopenedTabs.Where(x => x.Tab.ProfileId == entry.ProfileId && _waitingTabs.ContainsKey(x.Tab)).ToList();
+        await ConnectAndFillAsync(profile, mine, new OneAtATimePrompts(_prompts));
     }
 
     // ---- Ouvrir / fermer -------------------------------------------------------------------------------
@@ -562,7 +618,7 @@ public partial class MainWindowViewModel
             Move = move,
             LocalPaths = items.Select(i => i.FullPath).ToList(),
             Items = items.Select(ToRemoteItem).ToList(),
-        }, src, dst);
+        }, src, dst, job => FollowTransfer(job, items, sourceDir, dst is null ? destPath : destText));
         return true;
     }
 

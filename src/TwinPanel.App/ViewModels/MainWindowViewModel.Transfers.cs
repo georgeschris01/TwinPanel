@@ -22,7 +22,8 @@ public partial class MainWindowViewModel
     /// Lance un transfert, nouveau ou rétabli. Il n'est gardé que si ses serveurs ont une fiche enregistrée :
     /// une connexion rapide n'a rien qui permette de la retrouver.
     /// </summary>
-    private void StartTransfer(SavedTransfer transfer, RemoteSession? src, RemoteSession? dst)
+    /// <param name="follow">Appelé avec l'opération juste avant son départ (curseur à la fin du transfert).</param>
+    private void StartTransfer(SavedTransfer transfer, RemoteSession? src, RemoteSession? dst, Action<OperationJobViewModel>? follow = null)
     {
         int retries = Math.Clamp(_settings.Behavior.TransferRetries, 0, 10);
         var (items, locals, dest, policy, move) = (transfer.Items, transfer.LocalPaths, transfer.Destination, transfer.Policy, transfer.Move);
@@ -53,7 +54,9 @@ public partial class MainWindowViewModel
         transfer.Live = resume;
         transfer.HasJob = true;
         if (keep) _transfers.Add(transfer);
-        Operations.Start(new OperationJobViewModel(transfer.Title, transfer: true, work, resume) { Saved = keep ? transfer : null });
+        var job = new OperationJobViewModel(transfer.Title, transfer: true, work, resume) { Saved = keep ? transfer : null };
+        follow?.Invoke(job);
+        Operations.Start(job);
     }
 
     private bool HasProfile(RemoteSession? session) => session is null || _connections?.FindProfile(session.Profile.Id) is not null;
