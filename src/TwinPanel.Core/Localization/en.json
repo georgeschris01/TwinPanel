@@ -1864,5 +1864,15 @@
  "Deux fenêtres TwinPanel ouvertes en même temps n'effacent plus les mots de passe enregistrés par l'autre ; un changement du mot de passe maître dans l'une verrouille l'autre.": "Two TwinPanel windows open at the same time no longer erase the passwords saved by the other; changing the master password in one locks the other.",
  "Commandes enregistrées du terminal : case « Secret » pour un mot de passe, rangé dans le coffre chiffré et caché à l'écran.": "Saved terminal commands: \"Secret\" box for a password, kept in the encrypted vault and hidden on screen.",
  "Coffre des mots de passe : code de secours donné avec le mot de passe maître (à noter, copier ou enregistrer), et « Mot de passe maître oublié ? ».": "Password vault: recovery code given with the master password (to write down, copy or save), and \"Forgot the master password?\".",
- "Options → Sécurité : mot de passe maître, code de secours, mot de passe maître oublié.": "Options → Security: master password, recovery code, forgotten master password."
+ "Options → Sécurité : mot de passe maître, code de secours, mot de passe maître oublié.": "Options → Security: master password, recovery code, forgotten master password.",
+ "Copie pour les autres programmes : {0}": "Copy for other programs: {0}",
+ "Copier pour les autres programmes": "Copy for other programs",
+ "Fichiers donnés à l'autre programme.": "Files given to the other program.",
+ "Glisser vers l'autre programme abandonné : téléchargement trop long. Utilise Copier, puis Coller.": "Drag to the other program abandoned: download too long. Use Copy, then Paste.",
+ "Glisser vers l'autre programme impossible : {0}": "Cannot drag to the other program: {0}",
+ "Gros volume : pour le donner à un autre programme, utilise Copier (Ctrl+C), puis Coller dans ce programme.": "Large amount: to give it to another program, use Copy (Ctrl+C), then Paste in that program.",
+ "Préparer {0} ({1}) pour les autres programmes (Explorateur, messagerie…) ? Il faut d'abord les copier sur ce PC.{2}{2}Dans TwinPanel, Coller marche déjà, sans attendre.": "Prepare {0} ({1}) for other programs (Explorer, email…)? They must first be copied to this PC.{2}{2}In TwinPanel, Paste already works, without waiting.",
+ "Téléchargement pour l'autre programme…": "Downloading for the other program…",
+ "{0} : prêt à coller aussi dans les autres programmes.": "{0}: ready to paste in other programs too.",
+ "Fichiers d'un serveur ou d'une archive donnés aux autres programmes (Explorateur, messagerie…) par Copier / Coller ou en les glissant à la souris : ils sont d'abord copiés sur le PC.": "Files from a server or an archive given to other programs (File Explorer, email…) by Copy / Paste or by dragging them with the mouse: they are first copied to the PC."
 }

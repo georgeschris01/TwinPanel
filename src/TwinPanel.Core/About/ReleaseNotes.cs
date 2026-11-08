@@ -41,6 +41,7 @@ public static class ReleaseNotes
         var list = new List<string>
         {
             L.T("Couper / Copier / Coller des fichiers (Ctrl+X / Ctrl+C / Ctrl+V), sur le PC, dans les archives et sur les serveurs."),
+            L.T("Fichiers d'un serveur ou d'une archive donnés aux autres programmes (Explorateur, messagerie…) par Copier / Coller ou en les glissant à la souris : ils sont d'abord copiés sur le PC."),
             L.T("Infobulle avec le texte entier sur tout texte coupé par « … »."),
             L.T("Lecteurs réseau et connexions de la barre des lecteurs : rangés en les glissant."),
             L.T("Tailles en To à partir de 1 024 Go."),

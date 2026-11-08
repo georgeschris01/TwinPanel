@@ -40,6 +40,7 @@ public partial class MainWindow : Window
         {
             if (DataContext is not MainWindowViewModel vm) return;
             await vm.InitializeAsync();
+            MainWindowViewModel.CleanOldStaging();
             LeftPanel.FocusList();
             await vm.OfferFirstStartSyncAsync();
             await vm.OfferPendingTransfersAsync();

@@ -452,10 +452,37 @@ public partial class PanelView : UserControl
         var token = Guid.NewGuid().ToString("N");
         var data = DragData(DragFormat, token);
         var (panel, fromDir) = (_vm, _tab.CurrentPath);
+        DragStaging? staging = null;
         if (!_tab.IsRemote && !_tab.IsInsideArchive) await AddFilesAsync(data, entries);
+        else if (Main?.PrepareDragStaging(entries, fromDir) is { } prepared && await AddLazyFilesAsync(data, prepared)) staging = prepared;
         s_drag = (token, entries, panel, fromDir);
         try { await DragDrop.DoDragDropAsync(press, data, DragDropEffects.Copy | DragDropEffects.Move); }
-        finally { s_drag = null; }
+        finally
+        {
+            s_drag = null;
+            staging?.End();
+        }
+    }
+
+    /// <summary>
+    /// Serveur ou archive, pour les autres programmes : les copies sur le PC sont annoncées (fichiers vides), et ne sont
+    /// remplies que si le programme qui reçoit les demande. Dans TwinPanel, le transfert reste direct.
+    /// </summary>
+    private async Task<bool> AddLazyFilesAsync(DataTransfer data, DragStaging staging)
+    {
+        if (TopLevel.GetTopLevel(this)?.StorageProvider is not { } storage) { staging.End(); return false; }
+        var items = new List<IStorageItem>();
+        foreach (var path in staging.LocalPaths)
+        {
+            IStorageItem? item = Directory.Exists(path)
+                ? await storage.TryGetFolderFromPathAsync(path)
+                : await storage.TryGetFileFromPathAsync(path);
+            if (item is null) { staging.End(); return false; }
+            items.Add(item);
+        }
+        foreach (var item in items)
+            data.Add(DataTransferItem.Create<IStorageItem>(DataFormat.File, () => staging.EnsureReady() ? item : null!));
+        return true;
     }
 
     /// <summary>Pour l'Explorateur et les autres programmes.</summary>
