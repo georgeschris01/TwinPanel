@@ -102,6 +102,7 @@ Dernière mise à jour : 02/11/2026 (Windows 0.8.7 ; Linux 0.1.9-beta).
 | Outil | Version | Licence | Rôle |
 |---|---|---|---|
 | Inno Setup | 7.1.1 | Gratuit pour un usage non commercial (licence payante demandée aux utilisateurs commerciaux) | Assemble `TwinPanel-Setup-x.y.z.exe` à partir de `installer/TwinPanel.iss` (lancé par `build-installer.bat`). L'installateur produit ne dépend pas d'Inno Setup. |
+| Pillow (Python) | 12.0.0 | MIT-CMU (permissive) | Fabrique une fois les images de l'installateur (`installer/images/make-images.py`) : bande de l'accueil (logo, nom, petite capture `docs/screenshots/windows-fr.png` / `windows-en.png`, une image par réglage d'affichage, en français et en anglais) et logo du bandeau des pages suivantes. Seules les images produites vont dans l'installateur ; le bandeau bleu foncé et son trait jaune sont faits dans le `[Code]` de `installer/TwinPanel.iss` (installation et désinstallation). |
 
 ## 5. Programmes externes appelés (non inclus, présents ou non sur le PC)
 

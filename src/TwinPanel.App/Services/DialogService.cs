@@ -363,7 +363,7 @@ public sealed class DialogService(Window owner) : IDialogService
                 content.Children.Add(new TextBlock { Text = "•  " + line, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(8, 0, 0, 0) });
         }
         Section(L.T("Corrections de bug"), TwinPanel.Core.About.ReleaseNotes.Fixes(OperatingSystem.IsWindows()));
-        Section(L.T("Nouvelles fonctionnalités"), TwinPanel.Core.About.ReleaseNotes.Features());
+        Section(L.T("Nouvelles fonctionnalités"), TwinPanel.Core.About.ReleaseNotes.Features(OperatingSystem.IsWindows()));
         var scroll = new ScrollViewer { Content = content, MaxHeight = 520, HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled };
         dialog.Content = Layout(scroll, Buttons(ok));
         dialog.Opened += (_, _) => ok.Focus();

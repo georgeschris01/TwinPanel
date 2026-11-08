@@ -35,18 +35,23 @@ public static class ReleaseNotes
         return list;
     }
 
-    /// <summary>Nouvelles fonctionnalités.</summary>
-    public static IReadOnlyList<string> Features() =>
-    [
-        L.T("Couper / Copier / Coller des fichiers (Ctrl+X / Ctrl+C / Ctrl+V), sur le PC, dans les archives et sur les serveurs."),
-        L.T("Infobulle avec le texte entier sur tout texte coupé par « … »."),
-        L.T("Lecteurs réseau et connexions de la barre des lecteurs : rangés en les glissant."),
-        L.T("Tailles en To à partir de 1 024 Go."),
-        L.T("Précédent / Suivant (bouton, souris, Alt+← / Alt+→) : le curseur revient sur l'élément où on était, souvent le dossier dans lequel on était entré, montré au milieu de la liste."),
-        L.T("Commandes enregistrées du terminal : case « Secret » pour un mot de passe, rangé dans le coffre chiffré et caché à l'écran."),
-        L.T("Coffre des mots de passe : code de secours donné avec le mot de passe maître (à noter, copier ou enregistrer), et « Mot de passe maître oublié ? »."),
-        L.T("Options → Sécurité : mot de passe maître, code de secours, mot de passe maître oublié."),
-        L.T("« Nouveautés de cette version » dans « À propos »."),
-        L.T("« À propos » : total des téléchargements de TwinPanel pour le système utilisé (toutes versions), lu sur GitHub (rien n'est envoyé)."),
-    ];
+    /// <summary>Nouvelles fonctionnalités. windows : faux sous Linux (les lignes propres à Windows sont retirées).</summary>
+    public static IReadOnlyList<string> Features(bool windows)
+    {
+        var list = new List<string>
+        {
+            L.T("Couper / Copier / Coller des fichiers (Ctrl+X / Ctrl+C / Ctrl+V), sur le PC, dans les archives et sur les serveurs."),
+            L.T("Infobulle avec le texte entier sur tout texte coupé par « … »."),
+            L.T("Lecteurs réseau et connexions de la barre des lecteurs : rangés en les glissant."),
+            L.T("Tailles en To à partir de 1 024 Go."),
+            L.T("Précédent / Suivant (bouton, souris, Alt+← / Alt+→) : le curseur revient sur l'élément où on était, souvent le dossier dans lequel on était entré, montré au milieu de la liste."),
+            L.T("Commandes enregistrées du terminal : case « Secret » pour un mot de passe, rangé dans le coffre chiffré et caché à l'écran."),
+            L.T("Coffre des mots de passe : code de secours donné avec le mot de passe maître (à noter, copier ou enregistrer), et « Mot de passe maître oublié ? »."),
+            L.T("Options → Sécurité : mot de passe maître, code de secours, mot de passe maître oublié."),
+            L.T("« Nouveautés de cette version » dans « À propos »."),
+            L.T("« À propos » : total des téléchargements de TwinPanel pour le système utilisé (toutes versions), lu sur GitHub (rien n'est envoyé)."),
+        };
+        if (windows) list.Add(L.T("Installateur : nouvelle présentation, avec le logo et un aperçu de TwinPanel sur la page d'accueil, et un bandeau en haut des pages suivantes."));
+        return list;
+    }
 }

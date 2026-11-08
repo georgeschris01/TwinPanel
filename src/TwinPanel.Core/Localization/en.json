@@ -1785,6 +1785,7 @@
  "Nouvelles fonctionnalités": "New features",
  "Les onglets de serveur et les terminaux ne sont plus perdus si TwinPanel se ferme pendant le démarrage.": "Server tabs and terminals are no longer lost if TwinPanel closes during startup.",
  "« Lancer TwinPanel » à la fin de l'installation l'ouvre avec les droits de l'utilisateur, plus en administrateur.": "“Launch TwinPanel” at the end of setup now opens it with the user's rights, no longer as administrator.",
+ "Installateur : nouvelle présentation, avec le logo et un aperçu de TwinPanel sur la page d'accueil, et un bandeau en haut des pages suivantes.": "Setup: new look, with the logo and a preview of TwinPanel on the welcome page, and a banner at the top of the following pages.",
  "Les onglets apparaissent tout de suite au démarrage ; les dossiers sont lus en même temps, l'onglet actif d'abord.": "Tabs appear right away at startup; folders are read at the same time, the active tab first.",
  "Un onglet verrouillé garde le nom de son dossier verrouillé, même quand il affiche un autre dossier.": "A locked tab keeps the name of its locked folder, even when it shows another folder.",
  "Taille des dossiers sur un serveur : le calcul va jusqu'au bout (mesure par le serveur en SSH, 4 dossiers en même temps, tailles gardées ; Ctrl+R recalcule).": "Folder sizes on a server: the calculation now finishes (measured by the server over SSH, 4 folders at a time, sizes kept; Ctrl+R recalculates).",
