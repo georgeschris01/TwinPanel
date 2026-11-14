@@ -1,0 +1,64 @@
+name: 🐞 Report a bug
+description: Something does not work as it should in TwinPanel.
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a problem! The more precise you are, the faster it can be fixed.
+
+        ⚠️ **Never paste a password, a server address, a key or a personal path** (replace them with `server`, `user`, `C:\folder`…).
+        🔒 A security problem? Please do not report it here: use the **Security** tab → **Report a vulnerability** (private).
+  - type: input
+    id: version
+    attributes:
+      label: TwinPanel version
+      description: "Menu ≡ → Help → About. Example: 0.8.11 or 0.1.15-beta"
+      placeholder: "0.8.11"
+    validations:
+      required: true
+  - type: dropdown
+    id: system
+    attributes:
+      label: System
+      options:
+        - Windows 11
+        - Windows 10
+        - Debian
+        - Ubuntu
+        - Fedora
+        - Other Linux (say which in the description)
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: Describe the problem, and paste the error message if there is one.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: What did you do, step by step?
+      placeholder: |
+        1. Open …
+        2. Press …
+        3. See …
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: false
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: Screenshot
+      description: Optional. Drag an image here. Check that it shows no personal information.
+    validations:
+      required: false

@@ -1,0 +1,23 @@
+name: 💡 Suggest an idea
+description: A new feature or an improvement for TwinPanel.
+title: "[Idea] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for your idea! You can also talk about it first in **Discussions → Ideas**, and check the [roadmap](https://github.com/georgeschris01/TwinPanel/issues/22) to see what is already planned.
+  - type: textarea
+    id: what
+    attributes:
+      label: What would you like to do, and why?
+      description: The problem you meet, or what is missing for you.
+    validations:
+      required: true
+  - type: textarea
+    id: how
+    attributes:
+      label: How do you imagine it?
+      description: Optional. A shortcut, a menu, a button… whatever you have in mind.
+    validations:
+      required: false

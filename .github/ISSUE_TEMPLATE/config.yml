@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: ❓ Ask a question
+    url: https://github.com/georgeschris01/TwinPanel/discussions/categories/q-a
+    about: '"How do I…?" questions are answered in Discussions (Q&A).'
+  - name: 🔒 Report a security problem
+    url: https://github.com/georgeschris01/TwinPanel/security/advisories/new
+    about: Privately. Please never report a vulnerability in a public Issue.
+  - name: 🗺️ See the roadmap
+    url: https://github.com/georgeschris01/TwinPanel/issues/22
+    about: What is planned for TwinPanel.
