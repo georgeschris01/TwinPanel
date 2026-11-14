@@ -89,13 +89,25 @@
           <DataGridTemplateColumn Width="30" CanUserSort="False">
             <DataGridTemplateColumn.CellTemplate>
               <DataTemplate>
-                <PathIcon Width="14" Height="14" HorizontalAlignment="Center"
-                          Data="{Binding Category, Converter={x:Static conv:CategoryToGeometryConverter.Instance}}"
-                          Foreground="{Binding Category, Converter={x:Static conv:CategoryToBrushConverter.Instance}}" />
+                <!-- Comme dans les panneaux : icône dessinée aux couleurs des Options, ou vraie icône du système (Options → Affichage). -->
+                <Panel>
+                  <PathIcon Width="16" Height="16" HorizontalAlignment="Center" IsVisible="{Binding !HasShellIcon}"
+                            Data="{Binding Category, Converter={x:Static conv:CategoryToGeometryConverter.Instance}}"
+                            Foreground="{Binding IconBrush}" />
+                  <Image Width="16" Height="16" HorizontalAlignment="Center" IsVisible="{Binding HasShellIcon}"
+                         Source="{Binding ShellIcon}" RenderOptions.BitmapInterpolationMode="HighQuality" />
+                </Panel>
               </DataTemplate>
             </DataGridTemplateColumn.CellTemplate>
           </DataGridTemplateColumn>
-          <DataGridTextColumn Header="{l:T 'Nom'}" Binding="{Binding Name}" Width="2*" />
+          <DataGridTemplateColumn Header="{l:T 'Nom'}" Width="2*" SortMemberPath="Name">
+            <DataGridTemplateColumn.CellTemplate>
+              <DataTemplate>
+                <!-- Couleur du nom : celle des Options → Couleurs (style « colored »), sinon celle du thème. -->
+                <TextBlock Text="{Binding Name}" Classes.colored="{Binding HasNameColor}" VerticalAlignment="Center" Margin="12,0,4,0" />
+              </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+          </DataGridTemplateColumn>
           <DataGridTextColumn Header="{l:T 'Dossier'}" Binding="{Binding Folder}" Width="3*" />
           <DataGridTextColumn Header="{l:T 'Taille'}" Binding="{Binding SizeText}" Width="90" />
           <DataGridTextColumn Header="Date" Binding="{Binding DateText}" Width="130" />

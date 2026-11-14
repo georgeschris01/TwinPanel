@@ -309,7 +309,7 @@ Mark with `Ins`, `Space`, `Shift+arrows`, the right click, or by mask with `Num+
 
 In **Name**, a word without `*` or `?` finds the names that contain it: `destin` finds "Le destin.epub" as well as "Destinations.pdf" (like `*destin*`). **Containing the text** searches inside the files. With the **Read the text of documents** box (ticked by default), the text is searched in the real text of PDF, epub, Word, Excel, PowerPoint and OpenDocument files: these files are compressed, and without it the search would hit unrelated fragments. A scanned PDF (an image) has no text to read.
 
-The result columns are widened by dragging the edge of their title. A name or folder that is too long ends with "…" and is shown in full when the mouse hovers over it, even while searching.
+The result columns are widened by dragging the edge of their title. A name or folder that is too long ends with "…" and is shown in full when the mouse hovers over it, even while searching. The results keep the icons and colors of the panels: colors chosen in Options → Colors, and real system icons if they are enabled in Options → View.
 
 On a server, sizes are compared first. Over SSH, the server calculates the hashes itself, without transferring anything. Otherwise, TwinPanel announces the volume to read and asks for your approval.
 

@@ -10,9 +10,11 @@ using TwinPanel.Core.Search;
 
 namespace TwinPanel.App.ViewModels;
 
-/// <summary>Une ligne de résultat (avec le groupe pour les doublons).</summary>
-public sealed record SearchResult(FileEntry Entry, string Group)
+/// <summary>Une ligne de résultat (avec le groupe pour les doublons), avec les icônes et couleurs du panneau.</summary>
+public sealed partial class SearchResult(FileEntry entry, string group) : ObservableObject
 {
+    public FileEntry Entry { get; } = entry;
+    public string Group { get; } = group;
     public string Name => Entry.Name;
     /// <summary>Dossier qui contient le résultat (sur un serveur : sftp://…/dossier).</summary>
     public string Folder => TwinPanel.Core.Remote.PanelRemotePath.TryParse(Entry.FullPath, out var p)
@@ -21,6 +23,28 @@ public sealed record SearchResult(FileEntry Entry, string Group)
     public string SizeText => Entry.DisplaySize;
     public string DateText => Entry.DisplayDate;
     public FileCategory Category => Entry.Category;
+
+    /// <summary>Couleur de l'icône (règles des Options → Couleurs comprises), comme dans les panneaux.</summary>
+    public Avalonia.Media.IBrush IconBrush => Converters.FileIcons.BrushFor(Entry);
+    /// <summary>Le nom a une couleur à lui (règle par masque, ou « colorer les noms ») ; sinon celle du thème.</summary>
+    public bool HasNameColor => Converters.FileIcons.ColorNames || Converters.FileIcons.Rules.RuleColor(Entry) is not null;
+    public Avalonia.Media.IBrush NameColor => Converters.FileIcons.BrushFor(Entry);
+
+    /// <summary>Vraie icône du système (Options → Affichage) ; null : icône dessinée de TwinPanel.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasShellIcon))]
+    private Avalonia.Media.Imaging.Bitmap? _shellIcon;
+    public bool HasShellIcon => ShellIcon is not null;
+
+    /// <summary>Demande la vraie icône si l'option est choisie (connue : tout de suite ; sinon lue sur un fil à part).</summary>
+    public void RequestShellIcon()
+    {
+        if (!FolderTabViewModel.UseShellIcons || !Services.ShellIcons.IsSupported) return;
+        bool local = !TwinPanel.Core.Remote.PanelRemotePath.TryParse(Entry.FullPath, out _);
+        var (key, path, byType) = Services.ShellIcons.Describe(Entry.FullPath, Entry.Name, Entry.IsDirectory, local);
+        if (Services.ShellIcons.TryGetCached(key, large: true, out var known)) { ShellIcon = known; return; }
+        Services.ShellIcons.Request(key, path, Entry.IsDirectory, byType, large: true, icon => ShellIcon = icon);
+    }
 }
 
 /// <summary>Fenêtre de recherche (Alt+F7) : recherche classique ou recherche de doublons.</summary>
@@ -209,13 +233,19 @@ public partial class SearchViewModel(string startPath, TwinPanel.Core.Remote.Rem
         foreach (var g in groups)
         {
             var label = L.F("Groupe {0} — {1} × {2}", n++, g.Files.Count, FileEntry.FormatSize(g.Size));
-            foreach (var f in g.Files) Results.Add(new SearchResult(f, label));
+            foreach (var f in g.Files) Add(new SearchResult(f, label));
         }
+    }
+
+    private void Add(SearchResult r)
+    {
+        r.RequestShellIcon();
+        Results.Add(r);
     }
 
     private void Flush(List<SearchResult> batch)
     {
-        foreach (var r in batch) Results.Add(r);
+        foreach (var r in batch) Add(r);
         batch.Clear();
     }
 }

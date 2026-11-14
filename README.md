@@ -309,7 +309,7 @@ Marquez avec `Inser`, `Espace`, `Maj+flèches`, le clic droit, ou selon un masqu
 
 Dans **Nom**, un mot sans `*` ni `?` cherche les noms qui le contiennent : `destin` trouve « Le destin.epub » comme « Destinations.pdf » (comme `*destin*`). **Contenant le texte** cherche à l'intérieur des fichiers. Avec la case **Lire le texte des documents** (cochée au départ), le texte est cherché dans le vrai texte des PDF, epub, Word, Excel, PowerPoint et OpenDocument : ces fichiers sont compressés, et sans elle la recherche tomberait sur des morceaux sans rapport. Un PDF scanné (une image) n'a pas de texte à lire.
 
-Les colonnes des résultats s'élargissent en tirant le bord de leur titre. Un nom ou un dossier trop long se termine par « … » et s'affiche en entier au survol de la souris, même pendant la recherche.
+Les colonnes des résultats s'élargissent en tirant le bord de leur titre. Un nom ou un dossier trop long se termine par « … » et s'affiche en entier au survol de la souris, même pendant la recherche. Les résultats gardent les icônes et les couleurs des panneaux : couleurs choisies dans Options → Couleurs, et vraies icônes du système si elles sont activées dans Options → Affichage.
 
 Sur un serveur, les tailles sont comparées d'abord. En SSH, le serveur calcule lui-même les empreintes, sans rien transférer. Sinon, TwinPanel annonce le volume à lire et demande votre accord.
 
