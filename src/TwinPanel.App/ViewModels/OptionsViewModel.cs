@@ -329,6 +329,16 @@ public partial class OptionsViewModel : ObservableObject
         [new(TabRowMode.Arrows, L.T("Une ligne, avec les flèches ‹ › pour faire défiler")), new(TabRowMode.Wrap, L.T("Plusieurs lignes (tous les onglets visibles)"))];
     [ObservableProperty] private Choice<TabRowMode> _tabRows = TabRowModes[0];
 
+    public static IReadOnlyList<Choice<DropAction>> DropActionChoices { get; } =
+    [
+        new(DropAction.Ask, L.T("Demander (petit menu « Copier ici / Déplacer ici »)")),
+        new(DropAction.Copy, L.T("Copier")),
+        new(DropAction.Move, L.T("Déplacer")),
+    ];
+    [ObservableProperty] private Choice<DropAction> _dropChoice = DropActionChoices[0];
+    [ObservableProperty] private bool _openTabOnDrop = true;
+    [ObservableProperty] private bool _openTabOnHover = true;
+
     public static IReadOnlyList<Choice<double>> ThumbnailSizes { get; } =
         [new(96, L.T("Petites")), new(160, L.T("Moyennes")), new(256, L.T("Grandes"))];
     [ObservableProperty] private Choice<double> _thumbnailSize = ThumbnailSizes[1];
@@ -598,6 +608,9 @@ public partial class OptionsViewModel : ObservableObject
         TransferRetries = b.TransferRetries;
         MaxTransfers = b.MaxTransfers;
         ClickToRename = b.ClickToRename;
+        DropChoice = DropActionChoices.FirstOrDefault(d => d.Value == b.DropAction) ?? DropActionChoices[0];
+        OpenTabOnDrop = b.OpenTabOnDrop;
+        OpenTabOnHover = b.OpenTabOnHover;
         ShowTips = b.ShowTips;
         _nextTip = b.NextTip;
         RemoteRefreshSeconds = b.RemoteRefreshSeconds;
@@ -705,6 +718,9 @@ public partial class OptionsViewModel : ObservableObject
             TransferRetries = (int)Math.Clamp(TransferRetries ?? 3, 0, 10),
             MaxTransfers = (int)Math.Clamp(MaxTransfers ?? TransferGate<object>.MinLimit, TransferGate<object>.MinLimit, TransferGate<object>.MaxLimit),
             ClickToRename = ClickToRename,
+            DropAction = DropChoice.Value,
+            OpenTabOnDrop = OpenTabOnDrop,
+            OpenTabOnHover = OpenTabOnHover,
             ShowTips = ShowTips,
             NextTip = _nextTip,
             RemoteRefreshSeconds = (int)Math.Clamp(RemoteRefreshSeconds ?? 15, 0, 3600),

@@ -127,9 +127,11 @@ Pour connaître votre session, tapez `echo $XDG_SESSION_TYPE` dans un terminal d
 
 | Au lâcher | Résultat |
 |---|---|
-| Sans touche | Menu « Copier ici / Déplacer ici » |
+| Sans touche | Menu « Copier ici / Déplacer ici », ou copier, ou déplacer : au choix dans Options → Comportement → **Glisser-déposer de fichiers** |
 | Maj maintenue | Déplacer |
 | Ctrl maintenue | Copier sans demander |
+
+Des fichiers lâchés sur un onglet y sont copiés ou déplacés, et cet onglet s'ouvre pour montrer les éléments arrivés (case **Fichiers lâchés sur un onglet : ouvrir cet onglet** dans Options → Comportement). Sans lâcher, gardez la souris un court instant sur un onglet : il s'ouvre, et vous pouvez lâcher sur un dossier de sa liste (case **Fichiers glissés au-dessus d'un onglet : l'ouvrir après un court instant, sans lâcher**).
 
 ### Onglets et colonnes
 
@@ -304,6 +306,10 @@ Marquez avec `Inser`, `Espace`, `Maj+flèches`, le clic droit, ou selon un masqu
 ### Recherche
 
 `Alt+F7` cherche par nom, texte contenu, taille et date, dans plusieurs dossiers et sur les serveurs ouverts. La case **Doublons** trouve les fichiers au contenu identique.
+
+Dans **Nom**, un mot sans `*` ni `?` cherche les noms qui le contiennent : `destin` trouve « Le destin.epub » comme « Destinations.pdf » (comme `*destin*`). **Contenant le texte** cherche à l'intérieur des fichiers. Avec la case **Lire le texte des documents** (cochée au départ), le texte est cherché dans le vrai texte des PDF, epub, Word, Excel, PowerPoint et OpenDocument : ces fichiers sont compressés, et sans elle la recherche tomberait sur des morceaux sans rapport. Un PDF scanné (une image) n'a pas de texte à lire.
+
+Les colonnes des résultats s'élargissent en tirant le bord de leur titre. Un nom ou un dossier trop long se termine par « … » et s'affiche en entier au survol de la souris, même pendant la recherche.
 
 Sur un serveur, les tailles sont comparées d'abord. En SSH, le serveur calcule lui-même les empreintes, sans rien transférer. Sinon, TwinPanel annonce le volume à lire et demande votre accord.
 

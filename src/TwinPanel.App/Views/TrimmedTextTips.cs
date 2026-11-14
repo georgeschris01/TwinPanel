@@ -4,6 +4,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
+using Avalonia.Threading;
 
 namespace TwinPanel.App.Views;
 
@@ -25,6 +26,12 @@ public static class TrimmedTextTips
         if (s_installed) return;
         s_installed = true;
         InputElement.PointerEnteredEvent.AddClassHandler<TextBlock>((text, _) => Update(text));
+        // Texte changé sous la souris (recherche en cours, ligne réutilisée par la liste, barre d'état) :
+        // l'infobulle suit, une fois la nouvelle taille calculée.
+        TextBlock.TextProperty.Changed.AddClassHandler<TextBlock>((text, _) =>
+        {
+            if (text.IsPointerOver) Dispatcher.UIThread.Post(() => { if (text.IsPointerOver) Update(text); }, DispatcherPriority.Loaded);
+        });
     }
 
     private static void Update(TextBlock text)

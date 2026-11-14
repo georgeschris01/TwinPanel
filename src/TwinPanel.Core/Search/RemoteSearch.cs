@@ -17,7 +17,7 @@ public static class RemoteSearch
     public static async IAsyncEnumerable<FileEntry> SearchAsync(IRemoteFileSystem fs, PanelRemotePath root, SearchCriteria c,
         IProgress<string>? currentFolder = null, [EnumeratorCancellation] CancellationToken ct = default)
     {
-        var mask = new MaskMatcher(c.NameMask);
+        var mask = new MaskMatcher(c.NameMask, bareMeansContains: true);
         var textMatcher = FileSearch.BuildTextMatcher(c);
         var pending = new Stack<(string Dir, int Depth)>();
         pending.Push((root.Path, 0));
@@ -60,7 +60,10 @@ public static class RemoteSearch
                         data = ms.ToArray();
                     }
                     catch (RemoteException) { continue; } // illisible (droits) : on passe
-                    if (!FileSearch.BytesContain(data, textMatcher)) continue;
+                    bool found = c.SearchDocuments && DocumentText.IsDocument(item.Name)
+                        ? FileSearch.DocumentBytesContain(data, item.Name, textMatcher, ct)
+                        : FileSearch.BytesContain(data, textMatcher);
+                    if (!found) continue;
                 }
 
                 var attrs = item.IsDirectory ? FileAttributes.Directory : FileAttributes.Normal;

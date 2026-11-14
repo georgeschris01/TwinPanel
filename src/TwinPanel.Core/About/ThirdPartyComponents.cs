@@ -33,6 +33,7 @@ public static class ThirdPartyComponents
         new("ATL .NET", L.T("Tags des musiques et des MP4"), "MIT", "https://github.com/Zeugma440/atldotnet"),
         new("Ude.NetStandard", L.T("Détection de l'encodage des textes (utilisé par ATL .NET)"), L.T("MPL-1.1 (ou GPL / LGPL) ; code source à ce lien"), "https://github.com/yinyue200/ude"),
         new("MetadataExtractor", L.T("EXIF / GPS des photos"), "Apache-2.0", "https://github.com/drewnoakes/metadata-extractor-dotnet"),
+        new("PdfPig", L.T("Texte des PDF pour la recherche"), "Apache-2.0", "https://github.com/UglyToad/PdfPig"),
         new(L.T("XmpCore (dans MetadataExtractor)"), L.T("Données XMP des photos"), "BSD (Adobe)", "https://github.com/drewnoakes/xmp-core-dotnet"),
         new("Svg.Skia, ShimSkiaSharp, Svg.Model, Svg.Animation, Svg.SceneGraph", L.T("Dessin des icônes SVG sous Linux"), "MIT", "https://github.com/wieslawsoltes/Svg.Skia"),
         new("Svg.Custom", L.T("Lecture des fichiers SVG"), "Ms-PL", "https://github.com/wieslawsoltes/Svg.Skia"),

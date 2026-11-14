@@ -106,6 +106,8 @@ public static class ArchiveEditor
             // Archive d'un serveur : le serveur d'abord. S'il refuse, la copie reste identique à ce qu'il contient.
             server?.ReplaceAsync(part, progress, ct).GetAwaiter().GetResult();
             File.Move(part, info.FullName, overwrite: true);
+            // Un .tar modifié peut garder la même taille et la même heure (horloge du disque grossière) : liste à relire.
+            ArchiveIndex.Forget(info.FullName);
         }
         finally
         {

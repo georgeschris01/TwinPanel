@@ -64,6 +64,9 @@ public sealed class ArchiveIndex
         return slash < 0 ? string.Empty : key[..slash];
     }
 
+    /// <summary>Oublie l'index gardé de cette archive (elle vient d'être réécrite).</summary>
+    public static void Forget(string archivePath) => Cache.TryRemove(Path.GetFullPath(archivePath), out _);
+
     /// <summary>Lit (ou reprend du cache) l'index d'une archive.</summary>
     /// <exception cref="IOException">Archive illisible ou endommagée.</exception>
     /// <exception cref="ArchivePasswordException">Le mot de passe manque, jusque pour lire les noms (7z à noms cachés).</exception>

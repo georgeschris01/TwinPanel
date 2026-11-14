@@ -19,6 +19,8 @@ public sealed record SearchCriteria
     public string? ContainsText { get; init; }
     public bool MatchCase { get; init; }
     public bool TextIsRegex { get; init; }
+    /// <summary>Texte cherché dans le vrai texte des documents (PDF, epub, Word…) au lieu de leurs octets compressés.</summary>
+    public bool SearchDocuments { get; init; } = true;
     public long? MinSize { get; init; }
     public long? MaxSize { get; init; }
     public DateTime? ModifiedAfter { get; init; }
@@ -54,7 +56,7 @@ public static class FileSearch
     {
         if (!Directory.Exists(c.Root)) throw new DirectoryNotFoundException(L.F("Dossier introuvable : {0}", c.Root));
 
-        var mask = new MaskMatcher(c.NameMask);
+        var mask = new MaskMatcher(c.NameMask, bareMeansContains: true);
         var textMatcher = BuildTextMatcher(c);
         var options = new EnumerationOptions { IgnoreInaccessible = true, AttributesToSkip = 0, RecurseSubdirectories = false };
         var pending = new Stack<(string Dir, int Depth)>();
@@ -90,7 +92,10 @@ public static class FileSearch
                 if (textMatcher is not null)
                 {
                     if (isDir) continue; // le texte ne concerne que les fichiers
-                    if (!FileContains(info.FullName, size, textMatcher, c.TextIsRegex, ct)) continue;
+                    bool found = c.SearchDocuments && DocumentText.IsDocument(info.Name)
+                        ? DocumentContains(info.FullName, size, textMatcher, ct)
+                        : FileContains(info.FullName, size, textMatcher, c.TextIsRegex, ct);
+                    if (!found) continue;
                 }
 
                 var entry = new FileEntry(info.Name, info.FullName, isDir, size, info.LastWriteTime, info.Attributes);
@@ -149,6 +154,29 @@ public static class FileSearch
         {
             return false; // fichier verrouillé ou illisible : on passe
         }
+    }
+
+    /// <summary>Texte d'un document (PDF, epub, Word…) : lu par <see cref="DocumentText"/>.</summary>
+    private static bool DocumentContains(string path, long size, Func<string, bool> matcher, CancellationToken ct)
+    {
+        if (size > DocumentText.MaxFileSize) return false;
+        try
+        {
+            using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+            return DocumentText.Extract(fs, path, ct) is { } text && matcher(text);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or RegexMatchTimeoutException)
+        {
+            return false; // fichier verrouillé ou illisible : on passe
+        }
+    }
+
+    /// <summary>Le texte se trouve-t-il dans ce document téléchargé (PDF, epub, Word…) ?</summary>
+    public static bool DocumentBytesContain(byte[] data, string fileName, Func<string, bool> matcher, CancellationToken ct = default)
+    {
+        using var ms = new MemoryStream(data, writable: false);
+        try { return DocumentText.Extract(ms, fileName, ct) is { } text && matcher(text); }
+        catch (RegexMatchTimeoutException) { return false; }
     }
 
     private static IEnumerable<Encoding> CandidateEncodings(string path)

@@ -127,6 +127,18 @@ public enum SizeDisplay { Auto, Bytes, Kilobytes }
 /// <summary>Onglets trop nombreux pour la largeur : une ligne qu'on fait défiler (flèches ‹ ›) ou plusieurs lignes.</summary>
 public enum TabRowMode { Arrows, Wrap }
 
+/// <summary>Ce que fait un glisser-déposer de fichiers sans touche : demander (petit menu), copier ou déplacer.</summary>
+public enum DropAction { Ask, Copy, Move }
+
+public static class DropActions
+{
+    /// <summary>
+    /// Vrai = déplacer, faux = copier, null = demander. Maj déplace et Ctrl copie toujours, quel que soit le réglage.
+    /// </summary>
+    public static bool? Resolve(DropAction setting, bool shift, bool control) =>
+        shift ? true : control ? false : setting switch { DropAction.Copy => false, DropAction.Move => true, _ => null };
+}
+
 public sealed class AppearanceSettings
 {
     /// <summary>Police de l'interface (vide : Inter, celle de TwinPanel).</summary>
@@ -214,6 +226,12 @@ public sealed class BehaviorSettings
     public int TransferRetries { get; set; } = 3;
     /// <summary>Cliquer sur le nom du fichier déjà sous le curseur ouvre le renommage.</summary>
     public bool ClickToRename { get; set; } = true;
+    /// <summary>Glisser-déposer de fichiers sans touche : demander, copier ou déplacer.</summary>
+    public DropAction DropAction { get; set; } = DropAction.Ask;
+    /// <summary>Fichiers lâchés sur un onglet : cet onglet s'ouvre (il montre les éléments arrivés).</summary>
+    public bool OpenTabOnDrop { get; set; } = true;
+    /// <summary>Fichiers glissés au-dessus d'un onglet : il s'ouvre après un court instant, sans lâcher.</summary>
+    public bool OpenTabOnHover { get; set; } = true;
     /// <summary>Relecture du dossier de serveur affiché (0 : jamais).</summary>
     public int RemoteRefreshSeconds { get; set; } = 15;
     /// <summary>Copies, déplacements, envois et extractions qui tournent en même temps ; les suivants attendent.</summary>

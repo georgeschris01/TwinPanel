@@ -28,8 +28,9 @@
       </StackPanel>
 
       <StackPanel Grid.Row="1" Spacing="4" Margin="0,12,0,0">
-        <TextBlock Classes="subtle" Text="{l:T 'Nom (masque : *.jpg;*.png  ou  *.* | *.tmp)'}" />
-        <TextBox x:Name="MaskBox" Text="{Binding NameMask}" />
+        <TextBlock Classes="subtle" Text="{l:T 'Nom (un mot, ou masque : *.jpg;*.png  ou  *.* | *.tmp)'}" />
+        <TextBox x:Name="MaskBox" Text="{Binding NameMask}"
+                 ToolTip.Tip="{l:T 'Un mot sans * ni ? cherche les noms qui le contiennent : destin = *destin*'}" />
         <CheckBox Content="{l:T 'Chercher aussi dans les sous-dossiers'}" IsChecked="{Binding Recursive}" />
       </StackPanel>
       <StackPanel Grid.Row="1" Grid.Column="2" Spacing="4" Margin="0,12,0,0">
@@ -39,6 +40,8 @@
           <CheckBox Content="{l:T 'Respecter la casse'}" IsChecked="{Binding MatchCase}" />
           <CheckBox Content="{l:T 'Expression régulière'}" IsChecked="{Binding TextIsRegex}" />
         </StackPanel>
+        <CheckBox Content="{l:T 'Lire le texte des documents (PDF, epub, Word, Excel, PowerPoint, OpenDocument)'}" IsChecked="{Binding SearchDocuments}"
+                  ToolTip.Tip="{l:T 'Ces fichiers sont compressés : sans cette case, leur texte est invisible et la recherche tombe sur des morceaux sans rapport.'}" />
       </StackPanel>
 
       <Grid Grid.Row="2" ColumnDefinitions="*,8,*" Margin="0,12,0,0">
@@ -75,7 +78,13 @@
             BorderThickness="1" CornerRadius="8" ClipToBounds="True">
       <DataGrid x:Name="ResultsGrid" ItemsSource="{Binding Results}" SelectedItem="{Binding SelectedResult, Mode=TwoWay}"
                 IsReadOnly="True" GridLinesVisibility="None" HeadersVisibility="Column" CanUserSortColumns="True"
-                RowHeight="26" Background="Transparent" SelectionMode="Single">
+                CanUserResizeColumns="True" RowHeight="26" Background="Transparent" SelectionMode="Single">
+        <DataGrid.Styles>
+          <!-- Texte trop long : « … », et le texte entier en infobulle (TrimmedTextTips). -->
+          <Style Selector="DataGridCell TextBlock">
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+          </Style>
+        </DataGrid.Styles>
         <DataGrid.Columns>
           <DataGridTemplateColumn Width="30" CanUserSort="False">
             <DataGridTemplateColumn.CellTemplate>

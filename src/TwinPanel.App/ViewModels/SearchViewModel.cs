@@ -40,6 +40,7 @@ public partial class SearchViewModel(string startPath, TwinPanel.Core.Remote.Rem
     [ObservableProperty] private string _containsText = string.Empty;
     [ObservableProperty] private bool _matchCase;
     [ObservableProperty] private bool _textIsRegex;
+    [ObservableProperty] private bool _searchDocuments = true;
     [ObservableProperty] private decimal? _minSizeKb;
     [ObservableProperty] private decimal? _maxSizeKb;
     [ObservableProperty] private DateTime? _modifiedAfter;
@@ -96,6 +97,7 @@ public partial class SearchViewModel(string startPath, TwinPanel.Core.Remote.Rem
         ContainsText = string.IsNullOrEmpty(ContainsText) ? null : ContainsText,
         MatchCase = MatchCase,
         TextIsRegex = TextIsRegex,
+        SearchDocuments = SearchDocuments,
         MinSize = MinSizeKb is { } min ? (long)(min * 1024) : null,
         MaxSize = MaxSizeKb is { } max ? (long)(max * 1024) : null,
         ModifiedAfter = ModifiedAfter?.Date,

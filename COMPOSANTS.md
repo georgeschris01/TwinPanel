@@ -36,6 +36,7 @@ Dernière mise à jour : 02/11/2026 (Windows 0.8.7 ; Linux 0.1.9-beta).
 | **MediaInfo.Core.Native** | 26.10.0 | BSD-2 (MediaArea) | Bibliothèque native MediaInfo (libmediainfo, avec libcurl, libssh2, OpenSSL et Brotli) : codecs, pistes, langues, HDR / Dolby Vision. Appelée directement par `Core/Media/MediaInfoLib.cs`. | Référence de l'analyse des médias, utilisée par la plupart des lecteurs. |
 | **z440.atl.core** (ATL .NET) | 7.19.0 | MIT | Lecture et écriture des tags des musiques (MP3, FLAC, M4A, OGG, Opus, WMA…) et des MP4 ; débit, fréquence, durée. | Pur .NET, très complet, mis à jour régulièrement (MIT plutôt que la LGPL de TagLib#). |
 | **MetadataExtractor** | 2.9.3 | Apache-2.0 | Lecture de l'EXIF / XMP / GPS des photos (avec XmpCore, licence BSD d'Adobe). | Référence en .NET pour lire les métadonnées d'images. |
+| **PdfPig** | 0.1.16 | Apache-2.0 (parties BSD de PDFBox / FontBox et d'Adobe, voir THIRD-PARTY-NOTICES) | Texte des PDF pour la recherche de texte (Alt+F7), ajouté le 14/11/2026. | Écrit entièrement en .NET, sans dépendance ni DLL native. |
 | **Svg.Skia** | 5.1.1 | MIT | Dessin des icônes SVG des thèmes Linux (option « Vraies icônes du système »). Livré aussi sous Windows, où il ne sert pas. | Repose sur Skia, déjà utilisé par Avalonia. 5.1.1 : dernière version sur SkiaSharp 3, celui d'Avalonia 12 (5.2 exige SkiaSharp 4). |
 
 ### Installées automatiquement avec Avalonia (dépendances indirectes)
@@ -186,7 +187,7 @@ Les licences des bibliothèques livrées sont **permissives** (MIT, BSD, Apache 
 | `About/ReleaseNotes.cs` | « À propos » → Nouveautés de cette version : corrections de bug et nouvelles fonctionnalités, à réécrire à chaque version. |
 | `Selection/MaskMatcher.cs` | Masques `*.jpg;*.png \| *.tmp`. |
 | `Operations/` | Taille des dossiers, renommage multiple (masques, compteur, regex, annulation). |
-| `Search/` | Recherche (nom, texte, taille, date), doublons, vue à plat (`FlatListing`). |
+| `Search/` | Recherche (nom, texte, taille, date), doublons, vue à plat (`FlatListing`) ; `DocumentText` : vrai texte des PDF, epub, Word, Excel, PowerPoint, OpenDocument. |
 | `Compare/SyncProfiles.cs` | Profils de synchronisation (`SyncProfile`, `sync-profiles.json`, sans secret). |
 | `Operations/FileClipboard.cs` | Couper / Copier / Coller des fichiers : « couper » de Windows (`Preferred DropEffect`), collage dans le même dossier refusé, fichiers venus d'un autre programme. |
 | `Operations/ClipboardStaging.cs` | Copies sur le PC (dossier temporaire `TwinPanel\presse-papiers`) des éléments d'un serveur ou d'une archive, pour les donner aux autres programmes par Copier / Coller ou glisser-déposer : un dossier par Copier / glisser, sous-dossiers pour les noms en double (vue à plat), question au-delà de 500 Mo, ménage au Copier suivant et au démarrage (plus d'un jour). Dans l'application : `MainWindowViewModel.Clipboard.cs` (copie au Copier ; `DragStaging` : fichiers vides annoncés au départ du glisser, remplis seulement quand l'autre programme les demande) et `PanelView.AddLazyFilesAsync`. |

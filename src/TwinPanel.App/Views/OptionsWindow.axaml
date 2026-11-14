@@ -212,6 +212,13 @@
           <CheckBox Content="{l:T 'Cliquer sur le nom du fichier déjà sélectionné permet de le renommer'}" IsChecked="{Binding ClickToRename}" />
           <CheckBox Content="{l:T 'Afficher une astuce au démarrage'}" IsChecked="{Binding ShowTips}" />
           <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,6,0,0">
+            <TextBlock Text="{l:T 'Glisser-déposer de fichiers'}" VerticalAlignment="Center" />
+            <ComboBox ItemsSource="{x:Static vm:OptionsViewModel.DropActionChoices}" SelectedItem="{Binding DropChoice}" MinWidth="360" />
+          </StackPanel>
+          <TextBlock Classes="subtle" TextWrapping="Wrap" Text="{l:T 'Quel que soit ce choix, Maj en lâchant déplace et Ctrl copie.'}" />
+          <CheckBox Content="{l:T 'Fichiers lâchés sur un onglet : ouvrir cet onglet'}" IsChecked="{Binding OpenTabOnDrop}" />
+          <CheckBox Content="{l:T 'Fichiers glissés au-dessus d\'un onglet : l\'ouvrir après un court instant, sans lâcher'}" IsChecked="{Binding OpenTabOnHover}" />
+          <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,6,0,0">
             <TextBlock Text="{l:T 'Rafraîchir le dossier affiché sur un serveur toutes les (secondes, 0 : jamais)'}" VerticalAlignment="Center" />
             <NumericUpDown Value="{Binding RemoteRefreshSeconds}" Minimum="0" Maximum="3600" Increment="5" FormatString="0" Width="120" />
           </StackPanel>

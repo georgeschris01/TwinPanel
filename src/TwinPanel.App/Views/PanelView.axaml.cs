@@ -12,6 +12,7 @@ using Avalonia.VisualTree;
 using TwinPanel.Core;
 using TwinPanel.App.ViewModels;
 using TwinPanel.Core.Navigation;
+using TwinPanel.Core.Settings;
 
 namespace TwinPanel.App.Views;
 
@@ -47,7 +48,7 @@ public partial class PanelView : UserControl
         // Glisser-déposer : départ depuis la liste, arrivée n'importe où dans le panneau (liste, dossier, onglet, lecteur).
         DragDrop.SetAllowDrop(this, true);
         AddHandler(DragDrop.DragOverEvent, OnDragOver);
-        AddHandler(DragDrop.DragLeaveEvent, (_, _) => ShowDropRow(null));
+        AddHandler(DragDrop.DragLeaveEvent, (_, _) => { ShowDropRow(null); HoverTab(null); });
         AddHandler(DragDrop.DropEvent, OnDrop);
         FileGrid.Sorting += OnSorting;
         FileGrid.ColumnReordered += OnColumnReordered;
@@ -544,8 +545,34 @@ public partial class PanelView : UserControl
         if (row is not null) row.IsDropTarget = true;
     }
 
+    private DispatcherTimer? _tabHoverTimer;
+    private FolderTabViewModel? _tabHover;
+
+    /// <summary>
+    /// Fichiers glissés au-dessus d'un onglet : il s'ouvre après un court instant, sans lâcher le bouton
+    /// (on peut ensuite lâcher sur un dossier de cet onglet). null : la souris a quitté les onglets.
+    /// </summary>
+    private void HoverTab(FolderTabViewModel? tab)
+    {
+        if (ReferenceEquals(tab, _tabHover)) return;
+        _tabHoverTimer?.Stop();
+        _tabHover = tab;
+        if (tab is null || _vm is null || ReferenceEquals(tab, _vm.SelectedTab) || Main?.Settings.Behavior.OpenTabOnHover != true) return;
+        if (_tabHoverTimer is null)
+        {
+            _tabHoverTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(600) };
+            _tabHoverTimer.Tick += (_, _) =>
+            {
+                _tabHoverTimer.Stop();
+                if (_tabHover is { } t && _vm is not null && _vm.Tabs.Contains(t)) _vm.SelectedTab = t;
+            };
+        }
+        _tabHoverTimer.Start();
+    }
+
     private void OnDragOver(object? sender, DragEventArgs e)
     {
+        if (IsDriveDrag(e) || IsTabDrag(e)) HoverTab(null);
         if (IsDriveDrag(e))
         {
             ShowDropRow(null);
@@ -562,6 +589,7 @@ public partial class PanelView : UserControl
         }
         bool ours = IsOurDrag(e);
         bool files = !ours && e.DataTransfer.Contains(DataFormat.File);
+        HoverTab(ours || files ? (e.Source as Visual)?.FindAncestorOfType<ListBoxItem>(includeSelf: true)?.DataContext as FolderTabViewModel : null);
         var target = (ours || files) ? DropTarget(e, quiet: true) : null;
         var row = target is null ? null : DropFolderRowAt(e.GetPosition(ActiveList));
         ShowDropRow(row is not null && string.Equals(row.FullPath, target, PathText.Comparison) ? row : null);
@@ -570,7 +598,9 @@ public partial class PanelView : UserControl
         bool nothingToDo = ours && (target is null || (s_drag is { } d && string.Equals(target, d.FromDir, PathText.Comparison)));
         if (nothingToDo) e.DragEffects = DragDropEffects.Move;
         else if (target is null) e.DragEffects = DragDropEffects.None;
-        else e.DragEffects = e.KeyModifiers.HasFlag(KeyModifiers.Shift) ? DragDropEffects.Move : DragDropEffects.Copy;
+        else e.DragEffects = DropActions.Resolve(Main?.Settings.Behavior.DropAction ?? DropAction.Ask,
+            e.KeyModifiers.HasFlag(KeyModifiers.Shift), e.KeyModifiers.HasFlag(KeyModifiers.Control)) == true
+            ? DragDropEffects.Move : DragDropEffects.Copy;
         e.Handled = true;
     }
 
@@ -589,19 +619,28 @@ public partial class PanelView : UserControl
     private async void OnDrop(object? sender, DragEventArgs e)
     {
         ShowDropRow(null);
+        HoverTab(null);
         if (DropDriveButton(e)) return;
         if (await DropTabAsync(e)) return;
         if (Main is not { } main || _vm is null) return;
-        // Maj = déplacer, Ctrl = copier sans demander ; sinon un petit menu demande « Copier ici / Déplacer ici ».
-        bool? forced = e.KeyModifiers.HasFlag(KeyModifiers.Shift) ? true : e.KeyModifiers.HasFlag(KeyModifiers.Control) ? false : null;
+        // Maj = déplacer, Ctrl = copier sans demander ; sinon le choix des Options (par défaut : petit menu « Copier ici / Déplacer ici »).
+        bool? forced = DropActions.Resolve(main.Settings.Behavior.DropAction,
+            e.KeyModifiers.HasFlag(KeyModifiers.Shift), e.KeyModifiers.HasFlag(KeyModifiers.Control));
+        // Lâché sur un onglet : cet onglet s'ouvre (option), une fois Copier / Déplacer choisi.
+        var droppedOnTab = (e.Source as Visual)?.FindAncestorOfType<ListBoxItem>(includeSelf: true)?.DataContext as FolderTabViewModel;
+        void OpenDroppedTab()
+        {
+            if (droppedOnTab is not null && _vm is not null && main.Settings.Behavior.OpenTabOnDrop && _vm.Tabs.Contains(droppedOnTab))
+                _vm.SelectedTab = droppedOnTab;
+        }
         if (IsOurDrag(e) && s_drag is { } d)
         {
             e.Handled = true;
             var target = DropTarget(e, quiet: false);
             if (target is null || string.Equals(target, d.FromDir, PathText.Comparison)) return;
             var (entries, panel) = (d.Entries, d.Panel);
-            if (forced is { } m) await main.DropAsync(panel, entries, target, m);
-            else AskCopyOrMove(entries.Count, target, move => main.DropAsync(panel, entries, target, move));
+            if (forced is { } m) { OpenDroppedTab(); await main.DropAsync(panel, entries, target, m); }
+            else AskCopyOrMove(entries.Count, target, move => { OpenDroppedTab(); return main.DropAsync(panel, entries, target, move); });
             return;
         }
         if (e.DataTransfer.TryGetFiles() is not { } dropped) return;
@@ -622,8 +661,8 @@ public partial class PanelView : UserControl
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
         }
         if (list.Count == 0) return;
-        if (forced is { } mv) await main.DropAsync(null, list, dest, mv);
-        else AskCopyOrMove(list.Count, dest, move => main.DropAsync(null, list, dest, move));
+        if (forced is { } mv) { OpenDroppedTab(); await main.DropAsync(null, list, dest, mv); }
+        else AskCopyOrMove(list.Count, dest, move => { OpenDroppedTab(); return main.DropAsync(null, list, dest, move); });
     }
 
     /// <summary>Menu sous la souris après un lâcher : copier, déplacer ou annuler.</summary>

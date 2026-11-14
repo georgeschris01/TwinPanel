@@ -6,9 +6,9 @@
     <LangVersion>latest</LangVersion>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <!-- Version de TwinPanel : à augmenter seulement quand Christophe le demande (0.7.1, 0.8.0…). -->
-    <Version>0.8.10</Version>
+    <Version>0.8.11</Version>
     <!-- Version Linux, numérotée à part depuis zéro : à augmenter seulement quand Christophe le demande (0.1.0-beta, 0.1.1-beta…). -->
-    <LinuxVersion>0.1.14-beta</LinuxVersion>
+    <LinuxVersion>0.1.15-beta</LinuxVersion>
     <Version Condition="!$([MSBuild]::IsOSPlatform('Windows'))">$(LinuxVersion)</Version>
     <Product>TwinPanel</Product>
     <Company>chrypox</Company>

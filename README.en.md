@@ -127,9 +127,11 @@ To find your session type, type `echo $XDG_SESSION_TYPE` in a desktop terminal. 
 
 | When dropping | Result |
 |---|---|
-| No key | “Copy here / Move here” menu |
+| No key | “Copy here / Move here” menu, or copy, or move: your choice in Options → Behavior → **File drag-and-drop** |
 | Shift held | Move |
 | Ctrl held | Copy without asking |
+
+Files dropped on a tab are copied or moved there, and that tab opens to show the arrived items (**Files dropped on a tab: open that tab** box in Options → Behavior). Without releasing, keep the mouse a moment over a tab: it opens, and you can drop on a folder of its list (**Files dragged over a tab: open it after a moment, without releasing** box).
 
 ### Tabs and columns
 
@@ -304,6 +306,10 @@ Mark with `Ins`, `Space`, `Shift+arrows`, the right click, or by mask with `Num+
 ### Search
 
 `Alt+F7` searches by name, contained text, size and date, in several folders and on open servers. The **Duplicates** box finds files with identical contents.
+
+In **Name**, a word without `*` or `?` finds the names that contain it: `destin` finds "Le destin.epub" as well as "Destinations.pdf" (like `*destin*`). **Containing the text** searches inside the files. With the **Read the text of documents** box (ticked by default), the text is searched in the real text of PDF, epub, Word, Excel, PowerPoint and OpenDocument files: these files are compressed, and without it the search would hit unrelated fragments. A scanned PDF (an image) has no text to read.
+
+The result columns are widened by dragging the edge of their title. A name or folder that is too long ends with "…" and is shown in full when the mouse hovers over it, even while searching.
 
 On a server, sizes are compared first. Over SSH, the server calculates the hashes itself, without transferring anything. Otherwise, TwinPanel announces the volume to read and asks for your approval.
 

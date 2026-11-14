@@ -5,54 +5,25 @@ namespace TwinPanel.Core.About;
 /// <summary>
 /// Nouveautés de la version installée (fenêtre « À propos » → « Nouveautés de cette version »).
 /// À réécrire à chaque nouvelle version : seulement ce qui a changé depuis la précédente.
-/// Version actuelle : Windows 0.8.10, Linux 0.1.14-beta.
+/// Version actuelle : Windows 0.8.11, Linux 0.1.15-beta.
 /// </summary>
 public static class ReleaseNotes
 {
     /// <summary>Corrections de bug. windows : faux sous Linux (les lignes propres à Windows sont retirées).</summary>
-    public static IReadOnlyList<string> Fixes(bool windows)
-    {
-        var list = new List<string>
-        {
-            L.T("Les onglets de serveur et les terminaux ne sont plus perdus si TwinPanel se ferme pendant le démarrage."),
-            L.T("Les onglets de serveur ne sont plus perdus quand le système ferme TwinPanel (installation d'une nouvelle version, arrêt de l'ordinateur)."),
-            L.T("Deux fenêtres TwinPanel ouvertes en même temps n'effacent plus les mots de passe enregistrés par l'autre ; un changement du mot de passe maître dans l'une verrouille l'autre."),
-        };
-        if (windows) list.Add(L.T("« Lancer TwinPanel » à la fin de l'installation l'ouvre avec les droits de l'utilisateur, plus en administrateur."));
-        list.AddRange(
-        [
-            L.T("Les onglets apparaissent tout de suite au démarrage ; les dossiers sont lus en même temps, l'onglet actif d'abord."),
-            L.T("Les onglets de serveur apparaissent dès le démarrage (« connexion… ») ; les serveurs se connectent en même temps, leurs questions venant une à la fois. Sans réponse : clic droit sur l'onglet → Reconnecter."),
-            L.T("Un onglet verrouillé garde le nom de son dossier verrouillé, même quand il affiche un autre dossier."),
-            L.T("Après une copie ou un déplacement (F5, F6, glisser-déposer), la barre de couleur reste sur l'élément transféré et, dans l'autre panneau, va sur l'élément arrivé ; tous les éléments arrivés sont mis en valeur quelques secondes."),
-            L.T("Taille des dossiers sur un serveur : le calcul va jusqu'au bout (mesure par le serveur en SSH, 4 dossiers en même temps, tailles gardées ; Ctrl+R recalcule)."),
-            L.T("Le total en bas du panneau compte aussi la taille des dossiers déjà calculée."),
-            L.T("Barre d'adresse : le clic droit (Copier, Coller…) ne referme plus la case."),
-            L.T("Colonnes : les colonnes s'élargissent même quand la fenêtre est étroite."),
-            L.T("Glisser-déposer : on n'entre dans un dossier que sur son nom, et le dossier visé est entouré."),
-            L.T("Licence TwinPanel 1.1 : précisions ajoutées : usage comme outil de travail en entreprise permis (article 1), responsabilité gardée en cas de dol ou de faute lourde (article 9)."),
-        ]);
-        return list;
-    }
+    public static IReadOnlyList<string> Fixes(bool windows) =>
+    [
+        L.T("Recherche de texte : les PDF, epub et documents Word, Excel, PowerPoint, OpenDocument ne donnent plus de résultats sans rapport (leur contenu compressé était lu comme du texte)."),
+        L.T("Archives .tar : après une modification (renommer, supprimer…), la liste affichée n'est plus parfois l'ancienne."),
+        L.T("Infobulle des textes coupés : elle suit le texte quand il change sous la souris (barre d'état, listes qui se remplissent)."),
+    ];
 
     /// <summary>Nouvelles fonctionnalités. windows : faux sous Linux (les lignes propres à Windows sont retirées).</summary>
-    public static IReadOnlyList<string> Features(bool windows)
-    {
-        var list = new List<string>
-        {
-            L.T("Couper / Copier / Coller des fichiers (Ctrl+X / Ctrl+C / Ctrl+V), sur le PC, dans les archives et sur les serveurs."),
-            L.T("Fichiers d'un serveur ou d'une archive donnés aux autres programmes (Explorateur, messagerie…) par Copier / Coller ou en les glissant à la souris : ils sont d'abord copiés sur le PC."),
-            L.T("Infobulle avec le texte entier sur tout texte coupé par « … »."),
-            L.T("Lecteurs réseau et connexions de la barre des lecteurs : rangés en les glissant."),
-            L.T("Tailles en To à partir de 1 024 Go."),
-            L.T("Précédent / Suivant (bouton, souris, Alt+← / Alt+→) : le curseur revient sur l'élément où on était, souvent le dossier dans lequel on était entré, montré au milieu de la liste."),
-            L.T("Commandes enregistrées du terminal : case « Secret » pour un mot de passe, rangé dans le coffre chiffré et caché à l'écran."),
-            L.T("Coffre des mots de passe : code de secours donné avec le mot de passe maître (à noter, copier ou enregistrer), et « Mot de passe maître oublié ? »."),
-            L.T("Options → Sécurité : mot de passe maître, code de secours, mot de passe maître oublié."),
-            L.T("« Nouveautés de cette version » dans « À propos »."),
-            L.T("« À propos » : total des téléchargements de TwinPanel pour le système utilisé (toutes versions), lu sur GitHub (rien n'est envoyé)."),
-        };
-        if (windows) list.Add(L.T("Installateur : nouvelle présentation, avec le logo et un aperçu de TwinPanel sur la page d'accueil, et un bandeau en haut des pages suivantes."));
-        return list;
-    }
+    public static IReadOnlyList<string> Features(bool windows) =>
+    [
+        L.T("Recherche (Alt+F7) : un mot dans « Nom » sans * ni ? cherche les noms qui le contiennent (destin = *destin*), et le texte est cherché dans le vrai texte des documents (PDF, epub, Word, Excel, PowerPoint, OpenDocument)."),
+        L.T("Recherche (Alt+F7) : colonnes des résultats élargies en tirant leur bord ; un nom ou un dossier trop long s'affiche en entier au survol de la souris, même pendant la recherche."),
+        L.T("Options → Comportement → Glisser-déposer de fichiers : demander (petit menu), copier ou déplacer sans demander ; Maj déplace et Ctrl copie toujours."),
+        L.T("Fichiers lâchés sur un onglet : l'onglet s'ouvre pour montrer les éléments arrivés (case dans Options → Comportement)."),
+        L.T("Fichiers glissés au-dessus d'un onglet : il s'ouvre après un court instant, sans lâcher la souris (case dans Options → Comportement)."),
+    ];
 }

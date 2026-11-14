@@ -28,6 +28,7 @@ La même liste se trouve dans TwinPanel : **À propos → Bibliothèques utilis�
 | ATL .NET (z440.atl.core) | MIT | https://github.com/Zeugma440/atldotnet |
 | Ude.NetStandard (utilisé par ATL .NET) | MPL-1.1, ou GPL-2.0 ou ultérieure, ou LGPL-2.1 ou ultérieure, au choix : TwinPanel l'utilise sous MPL-1.1 | https://github.com/yinyue200/ude |
 | MetadataExtractor | Apache-2.0 (texte complet : voir OpenSSL ci-dessus) | https://github.com/drewnoakes/metadata-extractor-dotnet |
+| PdfPig (avec ses parties issues de PDFBox / FontBox et d'Adobe : AFM, CMaps) | Apache-2.0 (texte complet : voir OpenSSL ci-dessus) ; BSD pour PDFBox / FontBox et les CMaps d'Adobe ; licence propre aux AFM d'Adobe | https://github.com/UglyToad/PdfPig |
 | Svg.Skia (avec ShimSkiaSharp, Svg.Model, Svg.Animation, Svg.SceneGraph) | MIT | https://github.com/wieslawsoltes/Svg.Skia |
 | Svg.Custom (dérivé de SVG.NET) | Ms-PL | https://github.com/wieslawsoltes/Svg.Skia |
 | ExCSS (utilisé par Svg.Custom) | MIT | https://github.com/TylerBrinks/ExCSS |
@@ -1494,6 +1495,93 @@ license terms:
 - XmpCore (runtime) licensed under BSD
 
 - xUnit (design time) licensed under Apache 2.0
+```
+
+### PdfPig
+
+Licence : Apache-2.0 (texte complet : voir OpenSSL ci-dessus) — https://github.com/UglyToad/PdfPig
+
+Le fichier de licence de PdfPig contient le texte de l'Apache-2.0, suivi de cette partie, recopiée telle quelle :
+
+```
+EXTERNAL COMPONENTS
+
+PdfPig includes a number of components with separate copyright notices
+and license terms. Your use of these components is subject to the terms and
+conditions of the following licenses.
+
+Contributions made to the original PDFBox and FontBox projects:
+
+   Copyright (c) 2002-2007, www.pdfbox.org
+   All rights reserved.
+
+   Redistribution and use in source and binary forms, with or without
+   modification, are permitted provided that the following conditions are met:
+
+   1. Redistributions of source code must retain the above copyright notice,
+      this list of conditions and the following disclaimer.
+
+   2. Redistributions in binary form must reproduce the above copyright
+      notice, this list of conditions and the following disclaimer in the
+      documentation and/or other materials provided with the distribution.
+
+   3. Neither the name of pdfbox; nor the names of its contributors may be
+      used to endorse or promote products derived from this software without
+      specific prior written permission.
+
+   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+   AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+   ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+   FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+   DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+   SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+   CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+   OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+   SUCH DAMAGE.
+
+Adobe Font Metrics (AFM) for PDF Core 14 Fonts
+
+   This file and the 14 PostScript(R) AFM files it accompanies may be used,
+   copied, and distributed for any purpose and without charge, with or without
+   modification, provided that all copyright notices are retained; that the
+   AFM files are not distributed without this file; that all modifications
+   to this file or any of the AFM files are prominently noted in the modified
+   file(s); and that this paragraph is not modified. Adobe Systems has no
+   responsibility or obligation to support the use of the AFM files.
+
+CMaps for PDF Fonts (http://opensource.adobe.com/wiki/display/cmap/Downloads)
+
+   Copyright 1990-2009 Adobe Systems Incorporated.
+   All rights reserved.
+
+   Redistribution and use in source and binary forms, with or without
+   modification, are permitted provided that the following conditions
+   are met:
+
+   Redistributions of source code must retain the above copyright notice,
+   this list of conditions and the following disclaimer.
+
+   Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+   Neither the name of Adobe Systems Incorporated nor the names of its
+   contributors may be used to endorse or promote products derived from this
+   software without specific prior written permission.
+
+   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+   AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+   ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+   LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+   CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+   SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+   INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
+   THE POSSIBILITY OF SUCH DAMAGE.
 ```
 
 ### XmpCore (utilisé par MetadataExtractor)
