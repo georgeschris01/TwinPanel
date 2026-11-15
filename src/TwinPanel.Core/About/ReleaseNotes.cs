@@ -26,5 +26,7 @@ public static class ReleaseNotes
         L.T("Options → Comportement → Glisser-déposer de fichiers : demander (petit menu), copier ou déplacer sans demander ; Maj déplace et Ctrl copie toujours."),
         L.T("Fichiers lâchés sur un onglet : l'onglet s'ouvre pour montrer les éléments arrivés (case dans Options → Comportement)."),
         L.T("Fichiers glissés au-dessus d'un onglet : il s'ouvre après un court instant, sans lâcher la souris (case dans Options → Comportement)."),
+        L.T("Corbeille dans un panneau, sous Windows et Linux (bouton « Corbeille » de la barre des disques, menu ≡ → Fichiers) : restaurer, copier ailleurs (F5), voir (F3), supprimer définitivement (F8), vider."),
+        .. (windows ? [L.T("Version portable pour Windows (fichier .zip) : réglages dans le dossier Data à côté du programme, rien n'est écrit sur le PC ; reprise des réglages de la version installée ; mots de passe protégés par le mot de passe maître.")] : Array.Empty<string>()),
     ];
 }

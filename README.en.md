@@ -23,7 +23,7 @@ A free, modern and complete two-panel file manager. For Windows, and for Linux a
 
 ## Download
 
-**[TwinPanel for Windows](../../releases/latest)** (installer).
+**[TwinPanel for Windows](../../releases/latest)** (installer, or portable `.zip` version to unzip, for example on a USB stick: see the « Portable version » chapter).
 
 **[TwinPanel for Linux, beta version](../../releases/tag/linux-v0.1.13-beta)**: `.deb` package for Debian and Ubuntu, `.rpm` package for Fedora, or AppImage. This beta has been tested on Debian 13 with KDE, and on Ubuntu 26.04 and Fedora 45 with GNOME: some defects may remain.
 
@@ -291,6 +291,7 @@ Mark with `Ins`, `Space`, `Shift+arrows`, the right click, or by mask with `Num+
 - `F3` opens the built-in viewer: text, hex, image, media info.
 - `F4` opens the chosen editor, by default Notepad on Windows and the system editor on Linux. A built-in editor is also available, and each extension can have its own editor (Options → Editors).
 - `F8` sends to the system trash. On a server or in an archive, deletion is permanent and always confirmed.
+- **Recycle Bin** (Windows and Linux): the **Recycle Bin** button in the drive bar (its icon shows whether it is full or empty), or ≡ → Files → **Open the Recycle Bin**, shows it in the panel, with the name, original folder, deletion date and size. Right-click → **Restore** puts the items back in their place (nothing is overwritten: an item with the same name already there stays in the Recycle Bin), `F5` copies them elsewhere under their real name, `F3` shows a file, `Enter` opens a deleted folder to see its contents (read-only: nothing is run or changed there, `Enter` on a file shows it like `F3`; view and copy elsewhere; the parent folder takes you back to the Recycle Bin), `F8` deletes permanently (always confirmed), and **Empty the Recycle Bin…** deletes everything. Only your account's Recycle Bin is shown. On Linux, it is the desktop's trash (KDE, GNOME…): the home folder's one, and those of the other connected disks and USB sticks (a file deleted on a USB stick goes to that stick's own trash).
 - Right-click → **Share…** sends the marked files, or the one under the cursor. On Windows, it is the Windows share window: nearby sharing, mail, apps. On Linux, TwinPanel offers **By email** (your usual mail app opens with the files attached) and each device linked by KDE Connect (phone, other computer). A file from a server or an archive is first copied to a temporary folder. Folders cannot be shared.
 
 ### Multi-rename
@@ -485,6 +486,37 @@ Everything is set in ≡ → Tools → Options.
 
 Parameters for buttons and the menu: `%P` active folder, `%N` item name, `%F` its full path, `%T` folder of the other panel, `%S` marked items.
 
+## Portable version
+
+TwinPanel's portable version for Windows runs without installation, for example from a USB stick, and writes nothing to the PC. It is the `TwinPanel-Portable-<version>.zip` file on the download page.
+
+### Setting it up
+
+- Unzip the `.zip` file wherever you like: USB stick, external disk, personal folder.
+- The folder holds: `TwinPanel.exe` (the program), `lib` (its libraries: drawing, fonts, media), `Documents` (guide, license, components) and `portable.txt`.
+- Run `TwinPanel.exe`. The `portable.txt` file next to the program tells TwinPanel it is portable: do not delete it.
+- Your settings, tabs, connections, passwords and logs go into the `Data` folder, next to the program. Nothing is written to `%APPDATA%` or to the registry, and there is no Start menu entry or uninstaller: to remove it, delete the folder.
+
+### First start
+
+- If TwinPanel is also installed on this PC, the portable version offers **Bring my settings**: settings, tabs, folder history, synchronization profiles, connections and known servers are copied into `Data`. Passwords are never copied: you will be asked for them again.
+- **Start empty** starts with the default settings. The question is not asked again.
+
+### Passwords
+
+- The installed version encrypts passwords with your Windows account: they only open on that PC. A portable version moves from PC to PC, so its passwords are protected by a **master password**, required to save any.
+- Choose it in Options → Security. Keep the recovery code you are given: without it, a forgotten master password loses the saved passwords.
+- On a USB stick, which is easily lost, a strong master password protects your servers.
+
+### Updating
+
+- Unzip the new version over the old one, or into a new folder where you copy the `Data` folder. The `Data` folder is never in the `.zip`: your settings stay.
+
+### Read-only stick
+
+- If TwinPanel's folder is read-only (locked stick, CD), TwinPanel warns you at startup, then works normally with a temporary copy of the settings. Your changes are not kept after it closes.
+- Temporary files (opened archives, server files) go to Windows' temporary folder, as with the installed version, and are deleted.
+
 ## Frequently asked questions
 
 ### How do I change the language?
@@ -497,11 +529,11 @@ The **≡** button contains all the commands. Options → Shortcuts also lets yo
 
 ### How do I undo a deletion?
 
-`F8` sends to the system trash: restore the file from there. On a server or in an archive, there is no recycle bin. `Ctrl+Z` only undoes the last multi-rename.
+`F8` sends to the system trash: open it with the **Recycle Bin** button in the drive bar, then right-click → **Restore**. On a server or in an archive, there is no recycle bin. `Ctrl+Z` only undoes the last multi-rename.
 
 ### Where are my settings?
 
-In `%APPDATA%\TwinPanel` on Windows, in `~/.config/TwinPanel` on Linux. An update does not touch them.
+In `%APPDATA%\TwinPanel` on Windows, in `~/.config/TwinPanel` on Linux. An update does not touch them. With the portable version, they are in the `Data` folder, next to the program. « About » shows the folder in use.
 
 ### How do I back up my settings?
 

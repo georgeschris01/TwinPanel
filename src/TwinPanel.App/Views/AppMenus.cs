@@ -106,6 +106,11 @@ public static class AppMenus
         files.Items.Add(new Separator());
         Add(files.Items, Cmd(vm, "Copy", L.T("Copier…")), Cmd(vm, "Move", L.T("Déplacer…")), Cmd(vm, "Rename", L.T("Renommer…")), Cmd(vm, "MakeDirectory", L.T("Nouveau dossier…")), Cmd(vm, "Delete", L.T("Supprimer…")));
         files.Items.Add(new Separator());
+        if (TwinPanel.Core.Trash.RecycleBin.IsSupported)
+        {
+            Add(files.Items, Cmd(vm, "OpenRecycleBin"), tab.IsTrash ? Cmd(vm, "RestoreFromRecycleBin") : null, Cmd(vm, "EmptyRecycleBin", L.T("Vider la corbeille…")));
+            files.Items.Add(new Separator());
+        }
         Add(files.Items, Cmd(vm, "ClipboardCut", L.T("Couper")), Cmd(vm, "ClipboardCopy", L.T("Copier")), Cmd(vm, "ClipboardPaste", L.T("Coller")));
         files.Items.Add(new Separator());
         Add(files.Items, Cmd(vm, "MultiRenameFiles", L.T("Renommage multiple…")), Cmd(vm, "UndoRename"));
@@ -204,6 +209,34 @@ public static class AppMenus
         bool file = cur is { IsDirectory: false };
         bool any = cur is { IsParentLink: false };
         bool isArchive = file && TwinPanel.Core.Archives.ArchivePath.IsArchiveFile(cur!.Name);
+
+        if (vm.ActivePanel.Current.IsInTrashFolder)
+        {
+            // Dans un dossier supprimé : lecture seule.
+            if (any)
+            {
+                // Rien n'y est lancé : Entrée sur un fichier le montre (comme F3).
+                if (cur!.IsDirectory) items.Add(Act(L.T("Ouvrir"), () => _ = vm.ActivePanel.Current.OpenCurrentAsync(), "Enter"));
+                if (file) Add(items, Cmd(vm, "View", L.T("Voir")));
+                Add(items, Cmd(vm, "Copy", L.T("Copier vers l'autre panneau…")));
+            }
+            return;
+        }
+        if (vm.ActivePanel.Current.IsTrash)
+        {
+            // Corbeille : seulement ce qui a du sens pour des éléments supprimés.
+            if (any)
+            {
+                Add(items, Cmd(vm, "RestoreFromRecycleBin", L.T("Restaurer")));
+                if (file) Add(items, Cmd(vm, "View", L.T("Voir")));
+                Add(items, Cmd(vm, "Copy", L.T("Copier vers l'autre panneau…")));
+                items.Add(new Separator());
+                Add(items, Cmd(vm, "Delete", L.T("Supprimer définitivement…")));
+                items.Add(new Separator());
+            }
+            Add(items, Cmd(vm, "EmptyRecycleBin", L.T("Vider la corbeille…")));
+            return;
+        }
 
         if (any)
         {

@@ -10,6 +10,24 @@ public static class Breadcrumb
     public static IReadOnlyList<BreadcrumbSegment> Split(string path)
     {
         var result = new List<BreadcrumbSegment>();
+        if (Trash.RecycleBin.IsPanelPath(path))
+        {
+            result.Add(new BreadcrumbSegment(L.T("Corbeille"), Trash.RecycleBin.PanelPath));
+            return result;
+        }
+        if (Trash.RecycleBin.ItemRootOf(path) is { } trashed)
+        {
+            // Dans un dossier supprimé : « Corbeille › vrai nom › sous-dossiers », pas le nom interne (« $R… »).
+            result.Add(new BreadcrumbSegment(L.T("Corbeille"), Trash.RecycleBin.PanelPath));
+            result.Add(new BreadcrumbSegment(Trash.RecycleBin.RealNameOf(trashed), trashed));
+            var below = trashed;
+            foreach (var part in path.TrimEnd('/', '\\')[trashed.Length..].Split(['/', '\\'], StringSplitOptions.RemoveEmptyEntries))
+            {
+                below = System.IO.Path.Combine(below, part);
+                result.Add(new BreadcrumbSegment(part, below));
+            }
+            return result;
+        }
         if (Remote.ServerArchives.Find(path) is { } server)
         {
             // Copie d'une archive d'un serveur : on montre où elle est vraiment, pas le dossier temporaire.

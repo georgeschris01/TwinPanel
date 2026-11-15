@@ -109,6 +109,8 @@ public partial class MainWindowViewModel
 
     private async Task PutOnClipboardAsync(bool move)
     {
+        // Corbeille : noms internes, et rien ne doit en sortir par Couper ; dans un dossier supprimé, Copier est permis.
+        if ((move || !ActivePanel.Current.IsInTrashFolder) && await RefuseInTrashAsync()) return;
         var tab = ActivePanel.Current;
         var items = tab.TargetEntries;
         if (items.Count == 0 || ClipboardHost is not { } host) return;
@@ -255,7 +257,7 @@ public partial class MainWindowViewModel
     [RelayCommand]
     private async Task ClipboardPaste()
     {
-        if (ClipboardHost is not { } host) return;
+        if (await RefuseInTrashAsync() || ClipboardHost is not { } host) return;
         ClipboardFiles? content;
         try { content = await host.ReadAsync(); }
         catch (Exception ex)

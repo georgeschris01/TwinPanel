@@ -96,7 +96,8 @@ public static class DesktopTrash
         else Directory.CreateDirectory(path, OwnerOnly);
     }
 
-    private static string HomeTrash()
+    /// <summary>Corbeille du dossier personnel (~/.local/share/Trash, ou celle de XDG_DATA_HOME).</summary>
+    public static string HomeTrash()
     {
         var data = Environment.GetEnvironmentVariable("XDG_DATA_HOME");
         if (string.IsNullOrEmpty(data)) data = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".local", "share");
@@ -142,6 +143,34 @@ public static class DesktopTrash
         var personal = Path.Combine(mount, ".Trash-" + user);
         if (IsPrivateOrAbsent(personal)) return personal;
         throw new FileOperationException(L.F("La corbeille de ce disque n'est pas sûre : {0}. Rien n'a été supprimé.", personal));
+    }
+
+    /// <summary>
+    /// Corbeilles du compte : celle du dossier personnel, puis celles des autres disques du PC et des clés USB
+    /// (« .Trash/uid » ou « .Trash-uid », seulement si elles sont privées ; pas les lecteurs réseau, lents).
+    /// </summary>
+    [SupportedOSPlatform("linux")]
+    public static IReadOnlyList<string> UserTrashes()
+    {
+        var list = new List<string> { HomeTrash() };
+        var user = GetUserId().ToString(CultureInfo.InvariantCulture);
+        var homeMount = MountOf(ExistingParent(HomeTrash()));
+        DriveInfo[] drives;
+        try { drives = DriveInfo.GetDrives(); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return list; }
+        foreach (var drive in drives)
+        {
+            try
+            {
+                if (drive.DriveType is not (DriveType.Fixed or DriveType.Removable) || !drive.IsReady) continue;
+                var mount = drive.RootDirectory.FullName;
+                if (EndingWithSeparator(mount) == EndingWithSeparator(homeMount)) continue;
+                foreach (var trash in new[] { Path.Combine(mount, ".Trash", user), Path.Combine(mount, ".Trash-" + user) })
+                    if (Directory.Exists(trash) && IsPrivateOrAbsent(trash) && !list.Contains(trash)) list.Add(trash);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+        }
+        return list;
     }
 
     [SupportedOSPlatform("linux")]

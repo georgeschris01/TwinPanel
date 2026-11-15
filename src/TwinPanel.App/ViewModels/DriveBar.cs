@@ -8,7 +8,7 @@ using TwinPanel.Core.Remote;
 
 namespace TwinPanel.App.ViewModels;
 
-public enum DriveButtonKind { Drive, Separator, Connection }
+public enum DriveButtonKind { Drive, Separator, Connection, Trash }
 
 /// <summary>Un bouton de la barre des lecteurs : un disque (C:, clé USB, réseau…) ou une connexion enregistrée.</summary>
 public partial class DriveButtonViewModel : ObservableObject
@@ -66,7 +66,8 @@ public partial class DriveButtonViewModel : ObservableObject
     {
         get
         {
-            if (!s_custom || Kind == DriveButtonKind.Separator) return null;
+            // La corbeille n'est pas un disque : elle garde toujours sa couleur d'origine.
+            if (!s_custom || Kind is DriveButtonKind.Separator or DriveButtonKind.Trash) return null;
             var letter = Kind == DriveButtonKind.Drive ? Label : null;
             if (letter is not null && s_driveColors.TryGetValue(letter, out var own) && TwinPanel.Core.Customization.FileColorRules.IsColor(own)) return own;
             return s_typeColors.TryGetValue(TypeOf(IconKey), out var t) && TwinPanel.Core.Customization.FileColorRules.IsColor(t) ? t : null;
@@ -77,7 +78,7 @@ public partial class DriveButtonViewModel : ObservableObject
     public IBrush? IconBrush => IconColor is { } c ? new SolidColorBrush(Color.Parse(c)) : null;
 
     /// <summary>Signature pour ne reconstruire la barre que si quelque chose a vraiment changé.</summary>
-    public string Signature => $"{Kind}|{Key}|{Label}|{Tooltip}|{OpenAlias}|{IconColor}";
+    public string Signature => $"{Kind}|{Key}|{Label}|{Tooltip}|{OpenAlias}|{IconColor}|{IconKey}";
 }
 
 /// <summary>Lecture des lecteurs (hors du fil de l'interface : un lecteur réseau déconnecté peut mettre du temps à répondre).</summary>

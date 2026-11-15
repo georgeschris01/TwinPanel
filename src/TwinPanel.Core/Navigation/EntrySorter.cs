@@ -39,7 +39,7 @@ public static class EntrySorter
             SortColumn.Extension => Order(files, e => e.Extension, descending, byName).ThenBy(e => e.Name, byName),
             SortColumn.Size => Order(files, e => e.Size, descending).ThenBy(e => e.Name, byName),
             SortColumn.Date => Order(files, e => e.LastWriteTime, descending).ThenBy(e => e.Name, byName),
-            SortColumn.Folder => Order(files, e => FolderOf(e.FullPath), descending, byName).ThenBy(e => e.Name, byName),
+            SortColumn.Folder => Order(files, e => e.OriginalFolder ?? FolderOf(e.FullPath), descending, byName).ThenBy(e => e.Name, byName),
             _ => Order(files, e => e.Name, descending, byName),
         };
 

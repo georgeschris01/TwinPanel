@@ -91,7 +91,7 @@ public partial class PanelView : UserControl
         {
             switch (column.SortMemberPath)
             {
-                case "Folder": column.IsVisible = _tab?.IsFlat == true; break;
+                case "Folder": column.IsVisible = _tab is { IsFlat: true } or { IsTrash: true }; break;
                 case "Extension": column.IsVisible = a.ShowExtensionColumn; break;
                 case "Size": column.IsVisible = a.ShowSizeColumn; break;
                 case "Date": column.IsVisible = a.ShowDateColumn; break;
@@ -454,7 +454,9 @@ public partial class PanelView : UserControl
         var data = DragData(DragFormat, token);
         var (panel, fromDir) = (_vm, _tab.CurrentPath);
         DragStaging? staging = null;
-        if (!_tab.IsRemote && !_tab.IsInsideArchive) await AddFilesAsync(data, entries);
+        // Corbeille : seulement vers l'autre panneau (les fichiers y portent un nom interne, pas leur vrai nom).
+        if (_tab.IsTrash || _tab.IsInTrashFolder) { }
+        else if (!_tab.IsRemote && !_tab.IsInsideArchive) await AddFilesAsync(data, entries);
         else if (Main?.PrepareDragStaging(entries, fromDir) is { } prepared && await AddLazyFilesAsync(data, prepared)) staging = prepared;
         s_drag = (token, entries, panel, fromDir);
         try { await DragDrop.DoDragDropAsync(press, data, DragDropEffects.Copy | DragDropEffects.Move); }
@@ -966,7 +968,7 @@ public partial class PanelView : UserControl
     /// <summary>La colonne « Dossier » n'existe qu'en vue à plat.</summary>
     private void UpdateFolderColumn()
     {
-        if (FileGrid.Columns.FirstOrDefault(c => c.SortMemberPath == "Folder") is { } column) column.IsVisible = _tab?.IsFlat == true;
+        if (FileGrid.Columns.FirstOrDefault(c => c.SortMemberPath == "Folder") is { } column) column.IsVisible = _tab is { IsFlat: true } or { IsTrash: true };
     }
 
     private void OnPanelPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -1037,6 +1039,7 @@ public partial class PanelView : UserControl
             case nameof(FolderTabViewModel.CurrentPath):
                 // Le fil d'Ariane défile jusqu'au dossier courant (à droite).
                 Dispatcher.UIThread.Post(() => CrumbScroller.ScrollToEnd(), DispatcherPriority.Background);
+                UpdateFolderColumn(); // corbeille : dossier d'origine
                 break;
         }
     }

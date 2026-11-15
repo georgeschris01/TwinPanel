@@ -39,9 +39,8 @@ public sealed class ConnectionStore
         System.IO.File.SetUnixFileMode(directory, OwnerOnly);
     }
 
-    /// <summary>%APPDATA%\TwinPanel (même dossier que settings.json).</summary>
-    public static string DefaultDirectory => System.IO.Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "TwinPanel");
+    /// <summary>Même dossier que settings.json (%APPDATA%\TwinPanel, ou Data\ en version portable).</summary>
+    public static string DefaultDirectory => Settings.AppPaths.DataDirectory;
 
     public string Directory { get; }
     public SecretVault Vault { get; }

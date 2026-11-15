@@ -10,7 +10,8 @@ public sealed class FileSourceRegistry
     /// <summary>Disque local + archives (les archives sont testées en premier).</summary>
     public static FileSourceRegistry Default { get; } = new FileSourceRegistry()
         .Register(new LocalFileSource())
-        .Register(new Archives.ArchiveFileSource());
+        .Register(new Archives.ArchiveFileSource())
+        .Register(new Trash.RecycleBinFileSource());
 
     /// <summary>Les sources enregistrées en dernier sont prioritaires (un plugin passe avant le disque local).</summary>
     public FileSourceRegistry Register(IFileSource source)

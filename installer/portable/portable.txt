@@ -1,0 +1,36 @@
+TwinPanel — version portable
+============================
+
+Ce fichier indique à TwinPanel qu'il est en version portable : ne le supprimez pas.
+
+Contenu du dossier : TwinPanel.exe (le programme), lib (ses bibliothèques), Documents (guide, licence), Data (vos réglages, créé au premier démarrage).
+
+- Vos réglages, onglets, connexions et mots de passe sont enregistrés dans le dossier « Data », à côté de TwinPanel.exe.
+  Rien n'est écrit sur le PC (ni dans %APPDATA%, ni dans la base de registre).
+- Au premier démarrage, si TwinPanel est aussi installé sur ce PC, vous pouvez reprendre ses réglages (jamais les mots de passe).
+- Les mots de passe enregistrés sont protégés par un mot de passe maître, obligatoire dans la version portable
+  (Options → Sécurité). Gardez le code de secours qui vous est donné.
+- Mise à jour : décompressez la nouvelle version par-dessus celle-ci. Le dossier « Data » n'est jamais dans le .zip : vos réglages restent.
+- Pour enlever TwinPanel portable : supprimez simplement ce dossier.
+- Dossier en lecture seule (clé verrouillée, CD) : TwinPanel fonctionne, mais vos changements ne sont pas gardés.
+
+Guide complet : touche F1 dans TwinPanel, chapitre « Version portable ».
+
+
+TwinPanel — portable version
+============================
+
+This file tells TwinPanel that it is the portable version: do not delete it.
+
+Folder contents: TwinPanel.exe (the program), lib (its libraries), Documents (guide, license), Data (your settings, created on first start).
+
+- Your settings, tabs, connections and passwords are saved in the "Data" folder, next to TwinPanel.exe.
+  Nothing is written to the PC (neither to %APPDATA% nor to the registry).
+- On first start, if TwinPanel is also installed on this PC, you can bring its settings (never the passwords).
+- Saved passwords are protected by a master password, required in the portable version
+  (Options → Security). Keep the recovery code you are given.
+- Updating: unzip the new version over this one. The "Data" folder is never in the .zip: your settings stay.
+- To remove portable TwinPanel: simply delete this folder.
+- Read-only folder (locked stick, CD): TwinPanel works, but your changes are not kept.
+
+Full guide: F1 key in TwinPanel, "Portable version" chapter.

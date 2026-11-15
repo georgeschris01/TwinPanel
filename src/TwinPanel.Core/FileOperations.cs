@@ -65,17 +65,24 @@ public static class FileOperations
                .ToList();
 
     /// <summary>Le détail n'est calculé que s'il semble manquer de la place : c'est rare, et il faut alors regarder chaque fichier.</summary>
-    private static void CheckRoom(IReadOnlyList<string> sources, string destDir, ConflictPolicy policy, long bytes, bool move, PauseController? pause, CancellationToken ct)
+    private static void CheckRoom(IReadOnlyList<string> sources, string destDir, ConflictPolicy policy, long bytes, bool move, PauseController? pause, CancellationToken ct) =>
+        CheckRoom(sources.Select(s => (s, Path.GetFileName(TrimEnd(s)))).ToList(), destDir, policy, bytes, move, pause, ct);
+
+    private static void CheckRoom(IReadOnlyList<(string Source, string Name)> items, string destDir, ConflictPolicy policy, long bytes, bool move, PauseController? pause, CancellationToken ct)
     {
         if (DiskSpace.FreeBytes(destDir) is not { } free || free >= bytes) return;
-        DiskSpace.CheckBeforeStart(destDir, NeededBytes(sources, destDir, policy, move, ct), pause, ct);
+        DiskSpace.CheckBeforeStart(destDir, NeededBytes(items, destDir, policy, move, ct), pause, ct);
     }
 
     /// <summary>
     /// Place vraiment nécessaire : un fichier ignoré ne prend rien, un fichier remplacé rend la place de l'ancien.
     /// Mais il s'écrit à côté avant de le remplacer : le plus gros des fichiers remplacés doit tenir en entier.
     /// </summary>
-    internal static long NeededBytes(IEnumerable<string> sources, string destDir, ConflictPolicy policy, bool move, CancellationToken ct)
+    internal static long NeededBytes(IEnumerable<string> sources, string destDir, ConflictPolicy policy, bool move, CancellationToken ct) =>
+        NeededBytes(sources.Select(s => (s, Path.GetFileName(TrimEnd(s)))), destDir, policy, move, ct);
+
+    /// <param name="items">Chaque source avec le nom qu'elle aura à l'arrivée (copie depuis la corbeille : le vrai nom).</param>
+    internal static long NeededBytes(IEnumerable<(string Source, string Name)> items, string destDir, ConflictPolicy policy, bool move, CancellationToken ct)
     {
         long total = 0, largestReplaced = 0;
         void Count(FileInfo file, string target)
@@ -88,11 +95,11 @@ public static class FileOperations
             }
         }
         var destRoot = Path.GetPathRoot(Path.GetFullPath(destDir));
-        foreach (var source in sources)
+        foreach (var (source, name) in items)
         {
             var src = TrimEnd(source);
             if (move && string.Equals(Path.GetPathRoot(Path.GetFullPath(src)), destRoot, PathComparison)) continue;
-            var dest = Path.Combine(destDir, Path.GetFileName(src));
+            var dest = Path.Combine(destDir, name);
             if (File.Exists(src)) Count(new FileInfo(src), dest);
             else if (Directory.Exists(src))
                 foreach (var file in EnumerateFilesSafe(src, ct)) Count(file, Path.Combine(dest, Path.GetRelativePath(src, file.FullName)));
@@ -147,6 +154,23 @@ public static class FileOperations
                 var src = TrimEnd(s);
                 MoveItem(src, Path.Combine(destDir, Path.GetFileName(src)), policy, ctx, topLevel: true);
             }
+            ctx.Report(string.Empty, force: true);
+        }, ct);
+
+    /// <summary>
+    /// Copie des éléments sous d'autres noms dans un dossier (corbeille : les éléments y ont des noms internes « $R… »).
+    /// Mêmes règles que <see cref="CopyAsync"/> pour les conflits, la place libre et la progression.
+    /// </summary>
+    public static Task CopyNamedAsync(IReadOnlyList<(string Source, string Name)> items, string destDir, ConflictPolicy policy,
+        IProgress<TransferProgress>? progress = null, CancellationToken ct = default, PauseController? pause = null) =>
+        Task.Run(() =>
+        {
+            var sources = items.Select(i => i.Source).ToList();
+            var totals = Measure(sources, ct);
+            var ctx = new Context(progress, ct, pause, totals);
+            CheckRoom(items, destDir, policy, totals.Bytes, move: false, pause, ct);
+            foreach (var (source, name) in items)
+                CopyItem(TrimEnd(source), Path.Combine(destDir, ValidateName(name)), policy, ctx, topLevel: true);
             ctx.Report(string.Empty, force: true);
         }, ct);
 

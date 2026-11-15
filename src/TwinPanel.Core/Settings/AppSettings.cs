@@ -349,8 +349,8 @@ public sealed class SettingsStore(string filePath)
         Converters = { new JsonStringEnumConverter() },
     };
 
-    public static SettingsStore Default { get; } = new(System.IO.Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "TwinPanel", "settings.json"));
+    /// <summary>settings.json dans le dossier des réglages (%APPDATA%\TwinPanel, ou Data\ en version portable).</summary>
+    public static SettingsStore Default { get; } = new(System.IO.Path.Combine(AppPaths.DataDirectory, "settings.json"));
 
     public string FilePath { get; } = filePath;
 

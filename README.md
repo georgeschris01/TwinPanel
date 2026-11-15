@@ -23,7 +23,7 @@ Gestionnaire de fichiers à deux panneaux, gratuit, moderne et complet. Pour Win
 
 ## Télécharger
 
-**[TwinPanel pour Windows](../../releases/latest)** (installateur).
+**[TwinPanel pour Windows](../../releases/latest)** (installateur, ou version portable `.zip` à décompresser, par exemple sur une clé USB : voir le chapitre « Version portable »).
 
 **[TwinPanel pour Linux, version bêta](../../releases/tag/linux-v0.1.13-beta)** : paquet `.deb` pour Debian et Ubuntu, paquet `.rpm` pour Fedora, ou AppImage. Bêta testée sur Debian 13 avec KDE, Ubuntu 26.04 et Fedora 45 avec GNOME : des défauts peuvent rester.
 
@@ -291,6 +291,7 @@ Marquez avec `Inser`, `Espace`, `Maj+flèches`, le clic droit, ou selon un masqu
 - `F3` ouvre la visionneuse intégrée : texte, hexa, image, infos média.
 - `F4` ouvre l'éditeur choisi, par défaut le Bloc-notes sous Windows et l'éditeur du système sous Linux. Un éditeur intégré est aussi disponible, et chaque extension peut avoir son éditeur (Options → Éditeurs).
 - `F8` envoie à la corbeille du système. Sur un serveur ou dans une archive, la suppression est définitive et toujours confirmée.
+- **Corbeille** (Windows et Linux) : le bouton **Corbeille** de la barre des disques (son icône montre si elle est pleine ou vide), ou ≡ → Fichiers → **Ouvrir la corbeille**, l'affiche dans le panneau, avec le nom, le dossier d'origine, la date de suppression et la taille. Clic droit → **Restaurer** remet les éléments à leur place (rien n'est écrasé : un élément du même nom déjà là-bas reste dans la corbeille), `F5` en fait une copie ailleurs sous leur vrai nom, `F3` montre un fichier, `Entrée` ouvre un dossier supprimé pour voir son contenu (en lecture seule : rien n'y est lancé ni modifié, `Entrée` sur un fichier le montre comme `F3` ; voir et copier ailleurs ; le dossier parent ramène à la corbeille), `F8` supprime définitivement (toujours confirmé), et **Vider la corbeille…** supprime tout. Seule la corbeille de votre compte est montrée. Sous Linux, c'est la corbeille du bureau (KDE, GNOME…) : celle du dossier personnel, et celles des autres disques et clés USB branchés (un fichier supprimé sur une clé USB va dans la corbeille de cette clé).
 - Clic droit → **Partager…** envoie les fichiers marqués, ou celui sous le curseur. Sous Windows, c'est la fenêtre de partage de Windows : partage à proximité, courrier, applications. Sous Linux, TwinPanel propose **Par courriel** (la messagerie habituelle s'ouvre, fichiers joints) et chaque appareil relié par KDE Connect (téléphone, autre ordinateur). Un fichier d'un serveur ou d'une archive est d'abord copié dans un dossier temporaire. Les dossiers ne se partagent pas.
 
 ### Renommage multiple
@@ -485,6 +486,37 @@ Tout se règle dans ≡ → Outils → Options.
 
 Paramètres des boutons et du menu : `%P` dossier actif, `%N` nom de l'élément, `%F` son chemin complet, `%T` dossier de l'autre panneau, `%S` éléments marqués.
 
+## Version portable
+
+La version portable de TwinPanel pour Windows se lance sans installation, par exemple depuis une clé USB, et n'écrit rien sur le PC. C'est le fichier `TwinPanel-Portable-<version>.zip` de la page de téléchargement.
+
+### L'installer
+
+- Décompressez le fichier `.zip` où vous voulez : clé USB, disque externe, dossier personnel.
+- Le dossier contient : `TwinPanel.exe` (le programme), `lib` (ses bibliothèques : dessin, polices, médias), `Documents` (guide, licence, composants) et `portable.txt`.
+- Lancez `TwinPanel.exe`. Le fichier `portable.txt` posé à côté du programme indique à TwinPanel qu'il est portable : ne le supprimez pas.
+- Vos réglages, onglets, connexions, mots de passe et journaux vont dans le dossier `Data`, à côté du programme. Rien n'est écrit dans `%APPDATA%` ni dans la base de registre, et il n'y a ni menu Démarrer ni désinstallation : pour l'enlever, supprimez le dossier.
+
+### Le premier démarrage
+
+- Si TwinPanel est aussi installé sur ce PC, la version portable propose **Reprendre mes réglages** : réglages, onglets, historique des dossiers, profils de synchronisation, connexions et serveurs connus sont copiés dans `Data`. Les mots de passe ne sont jamais copiés : ils seront redemandés.
+- **Commencer à vide** démarre avec les réglages d'origine. La question n'est plus posée ensuite.
+
+### Les mots de passe
+
+- La version installée chiffre les mots de passe avec votre compte Windows : ils ne s'ouvrent que sur ce PC. Une version portable change de PC : ses mots de passe sont donc protégés par un **mot de passe maître**, obligatoire pour en enregistrer.
+- Choisissez-le dans Options → Sécurité. Gardez le code de secours qui vous est donné : sans lui, un mot de passe maître oublié fait perdre les mots de passe enregistrés.
+- Sur une clé USB, qui se perd facilement, un mot de passe maître solide protège vos serveurs.
+
+### Mettre à jour
+
+- Décompressez la nouvelle version par-dessus l'ancienne, ou dans un nouveau dossier où vous recopiez le dossier `Data`. Le dossier `Data` n'est jamais dans le `.zip` : vos réglages restent.
+
+### Clé en lecture seule
+
+- Si le dossier de TwinPanel est en lecture seule (clé verrouillée, CD), TwinPanel prévient au démarrage, puis fonctionne normalement avec une copie temporaire des réglages. Vos changements ne sont pas gardés après la fermeture.
+- Les fichiers temporaires (archives ouvertes, fichiers d'un serveur) vont dans le dossier temporaire de Windows, comme avec la version installée, et sont effacés.
+
 ## Questions fréquentes
 
 ### Comment changer la langue ?
@@ -497,11 +529,11 @@ Le bouton **≡** contient toutes les commandes. Options → Raccourcis permet a
 
 ### Comment annuler une suppression ?
 
-`F8` envoie à la corbeille du système : restaurez le fichier depuis celle-ci. Sur un serveur ou dans une archive, il n'y a pas de corbeille. `Ctrl+Z` annule seulement le dernier renommage multiple.
+`F8` envoie à la corbeille du système : ouvrez-la avec le bouton **Corbeille** de la barre des disques, puis clic droit → **Restaurer**. Sur un serveur ou dans une archive, il n'y a pas de corbeille. `Ctrl+Z` annule seulement le dernier renommage multiple.
 
 ### Où sont mes réglages ?
 
-Dans `%APPDATA%\TwinPanel` sous Windows, dans `~/.config/TwinPanel` sous Linux. Une mise à jour n'y touche pas.
+Dans `%APPDATA%\TwinPanel` sous Windows, dans `~/.config/TwinPanel` sous Linux. Une mise à jour n'y touche pas. Avec la version portable, ils sont dans le dossier `Data`, à côté du programme. « À propos » montre le dossier utilisé.
 
 ### Comment sauvegarder mes réglages ?
 

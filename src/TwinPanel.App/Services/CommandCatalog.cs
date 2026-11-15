@@ -65,6 +65,9 @@ public static class CommandCatalog
         new("Print", L.T("Imprimer"), L.T("Fichiers"), ""),
         new("Share", L.T("Partager…"), L.T("Fichiers"), ""),
         new("ShowProperties", L.T("Propriétés (droits, propriétaire, attributs, sécurité)"), L.T("Fichiers"), "Alt+Enter"),
+        new("OpenRecycleBin", L.T("Ouvrir la corbeille"), L.T("Fichiers"), ""),
+        new("RestoreFromRecycleBin", L.T("Restaurer depuis la corbeille"), L.T("Fichiers"), ""),
+        new("EmptyRecycleBin", L.T("Vider la corbeille"), L.T("Fichiers"), ""),
         // Outils
         new("Search", L.T("Rechercher des fichiers"), L.T("Outils"), "Alt+F7"),
         new("CompareFolders", L.T("Comparer les dossiers"), L.T("Outils"), "Shift+F2"),

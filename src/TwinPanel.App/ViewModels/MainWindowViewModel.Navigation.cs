@@ -273,7 +273,7 @@ public partial class MainWindowViewModel
     private static async Task<string?> ResolveTabPathAsync(string stored, Dictionary<Guid, RemoteSession> sessions)
     {
         if (!SavedRemoteTab.TryDecode(stored, out var id, out var path))
-            return Directory.Exists(stored) || (TwinPanel.Core.Archives.ArchivePath.TrySplit(stored, out var archive, out _) && File.Exists(archive)) ? stored : null;
+            return (TwinPanel.Core.Trash.RecycleBin.IsPanelPath(stored) && TwinPanel.Core.Trash.RecycleBin.IsSupported) || Directory.Exists(stored) || (TwinPanel.Core.Archives.ArchivePath.TrySplit(stored, out var archive, out _) && File.Exists(archive)) ? stored : null;
         if (!sessions.TryGetValue(id, out var session)) return null;
         try
         {

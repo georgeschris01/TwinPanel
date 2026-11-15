@@ -766,7 +766,7 @@ public partial class ConnectionManagerViewModel : ObservableObject
         RecoveryStatus = !v.HasMasterPassword ? string.Empty
             : v.HasRecoveryCode ? L.T("Code de secours : créé. Il permet de choisir un nouveau mot de passe maître si tu l'oublies.")
             : L.T("Aucun code de secours : si tu oublies ton mot de passe maître, les secrets seront perdus. Crée-en un.");
-        VaultStatus = OperatingSystem.IsLinux() ? LinuxVaultStatus(v)
+        VaultStatus = OperatingSystem.IsLinux() || TwinPanel.Core.Settings.AppPaths.IsPortable ? LinuxVaultStatus(v)
             : !v.HasMasterPassword
                 ? L.T("Les secrets sont chiffrés par Windows (DPAPI) : seul ton compte Windows, sur ce PC, peut les lire. Aucun mot de passe maître.")
                 : v.IsUnlocked
@@ -779,7 +779,9 @@ public partial class ConnectionManagerViewModel : ObservableObject
         if (!v.HasMasterPassword)
             return v.CanWorkWithoutMaster
                 ? L.T("Les secrets sont chiffrés avec une clé gardée dans le trousseau de Linux : seul ton compte peut les lire. Aucun mot de passe maître.")
-                : L.T("Aucun trousseau n'est disponible sur ce système : choisis un mot de passe maître pour pouvoir enregistrer des secrets.");
+                : TwinPanel.Core.Settings.AppPaths.IsPortable
+                    ? L.T("Version portable : choisis un mot de passe maître pour pouvoir enregistrer des secrets. Ils s'ouvriront ainsi sur n'importe quel PC.")
+                    : L.T("Aucun trousseau n'est disponible sur ce système : choisis un mot de passe maître pour pouvoir enregistrer des secrets.");
         if (v.UsesAccountProtection)
             return v.IsUnlocked
                 ? L.T("Double protection : trousseau de Linux + mot de passe maître (AES-256-GCM, PBKDF2 600 000 tours). Le coffre est ouvert.")
@@ -825,7 +827,9 @@ public partial class ConnectionManagerViewModel : ObservableObject
         if (!_store.Vault.HasMasterPassword) return;
         if (!_store.Vault.CanWorkWithoutMaster)
         {
-            await _dialogs.ShowErrorAsync(L.T("Retirer le mot de passe maître"), L.T("Sur ce système, le mot de passe maître est obligatoire."));
+            await _dialogs.ShowErrorAsync(L.T("Retirer le mot de passe maître"), TwinPanel.Core.Settings.AppPaths.IsPortable
+                ? L.T("Dans la version portable, le mot de passe maître est obligatoire : c'est lui qui protège les secrets, sur n'importe quel PC.")
+                : L.T("Sur ce système, le mot de passe maître est obligatoire."));
             return;
         }
         var question = OperatingSystem.IsLinux()

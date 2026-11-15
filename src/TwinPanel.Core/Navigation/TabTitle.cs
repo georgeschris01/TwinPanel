@@ -10,7 +10,9 @@ public static class TabTitle
     /// <summary>Nom du dossier ; disque du PC : lettre devant (« C:\Users\utilisateur\Documents » → « C: Documents », « C:\ » → « C: »).</summary>
     public static string FromPath(string path)
     {
+        if (Trash.RecycleBin.IsPanelPath(path)) return L.T("Corbeille");
         var trimmed = path.TrimEnd('\\', '/');
+        if (Trash.RecycleBin.ItemRootOf(trimmed) == trimmed) return Trash.RecycleBin.RealNameOf(trimmed);
         var name = System.IO.Path.GetFileName(trimmed);
         if (string.IsNullOrEmpty(name)) return trimmed;
         bool driveLetter = trimmed.Length >= 2 && trimmed[1] == ':' && char.IsAsciiLetter(trimmed[0])

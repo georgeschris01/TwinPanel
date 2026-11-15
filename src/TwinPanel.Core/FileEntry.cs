@@ -17,6 +17,9 @@ public sealed record FileEntry(
         ? string.Empty
         : Path.GetExtension(Name).TrimStart('.');
 
+    /// <summary>Corbeille : dossier d'où l'élément a été supprimé (null ailleurs).</summary>
+    public string? OriginalFolder { get; init; }
+
     /// <summary>Nom affiché : les dossiers entre crochets, comme dans Total Commander.</summary>
     public string DisplayName => IsParentLink ? "[..]" : IsDirectory ? $"[{Name}]" : Path.GetFileNameWithoutExtension(Name) is { Length: > 0 } n ? n : Name;
 

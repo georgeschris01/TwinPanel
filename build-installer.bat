@@ -26,16 +26,41 @@ echo === Installateur TwinPanel %VERSION% ===
 echo.
 echo === Publication (Release, .NET inclus) ===
 if exist publish\win-x64 rmdir /s /q publish\win-x64
-dotnet publish src\TwinPanel.App\TwinPanel.App.csproj -c Release -r win-x64 --self-contained true -o publish\win-x64 -p:DebugType=none "-p:PathMap=%CD%=."
+rem Un seul TwinPanel.exe (bibliotheques .NET a l'interieur) ; les bibliotheques natives sont rangees dans lib\.
+dotnet publish src\TwinPanel.App\TwinPanel.App.csproj -c Release -r win-x64 --self-contained true -o publish\win-x64 -p:DebugType=none -p:PublishSingleFile=true "-p:PathMap=%CD%=."
 if errorlevel 1 (
   echo ECHEC de la publication.
   goto :done
 )
+del /q publish\win-x64\*.pdb >nul 2>&1
+mkdir publish\win-x64\lib
+move /y publish\win-x64\*.dll publish\win-x64\lib\ >nul
 rem Aucune donnee personnelle dans l'installateur : on retire tout ce qui ne fait pas partie du programme.
 for %%f in (crash.log settings.json connections.json secrets.dat known_hosts.json history.json transfers.json transfers.json.lock sync-profiles.json) do if exist "publish\win-x64\%%f" del /q "publish\win-x64\%%f"
 del /q /s "publish\win-x64\*.twinpanel-part" >nul 2>&1
 echo Contenu publie (verification : aucun reglage, connexion ni journal) :
 dir /b /s publish\win-x64 | findstr /i /r "\.log$ \\settings.*\.json$ \\connections.*\.json$ \\secrets\.dat$ \\known_hosts.*\.json$ \\history\.json$ \\transfers\.json \\sync-profiles\.json" && echo ATTENTION : fichier personnel trouve ci-dessus. || echo OK, rien de personnel.
+echo.
+echo === Version portable (.zip) ===
+rem Meme programme que l'installateur, avec portable.txt (reglages dans Data\ a cote du programme). Jamais de dossier Data dans le .zip.
+if exist publish\portable rmdir /s /q publish\portable
+mkdir publish\portable\TwinPanel
+xcopy /e /i /q /y publish\win-x64 publish\portable\TwinPanel >nul
+mkdir publish\portable\TwinPanel\Documents
+for %%f in (COMPOSANTS.md README.md README.en.md LICENSE.en.txt THIRD-PARTY-NOTICES.md) do copy /y %%f publish\portable\TwinPanel\Documents\ >nul
+copy /y LICENSE publish\portable\TwinPanel\Documents\LICENSE.txt >nul
+copy /y installer\portable\portable.txt publish\portable\TwinPanel\ >nul
+del /q /s publish\portable\TwinPanel\*.pdb >nul 2>&1
+if exist publish\portable\TwinPanel\Data rmdir /s /q publish\portable\TwinPanel\Data
+dir /b /s publish\portable\TwinPanel | findstr /i /r "\.log$ \\settings.*\.json$ \\connections.*\.json$ \\secrets\.dat$ \\known_hosts.*\.json$ \\history\.json$ \\transfers\.json \\sync-profiles\.json \\Data$" && echo ATTENTION : fichier personnel trouve dans la version portable. || echo OK, rien de personnel dans la version portable.
+if not exist installer-output\windows mkdir installer-output\windows
+if exist "installer-output\windows\TwinPanel-Portable-%VERSION%.zip" del /q "installer-output\windows\TwinPanel-Portable-%VERSION%.zip"
+powershell -NoProfile -ExecutionPolicy Bypass -File installer\portable\make-zip.ps1 -Source publish\portable\TwinPanel -Zip "installer-output\windows\TwinPanel-Portable-%VERSION%.zip"
+if errorlevel 1 (
+  echo ECHEC de la version portable.
+) else (
+  echo Version portable creee : installer-output\windows\TwinPanel-Portable-%VERSION%.zip
+)
 echo.
 echo === Inno Setup ===
 if not defined ISCC (

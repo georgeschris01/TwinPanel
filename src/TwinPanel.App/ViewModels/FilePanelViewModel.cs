@@ -126,6 +126,7 @@ public partial class FilePanelViewModel : ObservableObject
     }
 
     private static bool CanReopen(string path) => Directory.Exists(path)
+        || (TwinPanel.Core.Trash.RecycleBin.IsPanelPath(path) && TwinPanel.Core.Trash.RecycleBin.IsSupported)
         || (TwinPanel.Core.Archives.ArchivePath.TrySplit(path, out var archive, out _) && File.Exists(archive));
 
     public PanelState CaptureState(bool withView = false)
@@ -351,6 +352,7 @@ public partial class FilePanelViewModel : ObservableObject
         if (button is null) return;
         Activate();
         if (button.Kind == DriveButtonKind.Drive) await Current.NavigateAsync(button.Key);
+        else if (button.Kind == DriveButtonKind.Trash) await Current.NavigateAsync(TwinPanel.Core.Trash.RecycleBin.PanelPath);
         else if (button.Profile is { } p) ConnectionRequested?.Invoke(this, p);
     }
 
@@ -372,9 +374,21 @@ public partial class FilePanelViewModel : ObservableObject
         try
         {
             _drives = await Task.Run(DriveScanner.Scan);
+            _trashFull = await Task.Run(TwinPanel.Core.Trash.RecycleBin.HasItems);
             RebuildDriveBar();
         }
         finally { _scanningDrives = false; }
+    }
+
+    private bool _trashFull;
+
+    /// <summary>Relit seulement l'état « pleine / vide » de la corbeille (après une suppression ou une restauration).</summary>
+    public void RefreshTrashState() => _ = RefreshTrashStateAsync();
+
+    private async Task RefreshTrashStateAsync()
+    {
+        _trashFull = await Task.Run(TwinPanel.Core.Trash.RecycleBin.HasItems);
+        RebuildDriveBar();
     }
 
     /// <summary>Connexions enregistrées à montrer dans la barre (avec le nom court de celles qui sont ouvertes).</summary>
@@ -398,6 +412,15 @@ public partial class FilePanelViewModel : ObservableObject
         items.AddRange(drives.Where(d => d.MoveGroup is null));
         var network = drives.Where(d => d.MoveGroup is not null).ToDictionary(d => d.Key, StringComparer.OrdinalIgnoreCase);
         foreach (var key in TwinPanel.Core.Customization.DriveBarOrder.Arrange([.. network.Keys], DriveBarOrder)) items.Add(network[key]);
+        if (TwinPanel.Core.Trash.RecycleBin.IsSupported)
+            items.Add(new DriveButtonViewModel
+            {
+                Kind = DriveButtonKind.Trash,
+                Key = TwinPanel.Core.Trash.RecycleBin.PanelPath,
+                Label = string.Empty,
+                Tooltip = L.T("Corbeille") + (_trashFull ? L.T("\nClic : voir les éléments supprimés, les restaurer") : L.T("\nVide")),
+                IconKey = _trashFull ? "IconTrashFull" : "IconTrash",
+            });
         if (_connections.Count > 0) items.Add(new DriveButtonViewModel { Kind = DriveButtonKind.Separator, Key = "|" });
         var connectionRank = TwinPanel.Core.Customization.DriveBarOrder.Arrange([.. _connections.Select(c => c.Profile.Id.ToString("N"))], DriveBarOrder);
         foreach (var (p, alias) in _connections.OrderBy(c => connectionRank.IndexOf(c.Profile.Id.ToString("N"))))
@@ -427,7 +450,8 @@ public partial class FilePanelViewModel : ObservableObject
         var path = Current.CurrentPath;
         string? alias = TwinPanel.Core.Remote.PanelRemotePath.TryParse(path, out var remote) ? remote.Session : null;
         // Sous Linux, tout part de « / » : le bouton allumé est celui du disque le plus précis.
-        var root = alias is not null || path.Length == 0 ? null
+        bool trash = TwinPanel.Core.Trash.RecycleBin.IsPanelPath(path) || TwinPanel.Core.Trash.RecycleBin.ItemRootOf(path) is not null;
+        var root = alias is not null || path.Length == 0 || trash ? null
             : OperatingSystem.IsLinux() ? LocalDisks.Containing(path, DriveBar.Where(b => b.Kind == DriveButtonKind.Drive).Select(b => b.Key))
             : Path.GetPathRoot(path);
         foreach (var b in DriveBar)
@@ -435,6 +459,7 @@ public partial class FilePanelViewModel : ObservableObject
             {
                 DriveButtonKind.Drive => root is not null && string.Equals(b.Key, root, PathText.Comparison),
                 DriveButtonKind.Connection => alias is not null && string.Equals(b.OpenAlias, alias, StringComparison.OrdinalIgnoreCase),
+                DriveButtonKind.Trash => trash,
                 _ => false,
             };
     }

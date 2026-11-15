@@ -38,6 +38,7 @@ public partial class MainWindowViewModel
             try { _store.Save(_settings); } catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
         };
         FolderTabViewModel.RemoteFileOpener = OpenRemoteFileAsync;
+        FolderTabViewModel.TrashOpener = OpenTrashItemAsync;
         FolderTabViewModel.RemoteArchiveOpener = OpenRemoteArchiveAsync;
         FolderTabViewModel.ArchiveCopyOpened = (local, archive, inner) => _remoteEdits?.WatchArchiveCopy(local, archive, inner);
         FolderTabViewModel.ArchivePasswordAsker = UnlockArchiveAsync;
@@ -454,6 +455,7 @@ public partial class MainWindowViewModel
     private async Task ShowProperties()
     {
         var tab = ActivePanel.Current;
+        if (await RefuseInTrashAsync()) return;
         if (tab.IsInsideArchive)
         {
             await _dialogs.ShowErrorAsync(L.T("Propriétés"), L.T("Les propriétés ne sont pas disponibles à l'intérieur d'une archive."));

@@ -102,6 +102,7 @@ Dernière mise à jour : 02/11/2026 (Windows 0.8.7 ; Linux 0.1.9-beta).
 
 | Outil | Version | Licence | Rôle |
 |---|---|---|---|
+| Version portable | — | — | Programme publié en un seul fichier (`PublishSingleFile`) ; bibliothèques natives dans `lib\`, retrouvées par `App/NativeLibraries.cs` (installateur et portable). `build-installer.bat` fabrique aussi `TwinPanel-Portable-x.y.z.zip` (documents dans `Documents\`) (même programme + `installer/portable/portable.txt`, explication en français et en anglais), avec `installer/portable/make-zip.ps1`. |
 | Inno Setup | 7.1.1 | Gratuit pour un usage non commercial (licence payante demandée aux utilisateurs commerciaux) | Assemble `TwinPanel-Setup-x.y.z.exe` à partir de `installer/TwinPanel.iss` (lancé par `build-installer.bat`). L'installateur produit ne dépend pas d'Inno Setup. |
 | Pillow (Python) | 12.0.0 | MIT-CMU (permissive) | Fabrique une fois les images de l'installateur (`installer/images/make-images.py`) : bande de l'accueil (logo, nom, petite capture `docs/screenshots/windows-fr.png` / `windows-en.png`, une image par réglage d'affichage, en français et en anglais) et logo du bandeau des pages suivantes. Seules les images produites vont dans l'installateur ; le bandeau bleu foncé et son trait jaune sont faits dans le `[Code]` de `installer/TwinPanel.iss` (installation et désinstallation). |
 
@@ -178,6 +179,7 @@ Les licences des bibliothèques livrées sont **permissives** (MIT, BSD, Apache 
 | `Archives/` | `ArchiveEditor` (modifier une archive : réécrire, vérifier, remplacer), `ArchivePasswords` (mots de passe en mémoire, copies déchiffrées), `EncryptedZip` (écriture AES-256), `ArchivePath` (chemins « dans » une archive), `ArchiveIndex` (contenu mis en cache), `ArchiveFileSource` (archive vue comme un dossier), `ArchiveService` (extraire avec protection zip slip, tester, créer zip / tar / tar.gz). |
 | `DiskSpace.cs` | Place libre, reconnaître un disque plein, messages (avant et pendant une copie). |
 | `TransferGate.cs` | Nombre de transferts en même temps, ordre d'arrivée, une seule opération par archive ; choix des lignes de progression. |
+| `Settings/AppPaths.cs` | Dossier des réglages, en un seul endroit : `%APPDATA%\TwinPanel` (installé) ou `Data\` à côté du programme (version portable, repérée par `portable.txt`) ; copie temporaire si ce dossier est en lecture seule ; reprise des réglages de la version installée (jamais le coffre) ; `PortableDataProtector` : coffre avec mot de passe maître seulement. |
 | `Settings/TabPositions.cs` | Remettre les onglets de serveur à leur rang à la réouverture. |
 | `Navigation/` | Tri, historique précédent / suivant, dossiers récents (`RecentFolders`, fichier `history.json`), fil d'Ariane. |
 | `Navigation/TabTitle.cs` | Nom de la pastille d'un onglet : nom personnel, sinon dossier verrouillé (gardé même ailleurs), sinon dossier affiché. |
@@ -188,6 +190,7 @@ Les licences des bibliothèques livrées sont **permissives** (MIT, BSD, Apache 
 | `Selection/MaskMatcher.cs` | Masques `*.jpg;*.png \| *.tmp`. |
 | `Operations/` | Taille des dossiers, renommage multiple (masques, compteur, regex, annulation). |
 | `Search/` | Recherche (nom, texte, taille, date), doublons, vue à plat (`FlatListing`) ; `DocumentText` : vrai texte des PDF, epub, Word, Excel, PowerPoint, OpenDocument. |
+| `Trash/` | Corbeille lue directement : Windows (`$Recycle.Bin\<SID du compte>`, fiches `$I` versions 1 et 2) et Linux (corbeille du dossier personnel et des autres disques `.Trash-uid` / `.Trash/uid`, fiches `.trashinfo`, tailles `directorysizes` contrôlées par leur date) : liste, restauration, suppression définitive ; `RecycleBinFileSource` : le panneau « Corbeille » (`trash:`). |
 | `Compare/SyncProfiles.cs` | Profils de synchronisation (`SyncProfile`, `sync-profiles.json`, sans secret). |
 | `Operations/FileClipboard.cs` | Couper / Copier / Coller des fichiers : « couper » de Windows (`Preferred DropEffect`), collage dans le même dossier refusé, fichiers venus d'un autre programme. |
 | `Operations/ClipboardStaging.cs` | Copies sur le PC (dossier temporaire `TwinPanel\presse-papiers`) des éléments d'un serveur ou d'une archive, pour les donner aux autres programmes par Copier / Coller ou glisser-déposer : un dossier par Copier / glisser, sous-dossiers pour les noms en double (vue à plat), question au-delà de 500 Mo, ménage au Copier suivant et au démarrage (plus d'un jour). Dans l'application : `MainWindowViewModel.Clipboard.cs` (copie au Copier ; `DragStaging` : fichiers vides annoncés au départ du glisser, remplis seulement quand l'autre programme les demande) et `PanelView.AddLazyFilesAsync`. |

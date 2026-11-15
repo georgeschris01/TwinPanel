@@ -395,6 +395,7 @@ public partial class MainWindowViewModel : ObservableObject
     private async Task OpenWithDefaultApp()
     {
         if (ActivePanel.Current.CurrentItem is not { IsParentLink: false } f) return;
+        if (await RefuseInTrashAsync()) return;
         if (ActivePanel.Current.IsRemote)
         {
             if (!f.IsDirectory) await OpenRemoteFileAsync(f.Entry);
@@ -408,7 +409,7 @@ public partial class MainWindowViewModel : ObservableObject
     private async Task Edit()
     {
         if (ActivePanel.Current.CurrentItem is not { IsDirectory: false } f) return;
-        if (await RemoteEditAsync(f.Entry, internalEditor: false)) return;
+        if (await RefuseInTrashAsync() || await RemoteEditAsync(f.Entry, internalEditor: false)) return;
         var path = f.FullPath;
         if (ActivePanel.Current.IsInsideArchive)
         {
@@ -425,7 +426,7 @@ public partial class MainWindowViewModel : ObservableObject
     private async Task EditInternal()
     {
         if (ActivePanel.Current.CurrentItem is not { IsDirectory: false } f) return;
-        if (await RemoteEditAsync(f.Entry, internalEditor: true)) return;
+        if (await RefuseInTrashAsync() || await RemoteEditAsync(f.Entry, internalEditor: true)) return;
         if (ActivePanel.Current.IsInsideArchive)
         {
             if (!await _dialogs.ConfirmAsync("Archive", L.T("Ce fichier est dans une archive : il va être extrait dans un dossier temporaire.\n") +
@@ -440,7 +441,7 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     private async Task NewFile()
     {
-        if (await RefuseInArchiveAsync() || await RemoteNewFileAsync()) return;
+        if (await RefuseInTrashAsync() || await RefuseInArchiveAsync() || await RemoteNewFileAsync()) return;
         var name = await _dialogs.PromptAsync(L.T("Nouveau fichier"), L.T("Nom du fichier :"), L.T("nouveau.txt"), selectLength: L.T("nouveau.txt").Length - 4);
         if (string.IsNullOrWhiteSpace(name)) return;
         try
@@ -476,6 +477,11 @@ public partial class MainWindowViewModel : ObservableObject
     public string? DriveDropTarget(DriveButtonViewModel button)
     {
         if (button.Kind == DriveButtonKind.Drive) return button.Key;
+        if (button.Kind == DriveButtonKind.Trash)
+        {
+            StatusMessage = L.T("Pour envoyer des éléments à la corbeille : F8 (Supprimer).");
+            return null;
+        }
         if (button.OpenAlias is { } alias && _remote?.Find(alias) is { } session) return session.StartPath.ToString();
         StatusMessage = L.T("Ouvre d'abord la connexion (clic sur son bouton), puis lâche les fichiers dessus.");
         return null;
@@ -490,6 +496,7 @@ public partial class MainWindowViewModel : ObservableObject
         var defaultDestination = destination ?? OtherPanel.Current.CurrentPath;
         bool intoArchive = ArchivePath.TrySplit(defaultDestination, out _, out _);
         var sourceDir = sourceFolder ?? ActivePanel.Current.CurrentPath;
+        if (await TrashTransferAsync(move, items, destination, sourceDir, forced)) return;
         if (await RemoteTransferAsync(move, items, destination, fromPanel, forced, sourceDir)) return;
 
         if (fromPanel && ArchivePath.TrySplit(sourceDir, out var archive, out var innerBase))
@@ -589,7 +596,7 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     private async Task Rename()
     {
-        if (await ArchiveRenameAsync() || await RemoteRenameAsync()) return;
+        if (await RefuseInTrashAsync() || await ArchiveRenameAsync() || await RemoteRenameAsync()) return;
         if (ActivePanel.Current.CurrentItem is not { IsParentLink: false } item) return;
         int selectLength = item.IsDirectory ? item.Name.Length : Path.GetFileNameWithoutExtension(item.Name).Length;
         if (selectLength == 0) selectLength = item.Name.Length;
@@ -629,7 +636,7 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     private async Task MultiRenameFiles()
     {
-        if (await RefuseInArchiveAsync()) return;
+        if (await RefuseInTrashAsync() || await RefuseInArchiveAsync()) return;
         var tab = ActivePanel.Current;
         Func<string, string, CancellationToken, Task>? move = null;
         if (tab.IsRemote)
@@ -677,7 +684,7 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     private async Task MakeDirectory()
     {
-        if (await ArchiveMakeDirectoryAsync() || await RemoteMakeDirectoryAsync()) return;
+        if (await RefuseInTrashAsync() || await ArchiveMakeDirectoryAsync() || await RemoteMakeDirectoryAsync()) return;
         var name = await _dialogs.PromptAsync(L.T("Nouveau dossier"), L.T("Nom du dossier :"));
         if (string.IsNullOrWhiteSpace(name)) return;
         try
@@ -694,7 +701,7 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     private async Task Delete()
     {
-        if (await ArchiveDeleteAsync() || await RemoteDeleteAsync()) return;
+        if (await TrashDeleteAsync() || await ArchiveDeleteAsync() || await RemoteDeleteAsync()) return;
         var items = ActivePanel.Current.TargetEntries;
         if (items.Count == 0) return;
 
@@ -706,8 +713,10 @@ public partial class MainWindowViewModel : ObservableObject
 
         var paths = items.Select(i => i.FullPath).ToList();
         ActivePanel.Current.MarkAll(false);
-        Operations.Start(new OperationJobViewModel(L.F("Suppression de {0}", what), transfer: false,
-            (progress, ct, _) => FileOperations.DeleteAsync(paths, recycle, progress, ct)));
+        var job = new OperationJobViewModel(L.F("Suppression de {0}", what), transfer: false,
+            (progress, ct, _) => FileOperations.DeleteAsync(paths, recycle, progress, ct));
+        if (recycle) AfterTrashJob(job, () => Task.CompletedTask); // la corbeille se remplit : son icône et ses panneaux suivent
+        Operations.Start(job);
     }
 
     // ---- Marquage (commandes au clavier) -------------------------------------------------------
@@ -731,6 +740,11 @@ public partial class MainWindowViewModel : ObservableObject
         if (ActivePanel.Current.IsInsideArchive)
         {
             await _dialogs.ShowErrorAsync(L.T("Recherche"), L.T("La recherche ne se fait pas à l'intérieur d'une archive : extrais-la d'abord."));
+            return;
+        }
+        if (InTrash(ActivePanel.Current.CurrentPath))
+        {
+            await _dialogs.ShowErrorAsync(L.T("Recherche"), L.T("La recherche ne se fait pas dans la corbeille : ouvre d'abord un dossier du PC."));
             return;
         }
         var path = await _dialogs.ShowSearchAsync(ActivePanel.Current.CurrentPath, _remote);
@@ -792,6 +806,11 @@ public partial class MainWindowViewModel : ObservableObject
         if (Left.Current.IsInsideArchive || Right.Current.IsInsideArchive)
         {
             await _dialogs.ShowErrorAsync(L.T("Synchroniser"), L.T("La synchronisation ne fonctionne pas à l'intérieur d'une archive."));
+            return;
+        }
+        if (InTrash(Left.Current.CurrentPath) || InTrash(Right.Current.CurrentPath))
+        {
+            await _dialogs.ShowErrorAsync(L.T("Synchroniser"), L.T("La synchronisation ne fonctionne pas avec la corbeille."));
             return;
         }
         var access = new SyncProfileAccess(_syncProfiles, ToStoredFolder, FromStoredFolder);
@@ -1092,7 +1111,7 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     private async Task PackArchive()
     {
-        if (await RefuseInArchiveAsync()) return;
+        if (await RefuseInTrashAsync() || await RefuseInArchiveAsync()) return;
         var items = ActivePanel.Current.TargetEntries;
         if (items.Count == 0) return;
         // Vue à plat : tous les fichiers seraient rangés à la racine de l'archive, sous le même nom.
@@ -1243,7 +1262,7 @@ public partial class MainWindowViewModel : ObservableObject
         var version = (System.Reflection.CustomAttributeExtensions.GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>(typeof(MainWindowViewModel).Assembly)?.InformationalVersion ?? "?").Split('+')[0];
         return _dialogs.ShowAboutAsync($"TwinPanel {version}",
             L.T("Gestionnaire de fichiers à deux panneaux, gratuit.\nCréé par chrypox, avec l'aide de l'IA Claude Code."),
-            [$".NET {Environment.Version} — {Environment.OSVersion.VersionString}", L.F("Réglages : {0}", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "TwinPanel"))],
+            [$".NET {Environment.Version} — {Environment.OSVersion.VersionString}", (AppPaths.IsPortable ? L.T("Version portable — ") : string.Empty) + L.F("Réglages : {0}", AppPaths.DataDirectory)],
             DownloadsTextAsync);
     }
 

@@ -13,6 +13,7 @@ internal static class Program
     [STAThread]
     public static void Main(string[] args)
     {
+        NativeLibraries.UseLibFolder(); // avant tout : les bibliothèques natives de la version publiée sont dans « lib »
         AppDomain.CurrentDomain.UnhandledException += (_, e) => CrashLog.Write(e.ExceptionObject as Exception, fatal: true);
         TaskScheduler.UnobservedTaskException += (_, e) => { CrashLog.Write(e.Exception, fatal: false); e.SetObserved(); };
         try
@@ -29,6 +30,7 @@ internal static class Program
                 HangWatchdog.Start();
                 Services.InWindowDragSource.UseUnderWayland();
             }).StartWithClassicDesktopLifetime(args);
+            TwinPanel.Core.Settings.AppPaths.CleanUp(); // portable en lecture seule : copie de travail effacée
             // Dans une AppImage, le programme vit dans un dossier temporaire qui disparaît à la fermeture : on repart du fichier AppImage.
             if (RestartAfterExit && (Environment.GetEnvironmentVariable("APPIMAGE") ?? Environment.ProcessPath) is { } program)
                 System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(program) { UseShellExecute = false });
@@ -48,7 +50,7 @@ internal static class Program
 }
 
 /// <summary>
-/// Journal des erreurs imprévues : %APPDATA%\TwinPanel\crash.log et, à côté du programme, crash.log.
+/// Journal des erreurs imprévues : crash.log dans le dossier des réglages (%APPDATA%\TwinPanel, ou Data\ en portable) et à côté du programme.
 /// Aucune donnée personnelle n'y est écrite volontairement (seulement le type d'erreur et l'endroit dans le code).
 /// </summary>
 internal static class CrashLog
@@ -59,7 +61,7 @@ internal static class CrashLog
         var text = $"===== {DateTime.Now:yyyy-MM-dd HH:mm:ss} {(fatal ? "ARRÊT" : "erreur rattrapée")} ====={Environment.NewLine}{ex}{Environment.NewLine}{Environment.NewLine}";
         foreach (var dir in new[]
                  {
-                     Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "TwinPanel"),
+                     TwinPanel.Core.Settings.AppPaths.DataDirectory,
                      AppContext.BaseDirectory,
                  })
         {

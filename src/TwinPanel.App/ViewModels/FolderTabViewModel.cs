@@ -47,6 +47,9 @@ public partial class FolderTabViewModel : ObservableObject, IDisposable
     /// <summary>Entrée sur une archive d'un serveur : branché par la fenêtre principale (téléchargement avec progression).</summary>
     public static Func<FileEntry, Task>? RemoteArchiveOpener { get; set; }
 
+    /// <summary>Entrée / double-clic sur un élément de la corbeille (donné par la fenêtre principale).</summary>
+    public static Func<FileEntry, Task>? TrashOpener { get; set; }
+
     /// <summary>Fichier d'une archive ouvert depuis une copie temporaire (copie, archive) : surveillé pour ne pas perdre une modification.</summary>
     public static Action<string, string, string>? ArchiveCopyOpened { get; set; }
 
@@ -346,6 +349,11 @@ public partial class FolderTabViewModel : ObservableObject, IDisposable
             ErrorOccurred?.Invoke(this, L.T("La vue à plat n'est pas disponible à l'intérieur d'une archive."));
             return;
         }
+        if (IsTrash || IsInTrashFolder)
+        {
+            ErrorOccurred?.Invoke(this, L.T("La vue à plat n'est pas disponible dans la corbeille."));
+            return;
+        }
         if (!IsFlat)
         {
             IsFlat = true;
@@ -472,14 +480,21 @@ public partial class FolderTabViewModel : ObservableObject, IDisposable
     /// <summary>Réaffiche la liste (formats, couleurs ou police changés dans les Options).</summary>
     public void Rebuild() => ApplySort(CursorKey, fullReset: true);
 
-    /// <summary>Repère de la ligne sous le curseur : en vue à plat, deux fichiers peuvent porter le même nom.</summary>
-    private string? CursorKey => IsFlat ? CurrentItem?.FullPath : CurrentItem?.Name;
+    /// <summary>
+    /// Repère de la ligne sous le curseur : en vue à plat et dans la corbeille, deux éléments peuvent porter le même nom,
+    /// on les reconnaît donc par leur chemin complet.
+    /// </summary>
+    private bool KeyByPath => IsFlat || IsTrash;
+
+    private string? CursorKey => KeyOf(CurrentItem);
+
+    private string? KeyOf(FileItemViewModel? item) => KeyByPath ? item?.FullPath : item?.Name;
 
     private bool IsCursorKey(FileItemViewModel item, string key) =>
-        string.Equals(IsFlat ? item.FullPath : item.Name, key, PathText.Comparison);
+        string.Equals(KeyOf(item), key, PathText.Comparison);
 
     private FileItemViewModel MakeItem(FileEntry e) =>
-        new(e) { FolderText = IsFlat ? FlatListing.RelativeFolder(CurrentPath, e.FullPath) : string.Empty };
+        new(e) { FolderText = e.OriginalFolder ?? (IsFlat ? FlatListing.RelativeFolder(CurrentPath, e.FullPath) : string.Empty) };
 
     public ObservableCollection<FileItemViewModel> Items { get; } = [];
     public ObservableCollection<BreadcrumbSegment> Segments { get; } = [];
@@ -559,6 +574,12 @@ public partial class FolderTabViewModel : ObservableObject, IDisposable
 
     /// <summary>Vrai si l'onglet affiche un dossier sur un serveur (sftp://, ftp://…).</summary>
     public bool IsRemote => TwinPanel.Core.Remote.PanelRemotePath.TryParse(CurrentPath, out _);
+
+    /// <summary>Vrai si l'onglet affiche la corbeille (éléments supprimés, sous leur vrai nom).</summary>
+    public bool IsTrash => TwinPanel.Core.Trash.RecycleBin.IsPanelPath(CurrentPath);
+
+    /// <summary>Vrai si l'onglet affiche l'intérieur d'un dossier supprimé (lecture seule : voir, copier ailleurs).</summary>
+    public bool IsInTrashFolder => TwinPanel.Core.Trash.RecycleBin.ItemRootOf(CurrentPath) is not null;
 
     /// <summary>Éléments sur lesquels agir : les marqués, sinon l'élément sous le curseur ; jamais "..".</summary>
     public IReadOnlyList<FileEntry> TargetEntries
@@ -654,10 +675,16 @@ public partial class FolderTabViewModel : ObservableObject, IDisposable
         if (CurrentPath.Length == 0) return;
         if (IsFlat) { _ = ScanFlatAsync(CurrentItem?.FullPath); return; }
         int started = _loadVersion;
-        if (await LoadAsync(CurrentPath, CurrentItem?.Name, recordHistory: false, quiet: true)) return;
-        if (IsRemote) return; // serveur : le message d'erreur a déjà été donné à la navigation
+        if (await LoadAsync(CurrentPath, CursorKey, recordHistory: false, quiet: true)) return;
+        if (IsRemote || IsTrash) return; // serveur : le message d'erreur a déjà été donné à la navigation
         // Relecture dépassée par une autre (fin d'une copie, surveillance du dossier) : le dossier est toujours là.
         if (_loadVersion > started + 1 || Directory.Exists(CurrentPath)) return;
+        if (IsInTrashFolder)
+        {
+            // Dossier restauré ou supprimé définitivement pendant qu'on le regardait : retour à la corbeille.
+            await NavigateAsync(TwinPanel.Core.Trash.RecycleBin.PanelPath);
+            return;
+        }
 
         // Le dossier a disparu : on remonte jusqu'au premier parent existant.
         var dir = new DirectoryInfo(CurrentPath).Parent;
@@ -668,6 +695,13 @@ public partial class FolderTabViewModel : ObservableObject, IDisposable
     public async Task GoUpAsync()
     {
         if (CurrentPath.Length == 0) return;
+        // Dossier supprimé : son parent est la corbeille, pas le dossier interne de Windows ou du bureau.
+        if (TwinPanel.Core.Trash.RecycleBin.ItemRootOf(CurrentPath) is { } trashed
+            && string.Equals(trashed, CurrentPath.TrimEnd('/', '\\'), StringComparison.Ordinal))
+        {
+            await NavigateAsync(TwinPanel.Core.Trash.RecycleBin.PanelPath, selectName: trashed); // dans la corbeille, le curseur suit le chemin complet
+            return;
+        }
         if (_sources.Resolve(CurrentPath).GetParent(CurrentPath) is { } parent)
             await NavigateAsync(parent, selectName: Path.GetFileName(CurrentPath));
     }
@@ -692,6 +726,10 @@ public partial class FolderTabViewModel : ObservableObject, IDisposable
         {
             case null: return;
             case { IsParentLink: true }: await GoUpAsync(); break;
+            case { } t when IsTrash || (IsInTrashFolder && !t.IsDirectory):
+                // Corbeille et dossier supprimé : rien n'est lancé ni modifié, un fichier est seulement montré (F3).
+                if (TrashOpener is not null) await TrashOpener(t.Entry);
+                break;
             case { IsDirectory: true } d: await NavigateAsync(d.FullPath); break;
             case { } f when IsRemote && OpenArchivesWithEnter && TwinPanel.Core.Archives.ArchivePath.IsArchiveFile(f.Name) && RemoteArchiveOpener is not null:
                 await RemoteArchiveOpener(f.Entry);
@@ -887,7 +925,7 @@ public partial class FolderTabViewModel : ObservableObject, IDisposable
                 _sizeCts.Cancel();
                 _sizeCts = new CancellationTokenSource();
                 // Pour Précédent / Suivant : l'élément sous le curseur dans le dossier qu'on quitte.
-                if (!IsFlat && CurrentPath.Length > 0) _history.RememberCursor(CurrentPath, CurrentItem?.Name);
+                if (!IsFlat && CurrentPath.Length > 0) _history.RememberCursor(CurrentPath, CursorKey);
                 if (IsFlat) LeaveFlat();
             }
             _rawEntries = entries;
@@ -929,7 +967,7 @@ public partial class FolderTabViewModel : ObservableObject, IDisposable
         // la grille déplace sa sélection sur la ligne suivante ; on remet le curseur au bon endroit ensuite.
         keepName ??= CursorKey;
         int oldIndex = CurrentItem is null ? -1 : Items.IndexOf(CurrentItem);
-        List<string> oldKeys = fullReset ? [] : [.. Items.Select(i => IsFlat ? i.FullPath : i.Name)];
+        List<string> oldKeys = fullReset ? [] : [.. Items.Select(i => KeyOf(i)!)];
 
         if (fullReset)
         {
@@ -973,7 +1011,7 @@ public partial class FolderTabViewModel : ObservableObject, IDisposable
         {
             // Plusieurs lignes ont pu partir ensemble : on prend la première ligne restante après le curseur.
             var present = new Dictionary<string, FileItemViewModel>();
-            foreach (var i in Items) present.TryAdd(IsFlat ? i.FullPath : i.Name, i);
+            foreach (var i in Items) present.TryAdd(KeyOf(i)!, i);
             if (TwinPanel.Core.Navigation.TransferCursor.NextRemaining(oldKeys, oldIndex, present.ContainsKey) is { } next)
                 keep = present[next];
         }

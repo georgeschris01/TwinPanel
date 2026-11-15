@@ -61,6 +61,11 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 ; Mise à jour : bibliothèques de l'ancienne version retirées (une bibliothèque abandonnée ne doit pas rester).
 Type: files; Name: "{app}\*.dll"
 Type: filesandordirs; Name: "{app}\runtimes"
+; Depuis la 0.8.11 : programme en un seul fichier ; restes de l'ancienne disposition retirés, « lib » remplacé.
+Type: files; Name: "{app}\createdump.exe"
+Type: files; Name: "{app}\TwinPanel.deps.json"
+Type: files; Name: "{app}\TwinPanel.runtimeconfig.json"
+Type: filesandordirs; Name: "{app}\lib"
 
 [Files]
 ; Seulement le programme : aucun réglage, connexion, mot de passe ni journal (double sécurité, ils ne sont de toute façon pas dans publish).
