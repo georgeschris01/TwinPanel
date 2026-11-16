@@ -324,6 +324,15 @@ public partial class OptionsViewModel : ObservableObject
     [ObservableProperty] private bool _showGroupColumn;
     [ObservableProperty] private bool _showDurationColumn;
     [ObservableProperty] private bool _showFolderSizes;
+    [ObservableProperty] private bool _dimHiddenFiles = true;
+    [ObservableProperty] private Choice<int> _uiScale = UiScales[2];
+    [ObservableProperty] private Choice<double> _fileIconSize = FileIconSizes[0];
+
+    /// <summary>Taille de toute l'interface (en plus de la mise à l'échelle du système).</summary>
+    public static IReadOnlyList<Choice<int>> UiScales { get; } =
+        [.. TwinPanel.Core.Settings.UiSizes.Scales.Select(s => new Choice<int>(s, s == 100 ? L.F("{0} % (normale)", s) : L.F("{0} %", s)))];
+    public static IReadOnlyList<Choice<double>> FileIconSizes { get; } =
+        [new(16, L.T("Petites")), new(20, L.T("Moyennes")), new(24, L.T("Grandes")), new(32, L.T("Très grandes"))];
     [ObservableProperty] private bool _useShellIcons;
     public static IReadOnlyList<Choice<TabRowMode>> TabRowModes { get; } =
         [new(TabRowMode.Arrows, L.T("Une ligne, avec les flèches ‹ › pour faire défiler")), new(TabRowMode.Wrap, L.T("Plusieurs lignes (tous les onglets visibles)"))];
@@ -562,6 +571,9 @@ public partial class OptionsViewModel : ObservableObject
         ShowVideoCodecColumn = a.ShowVideoCodecColumn;
         ShowAudioLanguagesColumn = a.ShowAudioLanguagesColumn;
         ShowFolderSizes = a.ShowFolderSizes;
+        DimHiddenFiles = a.DimHiddenFiles;
+        UiScale = UiScales.First(c => c.Value == TwinPanel.Core.Settings.UiSizes.Scale(a.UiScale));
+        FileIconSize = FileIconSizes.First(c => c.Value == TwinPanel.Core.Settings.UiSizes.IconSize(a.FileIconSize));
         UseShellIcons = a.UseShellIcons;
         TabRows = TabRowModes.FirstOrDefault(t => t.Value == a.TabRows) ?? TabRowModes[0];
         ThumbnailSize = ThumbnailSizes.FirstOrDefault(s => s.Value == a.ThumbnailSize) ?? ThumbnailSizes[1];
@@ -686,6 +698,9 @@ public partial class OptionsViewModel : ObservableObject
         a.ShowVideoCodecColumn = ShowVideoCodecColumn;
         a.ShowAudioLanguagesColumn = ShowAudioLanguagesColumn;
         a.ShowFolderSizes = ShowFolderSizes;
+        a.DimHiddenFiles = DimHiddenFiles;
+        a.UiScale = UiScale.Value;
+        a.FileIconSize = FileIconSize.Value;
         a.UseShellIcons = UseShellIcons;
         a.TabRows = TabRows.Value;
         a.ThumbnailSize = ThumbnailSize.Value;

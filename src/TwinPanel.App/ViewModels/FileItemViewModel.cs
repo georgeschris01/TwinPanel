@@ -27,6 +27,9 @@ public partial class FileItemViewModel(FileEntry entry) : ObservableObject
     /// </summary>
     public bool HasNameColor => !IsParentLink && (Converters.FileIcons.ColorNames || Converters.FileIcons.Rules.RuleColor(Entry) is not null);
 
+    /// <summary>Élément caché, montré estompé (icône et nom à moitié transparents) si l'option est cochée.</summary>
+    public bool IsDimmed => Converters.FileIcons.DimHidden && Entry.LooksHidden;
+
     /// <summary>Couleur du nom quand <see cref="HasNameColor"/> est vrai (utilisée par le style « colored »).</summary>
     public Avalonia.Media.IBrush NameColor => Converters.FileIcons.BrushFor(Entry);
 

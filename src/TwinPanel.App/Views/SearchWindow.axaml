@@ -90,11 +90,11 @@
             <DataGridTemplateColumn.CellTemplate>
               <DataTemplate>
                 <!-- Comme dans les panneaux : icône dessinée aux couleurs des Options, ou vraie icône du système (Options → Affichage). -->
-                <Panel>
-                  <PathIcon Width="16" Height="16" HorizontalAlignment="Center" IsVisible="{Binding !HasShellIcon}"
+                <Panel Classes.dimmed="{Binding IsDimmed}">
+                  <PathIcon Width="{DynamicResource FileIconSize}" Height="{DynamicResource FileIconSize}" HorizontalAlignment="Center" IsVisible="{Binding !HasShellIcon}"
                             Data="{Binding Category, Converter={x:Static conv:CategoryToGeometryConverter.Instance}}"
                             Foreground="{Binding IconBrush}" />
-                  <Image Width="16" Height="16" HorizontalAlignment="Center" IsVisible="{Binding HasShellIcon}"
+                  <Image Width="{DynamicResource FileIconSize}" Height="{DynamicResource FileIconSize}" HorizontalAlignment="Center" IsVisible="{Binding HasShellIcon}"
                          Source="{Binding ShellIcon}" RenderOptions.BitmapInterpolationMode="HighQuality" />
                 </Panel>
               </DataTemplate>

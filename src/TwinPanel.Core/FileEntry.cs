@@ -51,6 +51,12 @@ public sealed record FileEntry(
 
     public bool IsHidden => (Attributes & FileAttributes.Hidden) != 0;
 
+    /// <summary>
+    /// À montrer estompé : caché ou système (Windows), nom commençant par un point (Linux, serveurs : .NET et la lecture
+    /// des serveurs le marquent « caché »). Jamais « [..] ».
+    /// </summary>
+    public bool LooksHidden => !IsParentLink && (Attributes & (FileAttributes.Hidden | FileAttributes.System)) != 0;
+
     // ---- Droits Unix / propriétaire (serveurs, Linux) : colonnes facultatives ----
 
     /// <summary>Droits Unix sur 12 bits ; -1 : inconnus (disque Windows, WebDAV…).</summary>

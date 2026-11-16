@@ -146,6 +146,12 @@ public sealed class AppearanceSettings
     public double FontSize { get; set; } = 14;
     /// <summary>Hauteur des lignes des panneaux (22 compact, 28 normal, 34 aéré).</summary>
     public double RowHeight { get; set; } = 28;
+    /// <summary>Taille de toute l'interface, en pour cent (75 à 200), en plus de la mise à l'échelle du système.</summary>
+    public int UiScale { get; set; } = 100;
+    /// <summary>Côté des icônes des fichiers dans les panneaux et la recherche, en points (16, 20, 24 ou 32).</summary>
+    public double FileIconSize { get; set; } = 16;
+    /// <summary>Fichiers et dossiers cachés (ou système) affichés estompés : icône et nom à moitié transparents.</summary>
+    public bool DimHiddenFiles { get; set; } = true;
     public bool ShowExtensionColumn { get; set; } = true;
     public bool ShowSizeColumn { get; set; } = true;
     public bool ShowDateColumn { get; set; } = true;
@@ -496,4 +502,19 @@ public static class SavedRemoteTab
         if (remotePath.Length == 0 || remotePath[0] != '/') remotePath = "/" + remotePath;
         return true;
     }
+}
+
+/// <summary>Choix permis pour la taille de l'interface et celle des icônes des fichiers.</summary>
+public static class UiSizes
+{
+    public static readonly int[] Scales = [75, 85, 100, 115, 125, 150, 175, 200];
+    public static readonly double[] IconSizes = [16, 20, 24, 32];
+
+    /// <summary>Valeur enregistrée ramenée au choix permis le plus proche (fichier modifié à la main, ancienne version).</summary>
+    public static int Scale(int percent) => Scales.MinBy(s => Math.Abs(s - percent));
+    public static double IconSize(double size) => IconSizes.MinBy(s => Math.Abs(s - size));
+
+    /// <summary>Hauteur des lignes des panneaux : celle choisie, agrandie pour que le texte et l'icône y tiennent.</summary>
+    public static double RowHeight(double chosen, double textSize, double iconSize) =>
+        Math.Clamp(Math.Max(chosen, Math.Max(Math.Ceiling(textSize * 1.75), iconSize + 8)), 18, 72);
 }

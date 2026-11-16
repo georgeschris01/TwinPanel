@@ -28,6 +28,8 @@ public sealed partial class SearchResult(FileEntry entry, string group) : Observ
     public Avalonia.Media.IBrush IconBrush => Converters.FileIcons.BrushFor(Entry);
     /// <summary>Le nom a une couleur à lui (règle par masque, ou « colorer les noms ») ; sinon celle du thème.</summary>
     public bool HasNameColor => Converters.FileIcons.ColorNames || Converters.FileIcons.Rules.RuleColor(Entry) is not null;
+    /// <summary>Élément caché, montré estompé comme dans les panneaux.</summary>
+    public bool IsDimmed => Converters.FileIcons.DimHidden && Entry.LooksHidden;
     public Avalonia.Media.IBrush NameColor => Converters.FileIcons.BrushFor(Entry);
 
     /// <summary>Vraie icône du système (Options → Affichage) ; null : icône dessinée de TwinPanel.</summary>

@@ -22,6 +22,9 @@ public partial class App : Application
         {
             // Texte coupé par « … » : infobulle avec le texte entier, dans toutes les fenêtres.
             Views.TrimmedTextTips.Install();
+            // Taille de l'interface (Options → Affichage) : posée avant la première fenêtre.
+            UiScaling.Install();
+            UiScaling.Set(UiSizes.Scale(SettingsStore.Default.Load().Appearance.UiScale) / 100.0);
             // Version portable, premier démarrage sur un PC où TwinPanel est installé : reprendre ses réglages ?
             if (AppPaths.CanImportFromInstalled(AppPaths.Current, AppPaths.InstalledDirectory))
             {

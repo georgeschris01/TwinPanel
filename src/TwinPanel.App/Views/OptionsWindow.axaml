@@ -58,8 +58,12 @@
                 <NumericUpDown Value="{Binding FontSize}" Minimum="9" Maximum="28" Increment="1" FormatString="0" />
               </StackPanel>
             </Grid>
+            <TextBlock Classes="label" Text="{l:T 'Taille de l\'interface (en plus de celle du système)'}" />
+            <ComboBox ItemsSource="{x:Static vm:OptionsViewModel.UiScales}" SelectedItem="{Binding UiScale}" MinWidth="260" />
             <TextBlock Classes="label" Text="{l:T 'Hauteur des lignes des panneaux'}" />
             <ComboBox ItemsSource="{x:Static vm:OptionsViewModel.RowHeights}" SelectedItem="{Binding RowHeight}" MinWidth="260" />
+            <TextBlock Classes="label" Text="{l:T 'Taille des icônes des fichiers'}" />
+            <ComboBox ItemsSource="{x:Static vm:OptionsViewModel.FileIconSizes}" SelectedItem="{Binding FileIconSize}" MinWidth="260" />
             <TextBlock Classes="label" Text="{l:T 'Colonnes affichées (le nom l\'est toujours)'}" />
             <WrapPanel>
               <CheckBox Content="Extension" IsChecked="{Binding ShowExtensionColumn}" Margin="0,0,16,0" />
@@ -76,6 +80,7 @@
               <CheckBox Content="{l:T 'Langues audio'}" IsChecked="{Binding ShowAudioLanguagesColumn}" Margin="0,0,16,0" />
             </WrapPanel>
             <CheckBox Content="{l:T 'Taille des dossiers (calcul automatique en arrière-plan, PC et serveurs)'}" IsChecked="{Binding ShowFolderSizes}" Margin="0,6,0,0" />
+            <CheckBox Content="{l:T 'Estomper les fichiers et dossiers cachés'}" IsChecked="{Binding DimHiddenFiles}" Margin="0,6,0,0" />
             <CheckBox Content="{Binding ShellIconsLabel}" IsChecked="{Binding UseShellIcons}" IsVisible="{Binding ShellIconsAvailable}" Margin="0,6,0,0" />
             <TextBlock Classes="subtle" TextWrapping="Wrap" Margin="0,2,0,0"
                        Text="{l:T 'Ordre des colonnes : glisser un titre (Nom, Ext, Taille…) à la souris ; clic droit sur les titres pour revenir à l\'ordre par défaut.'}" />

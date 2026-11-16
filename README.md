@@ -471,7 +471,7 @@ Tout se règle dans ≡ → Outils → Options.
 
 | Page | Contenu |
 |---|---|
-| Affichage | Langue, thème, police, colonnes, formats, miniatures, outils médias |
+| Affichage | Langue, thème, police, taille de l'interface, taille des icônes, colonnes, fichiers cachés estompés, formats, miniatures, outils médias |
 | Couleurs | Couleurs par type de fichier, règles par masque, icônes des disques |
 | Comportement | Corbeille, confirmations, transferts en même temps, astuces |
 | Démarrage | Onglets et terminaux à rouvrir, dossiers de départ |
@@ -483,6 +483,8 @@ Tout se règle dans ≡ → Outils → Options.
 | Sauvegarde | Réglages, liste des connexions et onglets ouverts dans un seul fichier, au choix |
 | Synchronisation | Configuration chiffrée partagée entre vos machines, contenu au choix |
 | Sécurité | Mot de passe maître du coffre, code de secours, mot de passe maître oublié |
+
+**Taille de l'interface** (Options → Affichage, de 75 à 200 %) : agrandit ou réduit tout TwinPanel (fenêtres, menus, barre de boutons, infobulles), en plus de la mise à l'échelle de Windows ou du bureau. Le changement s'applique tout de suite, sans redémarrer. **Taille des icônes des fichiers** (petites, moyennes, grandes, très grandes) : icônes des panneaux et de la recherche, les lignes s'agrandissent avec elles. Pour seulement agrandir le texte des listes : `Ctrl` + molette.
 
 Paramètres des boutons et du menu : `%P` dossier actif, `%N` nom de l'élément, `%F` son chemin complet, `%T` dossier de l'autre panneau, `%S` éléments marqués.
 
@@ -602,7 +604,7 @@ Clic droit sur son onglet → **Reconnecter** : le terminal repart dans le même
 
 ### Comment afficher les fichiers cachés ?
 
-`Ctrl+H`, ou le bouton de la barre d'outils.
+`Ctrl+H`, ou le bouton de la barre d'outils. Ils sont alors estompés (icône et nom à moitié transparents) pour les reconnaître : fichiers cachés ou système sous Windows, noms commençant par un point sous Linux et sur les serveurs. Pour les montrer comme les autres : Options → Affichage, décocher **Estomper les fichiers et dossiers cachés**.
 
 ### Pourquoi les copies se font-elles l'une après l'autre ?
 

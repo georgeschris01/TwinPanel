@@ -85,7 +85,10 @@ public partial class PanelView : UserControl
     {
         // Texte agrandi (Ctrl + molette) : les lignes grandissent avec lui.
         var text = MainWindowViewModel.PanelFontSize(a);
-        FileGrid.RowHeight = Math.Clamp(Math.Max(a.RowHeight, Math.Ceiling(text * 1.75)), 18, 72);
+        var icon = TwinPanel.Core.Settings.UiSizes.IconSize(a.FileIconSize);
+        FileGrid.RowHeight = TwinPanel.Core.Settings.UiSizes.RowHeight(a.RowHeight, text, icon);
+        // Colonne des icônes : à la taille des icônes choisie.
+        if (FileGrid.Columns.Count > 0) FileGrid.Columns[0].Width = new DataGridLength(icon + 16);
         // Repérées par leur clé de tri : le titre change quand on trie (« Taille ▲ »).
         foreach (var column in FileGrid.Columns)
         {

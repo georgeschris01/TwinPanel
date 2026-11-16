@@ -624,10 +624,13 @@ public partial class MainWindow : Window
             app.Resources["PanelFontSize"] = MainWindowViewModel.PanelFontSize(a);
             // Titres des onglets (rubriques des Options, onglets du gestionnaire de connexions…), un peu plus grands que le texte.
             app.Resources["TabItemHeaderFontSize"] = size + 2;
+            app.Resources["FileIconSize"] = TwinPanel.Core.Settings.UiSizes.IconSize(a.FileIconSize);
             app.Resources["AppFontFamily"] = string.IsNullOrWhiteSpace(a.FontFamily)
                 ? new Avalonia.Media.FontFamily("fonts:Inter#Inter")
                 : new Avalonia.Media.FontFamily(a.FontFamily);
         }
+        // Taille de toute l'interface (toutes les fenêtres, menus et infobulles), appliquée tout de suite.
+        Services.UiScaling.Set(TwinPanel.Core.Settings.UiSizes.Scale(a.UiScale) / 100.0);
         LeftPanel.ApplyAppearance(a);
         RightPanel.ApplyAppearance(a);
         HangWatchdog.Step("Apparence : appliquée");

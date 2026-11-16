@@ -1906,5 +1906,13 @@
  "TwinPanel fonctionne normalement, mais tes changements (réglages, onglets, connexions) ne seront pas gardés après la fermeture.": "TwinPanel works normally, but your changes (settings, tabs, connections) will not be kept after it closes.",
  "Version portable : choisis un mot de passe maître pour pouvoir enregistrer des secrets. Ils s'ouvriront ainsi sur n'importe quel PC.": "Portable version: choose a master password to be able to save secrets. They will then open on any PC.",
  "Dans la version portable, le mot de passe maître est obligatoire : c'est lui qui protège les secrets, sur n'importe quel PC.": "In the portable version, the master password is required: it is what protects the secrets, on any PC.",
- "Version portable pour Windows (fichier .zip) : réglages dans le dossier Data à côté du programme, rien n'est écrit sur le PC ; reprise des réglages de la version installée ; mots de passe protégés par le mot de passe maître.": "Portable version for Windows (.zip file): settings in the Data folder next to the program, nothing is written to the PC; settings can be brought from the installed version; passwords protected by the master password."
+ "Version portable pour Windows (fichier .zip) : réglages dans le dossier Data à côté du programme, rien n'est écrit sur le PC ; reprise des réglages de la version installée ; mots de passe protégés par le mot de passe maître.": "Portable version for Windows (.zip file): settings in the Data folder next to the program, nothing is written to the PC; settings can be brought from the installed version; passwords protected by the master password.",
+ "{0} % (normale)": "{0} % (normal)",
+ "{0} %": "{0} %",
+ "Très grandes": "Very large",
+ "Taille de l'interface (en plus de celle du système)": "Interface size (on top of the system's)",
+ "Taille des icônes des fichiers": "File icon size",
+ "Estomper les fichiers et dossiers cachés": "Dim hidden files and folders",
+ "Taille de l'interface (75 à 200 %, Options → Affichage), appliquée tout de suite à toutes les fenêtres, en plus de la mise à l'échelle du système ; taille des icônes des fichiers réglable à part.": "Interface size (75 to 200 %, Options → View), applied right away to all windows, on top of the system scaling; file icon size adjustable on its own.",
+ "Fichiers et dossiers cachés estompés (icône et nom à moitié transparents), comme dans l'Explorateur ; case dans Options → Affichage.": "Hidden files and folders dimmed (half-transparent icon and name), as in Explorer; box in Options → View."
 }

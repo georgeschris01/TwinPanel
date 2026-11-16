@@ -471,7 +471,7 @@ Everything is set in ≡ → Tools → Options.
 
 | Page | Contents |
 |---|---|
-| View | Language, theme, font, columns, formats, thumbnails, media tools |
+| View | Language, theme, font, interface size, icon size, columns, dimmed hidden files, formats, thumbnails, media tools |
 | Colors | Colors by file type, rules by mask, disk icons |
 | Behavior | Recycle bin, confirmations, simultaneous transfers, tips |
 | Startup | Tabs and terminals to reopen, starting folders |
@@ -483,6 +483,8 @@ Everything is set in ≡ → Tools → Options.
 | Backup | Settings, list of connections and open tabs in a single file, as you choose |
 | Synchronization | Encrypted configuration shared between your machines, contents as you choose |
 | Security | Vault master password, recovery code, forgotten master password |
+
+**Interface size** (Options → View, from 75 to 200 %): makes all of TwinPanel larger or smaller (windows, menus, button bar, tooltips), on top of the Windows or desktop scaling. The change applies right away, without restarting. **File icon size** (small, medium, large, very large): icons of the panels and of the search, the rows grow with them. To enlarge only the text of the lists: `Ctrl` + mouse wheel.
 
 Parameters for buttons and the menu: `%P` active folder, `%N` item name, `%F` its full path, `%T` folder of the other panel, `%S` marked items.
 
@@ -602,7 +604,7 @@ Right-click its tab → **Reconnect**: the terminal starts again in the same tab
 
 ### How do I show hidden files?
 
-`Ctrl+H`, or the toolbar button.
+`Ctrl+H`, or the toolbar button. They are then dimmed (half-transparent icon and name) so you can recognize them: hidden or system files on Windows, names starting with a dot on Linux and on servers. To show them like the others: Options → View, untick **Dim hidden files and folders**.
 
 ### Why are copies done one after the other?
 

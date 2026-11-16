@@ -67,6 +67,10 @@
     <Style Selector="PathIcon.tinted">
       <Setter Property="Foreground" Value="{Binding IconBrush}" />
     </Style>
+    <!-- Fichiers cachés estompés (Options → Affichage) -->
+    <Style Selector=":is(Control).dimmed">
+      <Setter Property="Opacity" Value="0.5" />
+    </Style>
     <!-- Taille du texte des listes : Options → Affichage (ressource mise à jour par la fenêtre principale). -->
     <Style Selector="DataGridCell">
       <Setter Property="FontSize" Value="{DynamicResource PanelFontSize}" />
@@ -250,12 +254,13 @@
               <DataGridTemplateColumn Width="32" CanUserSort="False" CanUserResize="False" CanUserReorder="False">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <Panel>
-                      <PathIcon Width="16" Height="16" HorizontalAlignment="Center" IsVisible="{Binding !HasShellIcon}"
+                    <!-- Taille des icônes : Options → Affichage (ressource FileIconSize) ; élément caché : estompé. -->
+                    <Panel Classes.dimmed="{Binding IsDimmed}">
+                      <PathIcon Width="{DynamicResource FileIconSize}" Height="{DynamicResource FileIconSize}" HorizontalAlignment="Center" IsVisible="{Binding !HasShellIcon}"
                                 Data="{Binding Category, Converter={x:Static conv:CategoryToGeometryConverter.Instance}}"
                                 Foreground="{Binding IconBrush}" />
-                      <!-- Vraie icône de Windows (Options → Affichage), image 32 px montrée en 16 : nette sur les écrans agrandis -->
-                      <Image Width="16" Height="16" HorizontalAlignment="Center" IsVisible="{Binding HasShellIcon}"
+                      <!-- Vraie icône de Windows (Options → Affichage), image 32 px : nette sur les écrans agrandis -->
+                      <Image Width="{DynamicResource FileIconSize}" Height="{DynamicResource FileIconSize}" HorizontalAlignment="Center" IsVisible="{Binding HasShellIcon}"
                              Source="{Binding ShellIcon}" RenderOptions.BitmapInterpolationMode="HighQuality" />
                     </Panel>
                   </DataTemplate>
@@ -269,7 +274,7 @@
                     <!-- Bordure : dossier visé pendant un glisser (on n'y entre que sur la colonne Nom). -->
                     <Border Classes="dropFrame" Classes.dropTarget="{Binding IsDropTarget}" Classes.arrived="{Binding IsJustArrived}">
                     <Panel>
-                      <TextBlock Text="{Binding DisplayName}" Classes="fileName" Classes.marked="{Binding IsMarked}" Classes.colored="{Binding HasNameColor}"
+                      <TextBlock Text="{Binding DisplayName}" Classes="fileName" Classes.marked="{Binding IsMarked}" Classes.colored="{Binding HasNameColor}" Classes.dimmed="{Binding IsDimmed}"
                                  HorizontalAlignment="Left" VerticalAlignment="Center" Margin="4,0" TextTrimming="CharacterEllipsis" />
                     </Panel>
                     </Border>

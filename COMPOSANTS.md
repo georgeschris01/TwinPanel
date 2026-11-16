@@ -180,6 +180,7 @@ Les licences des bibliothèques livrées sont **permissives** (MIT, BSD, Apache 
 | `DiskSpace.cs` | Place libre, reconnaître un disque plein, messages (avant et pendant une copie). |
 | `TransferGate.cs` | Nombre de transferts en même temps, ordre d'arrivée, une seule opération par archive ; choix des lignes de progression. |
 | `Settings/AppPaths.cs` | Dossier des réglages, en un seul endroit : `%APPDATA%\TwinPanel` (installé) ou `Data\` à côté du programme (version portable, repérée par `portable.txt`) ; copie temporaire si ce dossier est en lecture seule ; reprise des réglages de la version installée (jamais le coffre) ; `PortableDataProtector` : coffre avec mot de passe maître seulement. |
+| `Settings/AppSettings.cs` → `UiSizes` | Taille de l'interface (75 à 200 %), taille des icônes des fichiers (16, 20, 24, 32), hauteur des lignes qui suit le texte et les icônes ; `FileEntry.LooksHidden` : élément caché ou système, estompé dans les panneaux et la recherche. App : `Services/UiScaling.cs` pose une mise à l'échelle sur le contenu de chaque fenêtre (menus et infobulles la reprennent par `InheritsTransform`), appliquée tout de suite. |
 | `Settings/TabPositions.cs` | Remettre les onglets de serveur à leur rang à la réouverture. |
 | `Navigation/` | Tri, historique précédent / suivant, dossiers récents (`RecentFolders`, fichier `history.json`), fil d'Ariane. |
 | `Navigation/TabTitle.cs` | Nom de la pastille d'un onglet : nom personnel, sinon dossier verrouillé (gardé même ailleurs), sinon dossier affiché. |

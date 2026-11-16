@@ -22,11 +22,14 @@ public static class FileIcons
     /// <summary>Couleurs et options d'apparence choisies dans les Options.</summary>
     public static TwinPanel.Core.Customization.FileColorRules Rules => _rules;
     public static bool ColorNames { get; private set; }
+    /// <summary>Fichiers cachés estompés (Options → Affichage).</summary>
+    public static bool DimHidden { get; private set; } = true;
 
     public static void Configure(TwinPanel.Core.Settings.AppearanceSettings appearance)
     {
         _rules = new TwinPanel.Core.Customization.FileColorRules(appearance);
         ColorNames = appearance.ColorNames;
+        DimHidden = appearance.DimHiddenFiles;
     }
 
     /// <summary>Couleur d'un fichier précis : règle par masque, sinon couleur (éventuellement personnalisée) de son type.</summary>
