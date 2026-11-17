@@ -325,7 +325,7 @@ public partial class OptionsViewModel : ObservableObject
     [ObservableProperty] private bool _showDurationColumn;
     [ObservableProperty] private bool _showFolderSizes;
     [ObservableProperty] private bool _dimHiddenFiles = true;
-    [ObservableProperty] private Choice<int> _uiScale = UiScales[2];
+    [ObservableProperty] private Choice<int> _uiScale = UiScales[4];
     [ObservableProperty] private Choice<double> _fileIconSize = FileIconSizes[0];
 
     /// <summary>Taille de toute l'interface (en plus de la mise à l'échelle du système).</summary>

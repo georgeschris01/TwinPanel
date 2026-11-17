@@ -484,7 +484,7 @@ Tout se règle dans ≡ → Outils → Options.
 | Synchronisation | Configuration chiffrée partagée entre vos machines, contenu au choix |
 | Sécurité | Mot de passe maître du coffre, code de secours, mot de passe maître oublié |
 
-**Taille de l'interface** (Options → Affichage, de 75 à 200 %) : agrandit ou réduit tout TwinPanel (fenêtres, menus, barre de boutons, infobulles), en plus de la mise à l'échelle de Windows ou du bureau. Le changement s'applique tout de suite, sans redémarrer. **Taille des icônes des fichiers** (petites, moyennes, grandes, très grandes) : icônes des panneaux et de la recherche, les lignes s'agrandissent avec elles. Pour seulement agrandir le texte des listes : `Ctrl` + molette.
+**Taille de l'interface** (Options → Affichage, de 60 à 200 %) : agrandit ou réduit tout TwinPanel (fenêtres, menus, barre de boutons, infobulles), en plus de la mise à l'échelle de Windows ou du bureau. Les icônes et le texte restent nets à toutes les tailles ; en dessous de 75 %, le texte devient très petit. Le changement s'applique tout de suite, sans redémarrer. **Taille des icônes des fichiers** (petites, moyennes, grandes, très grandes) : icônes des panneaux et de la recherche, les lignes s'agrandissent avec elles. Pour seulement agrandir le texte des listes : `Ctrl` + molette.
 
 Paramètres des boutons et du menu : `%P` dossier actif, `%N` nom de l'élément, `%F` son chemin complet, `%T` dossier de l'autre panneau, `%S` éléments marqués.
 

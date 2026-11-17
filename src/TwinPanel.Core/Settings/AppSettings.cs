@@ -146,7 +146,7 @@ public sealed class AppearanceSettings
     public double FontSize { get; set; } = 14;
     /// <summary>Hauteur des lignes des panneaux (22 compact, 28 normal, 34 aéré).</summary>
     public double RowHeight { get; set; } = 28;
-    /// <summary>Taille de toute l'interface, en pour cent (75 à 200), en plus de la mise à l'échelle du système.</summary>
+    /// <summary>Taille de toute l'interface, en pour cent (60 à 200), en plus de la mise à l'échelle du système.</summary>
     public int UiScale { get; set; } = 100;
     /// <summary>Côté des icônes des fichiers dans les panneaux et la recherche, en points (16, 20, 24 ou 32).</summary>
     public double FileIconSize { get; set; } = 16;
@@ -507,7 +507,7 @@ public static class SavedRemoteTab
 /// <summary>Choix permis pour la taille de l'interface et celle des icônes des fichiers.</summary>
 public static class UiSizes
 {
-    public static readonly int[] Scales = [75, 85, 100, 115, 125, 150, 175, 200];
+    public static readonly int[] Scales = [60, 65, 75, 85, 100, 115, 125, 150, 175, 200];
     public static readonly double[] IconSizes = [16, 20, 24, 32];
 
     /// <summary>Valeur enregistrée ramenée au choix permis le plus proche (fichier modifié à la main, ancienne version).</summary>

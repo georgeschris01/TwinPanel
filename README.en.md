@@ -484,7 +484,7 @@ Everything is set in ≡ → Tools → Options.
 | Synchronization | Encrypted configuration shared between your machines, contents as you choose |
 | Security | Vault master password, recovery code, forgotten master password |
 
-**Interface size** (Options → View, from 75 to 200 %): makes all of TwinPanel larger or smaller (windows, menus, button bar, tooltips), on top of the Windows or desktop scaling. The change applies right away, without restarting. **File icon size** (small, medium, large, very large): icons of the panels and of the search, the rows grow with them. To enlarge only the text of the lists: `Ctrl` + mouse wheel.
+**Interface size** (Options → View, from 60 to 200 %): makes all of TwinPanel larger or smaller (windows, menus, button bar, tooltips), on top of the Windows or desktop scaling. Icons and text stay sharp at every size; below 75 %, the text becomes very small. The change applies right away, without restarting. **File icon size** (small, medium, large, very large): icons of the panels and of the search, the rows grow with them. To enlarge only the text of the lists: `Ctrl` + mouse wheel.
 
 Parameters for buttons and the menu: `%P` active folder, `%N` item name, `%F` its full path, `%T` folder of the other panel, `%S` marked items.
 

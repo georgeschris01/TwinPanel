@@ -18,7 +18,9 @@ public class UiSizesTests
 
     [Theory]
     [InlineData(100, 100)]
-    [InlineData(10, 75)]
+    [InlineData(10, 60)]
+    [InlineData(62, 60)]
+    [InlineData(70, 65)]
     [InlineData(500, 200)]
     [InlineData(120, 115)]
     [InlineData(160, 150)]

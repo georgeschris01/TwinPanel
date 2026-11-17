@@ -8,7 +8,7 @@ using Avalonia.Media;
 namespace TwinPanel.App.Services;
 
 /// <summary>
-/// Taille de l'interface (Options → Affichage, 75 à 200 %) : le contenu de chaque fenêtre et de chaque menu, infobulle
+/// Taille de l'interface (Options → Affichage, 60 à 200 %) : le contenu de chaque fenêtre et de chaque menu, infobulle
 /// ou liste déroulante est agrandi ou réduit d'un même facteur, en plus de la mise à l'échelle du système.
 /// Tout est dessiné en vectoriel : le texte et les icônes restent nets. Un changement s'applique tout de suite.
 /// </summary>

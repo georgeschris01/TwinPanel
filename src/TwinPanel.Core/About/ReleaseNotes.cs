@@ -27,7 +27,7 @@ public static class ReleaseNotes
         L.T("Fichiers lâchés sur un onglet : l'onglet s'ouvre pour montrer les éléments arrivés (case dans Options → Comportement)."),
         L.T("Fichiers glissés au-dessus d'un onglet : il s'ouvre après un court instant, sans lâcher la souris (case dans Options → Comportement)."),
         L.T("Corbeille dans un panneau, sous Windows et Linux (bouton « Corbeille » de la barre des disques, menu ≡ → Fichiers) : restaurer, copier ailleurs (F5), voir (F3), supprimer définitivement (F8), vider."),
-        L.T("Taille de l'interface (75 à 200 %, Options → Affichage), appliquée tout de suite à toutes les fenêtres, en plus de la mise à l'échelle du système ; taille des icônes des fichiers réglable à part."),
+        L.T("Taille de l'interface (60 à 200 %, Options → Affichage), appliquée tout de suite à toutes les fenêtres, en plus de la mise à l'échelle du système ; taille des icônes des fichiers réglable à part."),
         L.T("Fichiers et dossiers cachés estompés (icône et nom à moitié transparents), comme dans l'Explorateur ; case dans Options → Affichage."),
         .. (windows ? [L.T("Version portable pour Windows (fichier .zip) : réglages dans le dossier Data à côté du programme, rien n'est écrit sur le PC ; reprise des réglages de la version installée ; mots de passe protégés par le mot de passe maître.")] : Array.Empty<string>()),
     ];
