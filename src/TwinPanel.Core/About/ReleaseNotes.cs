@@ -13,6 +13,7 @@ public static class ReleaseNotes
     public static IReadOnlyList<string> Fixes(bool windows) =>
     [
         L.T("Recherche de texte : les PDF, epub et documents Word, Excel, PowerPoint, OpenDocument ne donnent plus de résultats sans rapport (leur contenu compressé était lu comme du texte)."),
+        L.T("Archives .zip téléchargées depuis Nextcloud (plusieurs fichiers choisis ensemble) : elles s'ouvrent et se décompressent, au lieu d'être signalées illisibles."),
         L.T("Archives .tar : après une modification (renommer, supprimer…), la liste affichée n'est plus parfois l'ancienne."),
         L.T("Infobulle des textes coupés : elle suit le texte quand il change sous la souris (barre d'état, listes qui se remplissent)."),
     ];

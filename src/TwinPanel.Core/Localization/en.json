@@ -1914,5 +1914,6 @@
  "Taille des icônes des fichiers": "File icon size",
  "Estomper les fichiers et dossiers cachés": "Dim hidden files and folders",
  "Taille de l'interface (60 à 200 %, Options → Affichage), appliquée tout de suite à toutes les fenêtres, en plus de la mise à l'échelle du système ; taille des icônes des fichiers réglable à part.": "Interface size (60 to 200 %, Options → View), applied right away to all windows, on top of the system scaling; file icon size adjustable on its own.",
- "Fichiers et dossiers cachés estompés (icône et nom à moitié transparents), comme dans l'Explorateur ; case dans Options → Affichage.": "Hidden files and folders dimmed (half-transparent icon and name), as in Explorer; box in Options → View."
+ "Fichiers et dossiers cachés estompés (icône et nom à moitié transparents), comme dans l'Explorateur ; case dans Options → Affichage.": "Hidden files and folders dimmed (half-transparent icon and name), as in Explorer; box in Options → View.",
+ "Archives .zip téléchargées depuis Nextcloud (plusieurs fichiers choisis ensemble) : elles s'ouvrent et se décompressent, au lieu d'être signalées illisibles.": "Zip archives downloaded from Nextcloud (several files chosen together): they open and extract, instead of being reported unreadable."
 }

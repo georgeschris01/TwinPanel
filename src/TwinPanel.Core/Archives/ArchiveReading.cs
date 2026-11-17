@@ -12,7 +12,8 @@ internal readonly record struct RawEntry(string Key, bool IsDirectory, long Size
 
 /// <summary>
 /// Lecture des archives : .tar / .tar.gz / .tgz avec le lecteur intégré à .NET (System.Formats.Tar, fiable),
-/// tout le reste (zip, 7z, rar, gz seul, bz2, xz…) avec SharpCompress.
+/// tout le reste (zip, 7z, rar, gz seul, bz2, xz…) avec SharpCompress ; un .zip que SharpCompress ne sait pas lire
+/// (ceux de Nextcloud, par exemple) passe par le lecteur de .NET.
 /// </summary>
 internal static class ArchiveReading
 {
@@ -25,7 +26,56 @@ internal static class ArchiveReading
     public static IEnumerable<RawEntry> Read(string archivePath, string? password = null)
     {
         var info = new FileInfo(archivePath);
-        return IsTar(info.FullName) ? ReadTar(info) : ReadWithSharpCompress(info, password ?? ArchivePasswords.Get(info.FullName));
+        if (IsTar(info.FullName)) return ReadTar(info);
+        password ??= ArchivePasswords.Get(info.FullName);
+        return IsZip(info) && !SharpCompressReadsZip(info, password) ? ReadWithDotNetZip(info) : ReadWithSharpCompress(info, password);
+    }
+
+    /// <summary>Fichier .zip, reconnu à sa signature (quel que soit son nom).</summary>
+    private static bool IsZip(FileInfo info)
+    {
+        try
+        {
+            using var fs = info.OpenRead();
+            Span<byte> head = stackalloc byte[4];
+            return fs.ReadAtLeast(head, 4, throwOnEndOfStream: false) == 4
+                && head[0] == (byte)'P' && head[1] == (byte)'K' && head[2] is 3 or 5 && head[3] is 4 or 6;
+        }
+        catch (IOException) { return false; }
+        catch (UnauthorizedAccessException) { return false; }
+    }
+
+    /// <summary>
+    /// SharpCompress sait-il lire la table des matières de ce .zip ? Pas celle des .zip fabriqués à la volée par
+    /// Nextcloud (plusieurs fichiers téléchargés ensemble) : numéro de disque 65535, le vrai étant dans le champ Zip64.
+    /// </summary>
+    private static bool SharpCompressReadsZip(FileInfo info, string? password)
+    {
+        try
+        {
+            using var archive = password is null
+                ? ArchiveFactory.OpenArchive(info.FullName)
+                : ArchiveFactory.OpenArchive(info, new ReaderOptions { Password = password, LeaveStreamOpen = false });
+            foreach (var e in archive.Entries) _ = e.Key;
+            return true;
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>Lecteur de .zip intégré à .NET, quand SharpCompress n'y arrive pas (zip sans chiffrement seulement).</summary>
+    private static IEnumerable<RawEntry> ReadWithDotNetZip(FileInfo info)
+    {
+        using var zip = ZipFile.OpenRead(info.FullName);
+        foreach (var e in zip.Entries)
+        {
+            var entry = e;
+            bool isDir = entry.FullName.EndsWith('/') || entry.FullName.EndsWith('\\');
+            yield return new RawEntry(entry.FullName, isDir, isDir ? 0 : entry.Length, entry.LastWriteTime.LocalDateTime,
+                entry.Open, entry.IsEncrypted);
+        }
     }
 
     private static IEnumerable<RawEntry> ReadTar(FileInfo info)
