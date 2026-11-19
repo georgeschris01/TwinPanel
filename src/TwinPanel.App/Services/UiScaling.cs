@@ -3,6 +3,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Input;
 using Avalonia.Media;
 
 namespace TwinPanel.App.Services;
@@ -31,8 +32,39 @@ internal static class UiScaling
         ContentControl.ContentProperty.Changed.AddClassHandler<Window>((w, e) => Wrap(w, e.NewValue));
         // Menus, infobulles, listes déroulantes : ils reprennent l'agrandissement de l'endroit d'où ils s'ouvrent
         // (fenêtre agrandie). Ni enveloppe autour de leur contenu ni échelle posée à la main : le menu ne s'ouvrirait plus.
-        Popup.ChildProperty.Changed.AddClassHandler<Popup>((p, _) => p.InheritsTransform = true);
+        Popup.ChildProperty.Changed.AddClassHandler<Popup>((p, e) =>
+        {
+            p.InheritsTransform = true;
+            if (e.NewValue is ContextMenu menu) PlaceAtPointer(p, menu);
+        });
+        // Dernière position de la souris, pour les menus ouverts sous elle.
+        InputElement.PointerMovedEvent.AddClassHandler<TopLevel>((t, e) => s_pointer = (new WeakReference<TopLevel>(t), e.GetPosition(t)),
+            Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
     }
+
+    private static (WeakReference<TopLevel> TopLevel, Point Position)? s_pointer;
+
+    /// <summary>
+    /// Menu ouvert « sous la souris » (clic droit) avec une taille d'interface autre que 100 % : Avalonia place la fenêtre
+    /// du menu avant d'y appliquer l'échelle, puis ne la redimensionne plus (cas propre à ce placement) → menu coupé à
+    /// gauche. On l'ouvre donc au même endroit, mais accroché à un point (coin haut-gauche sous la souris), placement
+    /// qui suit bien les changements de taille, comme le menu ≡.
+    /// </summary>
+    private static void PlaceAtPointer(Popup popup, ContextMenu menu)
+    {
+        // Point posé par nous lors d'une ouverture précédente : retiré (le menu reprend son placement normal).
+        if (s_placed.Remove(menu)) menu.PlacementRect = null;
+        if (Math.Abs(s_scale - 1) < 0.001 || popup.Placement != PlacementMode.Pointer) return;
+        // ContextMenu.Open(cible) : la cible est aussi le parent du menu ; son PlacementRect est recopié juste après.
+        if (popup.Parent is not Visual target || TopLevel.GetTopLevel(target) is not { } top) return;
+        if (s_pointer is not { } last || !last.TopLevel.TryGetTarget(out var t) || t != top) return;
+        if (top.TranslatePoint(last.Position, target) is not { } p) return;
+        popup.Placement = PlacementMode.BottomEdgeAlignedLeft;
+        menu.PlacementRect = new Rect(p, new Size(1, 1));
+        s_placed.AddOrUpdate(menu, menu);
+    }
+
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<ContextMenu, object> s_placed = [];
 
     /// <summary>Change la taille de l'interface (1 = 100 %) : fenêtres ouvertes comprises.</summary>
     public static void Set(double scale)
