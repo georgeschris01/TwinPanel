@@ -45,16 +45,17 @@ internal static class UiScaling
     private static (WeakReference<TopLevel> TopLevel, Point Position)? s_pointer;
 
     /// <summary>
-    /// Menu ouvert « sous la souris » (clic droit) avec une taille d'interface autre que 100 % : Avalonia place la fenêtre
-    /// du menu avant d'y appliquer l'échelle, puis ne la redimensionne plus (cas propre à ce placement) → menu coupé à
-    /// gauche. On l'ouvre donc au même endroit, mais accroché à un point (coin haut-gauche sous la souris), placement
-    /// qui suit bien les changements de taille, comme le menu ≡.
+    /// Menu ouvert « sous la souris » (clic droit) : Avalonia place la fenêtre du menu avant d'y appliquer l'échelle, puis
+    /// ne la redimensionne plus (cas propre à ce placement) → menu coupé à gauche. Arrive avec une taille d'interface
+    /// autre que 100 %, mais aussi avec la seule mise à l'échelle de Windows (ex. écran 4K à 250 %). On l'ouvre donc
+    /// toujours au même endroit, mais accroché à un point (coin haut-gauche sous la souris), placement qui suit bien
+    /// les changements de taille, comme le menu ≡.
     /// </summary>
     private static void PlaceAtPointer(Popup popup, ContextMenu menu)
     {
         // Point posé par nous lors d'une ouverture précédente : retiré (le menu reprend son placement normal).
         if (s_placed.Remove(menu)) menu.PlacementRect = null;
-        if (Math.Abs(s_scale - 1) < 0.001 || popup.Placement != PlacementMode.Pointer) return;
+        if (popup.Placement != PlacementMode.Pointer) return;
         // ContextMenu.Open(cible) : la cible est aussi le parent du menu ; son PlacementRect est recopié juste après.
         if (popup.Parent is not Visual target || TopLevel.GetTopLevel(target) is not { } top) return;
         if (s_pointer is not { } last || !last.TopLevel.TryGetTarget(out var t) || t != top) return;

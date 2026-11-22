@@ -645,7 +645,7 @@ public partial class PanelView : UserControl
             if (target is null || string.Equals(target, d.FromDir, PathText.Comparison)) return;
             var (entries, panel) = (d.Entries, d.Panel);
             if (forced is { } m) { OpenDroppedTab(); await main.DropAsync(panel, entries, target, m); }
-            else AskCopyOrMove(entries.Count, target, e.GetPosition(ActiveList), move => { OpenDroppedTab(); return main.DropAsync(panel, entries, target, move); });
+            else AskCopyOrMove(entries.Count, target, e.GetPosition(this), move => { OpenDroppedTab(); return main.DropAsync(panel, entries, target, move); });
             return;
         }
         if (e.DataTransfer.TryGetFiles() is not { } dropped) return;
@@ -667,7 +667,7 @@ public partial class PanelView : UserControl
         }
         if (list.Count == 0) return;
         if (forced is { } mv) { OpenDroppedTab(); await main.DropAsync(null, list, dest, mv); }
-        else AskCopyOrMove(list.Count, dest, e.GetPosition(ActiveList), move => { OpenDroppedTab(); return main.DropAsync(null, list, dest, move); });
+        else AskCopyOrMove(list.Count, dest, e.GetPosition(this), move => { OpenDroppedTab(); return main.DropAsync(null, list, dest, move); });
     }
 
     /// <summary>Menu sous la souris après un lâcher : copier, déplacer ou annuler.</summary>
@@ -688,10 +688,11 @@ public partial class PanelView : UserControl
         menu.Items.Add(new Separator());
         menu.Items.Add(new MenuItem { Header = L.T("Annuler") });
         // Pendant un glisser, la souris ne « bouge » plus pour Avalonia : un placement « sous la souris » tomberait
-        // en haut à gauche. On l'accroche donc au point exact du lâcher.
+        // en haut à gauche. On l'accroche donc au point exact du lâcher, mesuré sur tout le panneau : lâché sur un onglet
+        // (au-dessus de la liste), un point pris sur la liste serait « dehors » et Avalonia ramènerait le menu dans un coin.
         menu.Placement = PlacementMode.BottomEdgeAlignedLeft;
         menu.PlacementRect = new Rect(at, new Size(1, 1));
-        menu.Open(ActiveList);
+        menu.Open(this);
     }
 
     // ---- Bouton droit façon Total Commander ---------------------------------------------
