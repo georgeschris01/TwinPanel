@@ -5,7 +5,7 @@ namespace TwinPanel.Core.About;
 /// <summary>
 /// Nouveautés de la version installée (fenêtre « À propos » → « Nouveautés de cette version »).
 /// À réécrire à chaque nouvelle version : seulement ce qui a changé depuis la précédente.
-/// Version actuelle : Windows 0.8.11, Linux 0.1.15-beta.
+/// Version actuelle : Windows 0.8.11, Linux 0.1.15.
 /// </summary>
 public static class ReleaseNotes
 {

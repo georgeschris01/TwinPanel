@@ -2,7 +2,7 @@
 
 [Français](README.md) · **English**
 
-A free, modern and complete two-panel file manager. For Windows, and for Linux as a beta. Interface in English and French.
+A free, modern and complete two-panel file manager. For Windows and for Linux. Interface in English and French.
 
 - Two panels, lockable and renamable tabs, tab sets, quick view, folder tree, thumbnails, flat view
 - Copy and move with a transfer queue, several transfers at once, resume after a cut, free space check
@@ -25,7 +25,7 @@ A free, modern and complete two-panel file manager. For Windows, and for Linux a
 
 **[TwinPanel for Windows](../../releases/latest)** (installer, or portable `.zip` version to unzip, for example on a USB stick: see the « Portable version » chapter).
 
-**[TwinPanel for Linux, beta version](../../releases/tag/linux-v0.1.13-beta)**: `.deb` package for Debian and Ubuntu, `.rpm` package for Fedora, or AppImage. This beta has been tested on Debian 13 with KDE, and on Ubuntu 26.04 and Fedora 45 with GNOME: some defects may remain.
+**[TwinPanel for Linux](../../releases/tag/linux-v0.1.15)**: `.deb` package for Debian and Ubuntu, `.rpm` package for Fedora, or AppImage. Tested on Debian 13 with KDE, and on Ubuntu 26.04 and Fedora 45 with GNOME.
 
 ```
 sudo apt install ./twinpanel_*_amd64.deb     # Debian, Ubuntu
@@ -586,7 +586,7 @@ Choose it in ≡ → Tools → Editor and viewer, or by extension in Options →
 
 ### What is different in the Linux version?
 
-It is a beta and does the same work. It has been tested on Debian 13 with KDE, and on Ubuntu 26.04 and Fedora 45 with GNOME. Real icons come from the desktop theme (Options → Display), the terminal starts your usual shell, and a command typed in the bottom line opens in a new tab of the built-in terminal, where you see its result (or in the desktop terminal if the built-in terminal is turned off). A few differences:
+It does the same work. It has been tested on Debian 13 with KDE, and on Ubuntu 26.04 and Fedora 45 with GNOME. Real icons come from the desktop theme (Options → Display), the terminal starts your usual shell, and a command typed in the bottom line opens in a new tab of the built-in terminal, where you see its result (or in the desktop terminal if the built-in terminal is turned off). A few differences:
 
 - **Drag and drop**: in a Wayland session (always the case on GNOME), a file cannot be dropped from TwinPanel into another application; the other way works.
 - **Share**: by email, or to a device linked with KDE Connect.

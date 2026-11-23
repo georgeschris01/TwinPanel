@@ -2,7 +2,7 @@
 
 **Français** · [English](README.en.md)
 
-Gestionnaire de fichiers à deux panneaux, gratuit, moderne et complet. Pour Windows, et pour Linux en version bêta. Interface en français et en anglais.
+Gestionnaire de fichiers à deux panneaux, gratuit, moderne et complet. Pour Windows et pour Linux. Interface en français et en anglais.
 
 - Deux panneaux, onglets verrouillables et renommables, jeux d'onglets, vue rapide, arborescence, miniatures, vue à plat
 - Copie et déplacement avec file de transferts, plusieurs transferts en même temps, reprise après coupure, contrôle de la place libre
@@ -25,7 +25,7 @@ Gestionnaire de fichiers à deux panneaux, gratuit, moderne et complet. Pour Win
 
 **[TwinPanel pour Windows](../../releases/latest)** (installateur, ou version portable `.zip` à décompresser, par exemple sur une clé USB : voir le chapitre « Version portable »).
 
-**[TwinPanel pour Linux, version bêta](../../releases/tag/linux-v0.1.13-beta)** : paquet `.deb` pour Debian et Ubuntu, paquet `.rpm` pour Fedora, ou AppImage. Bêta testée sur Debian 13 avec KDE, Ubuntu 26.04 et Fedora 45 avec GNOME : des défauts peuvent rester.
+**[TwinPanel pour Linux](../../releases/tag/linux-v0.1.15)** : paquet `.deb` pour Debian et Ubuntu, paquet `.rpm` pour Fedora, ou AppImage. Testée sur Debian 13 avec KDE, Ubuntu 26.04 et Fedora 45 avec GNOME.
 
 ```
 sudo apt install ./twinpanel_*_amd64.deb     # Debian, Ubuntu
@@ -586,7 +586,7 @@ Choisissez-le dans ≡ → Outils → Éditeur et visionneuse, ou par extension 
 
 ### Que change la version Linux ?
 
-Elle est en bêta et fait le même travail. Elle a été essayée sur Debian 13 avec KDE, et sur Ubuntu 26.04 et Fedora 45 avec GNOME. Les vraies icônes viennent du thème du bureau (Options → Affichage), le terminal lance votre shell habituel, et une commande tapée dans la ligne du bas s'ouvre dans un nouvel onglet du terminal intégré, où l'on voit son résultat (ou dans le terminal du bureau si le terminal intégré est désactivé). Quelques différences :
+Elle fait le même travail. Elle a été essayée sur Debian 13 avec KDE, et sur Ubuntu 26.04 et Fedora 45 avec GNOME. Les vraies icônes viennent du thème du bureau (Options → Affichage), le terminal lance votre shell habituel, et une commande tapée dans la ligne du bas s'ouvre dans un nouvel onglet du terminal intégré, où l'on voit son résultat (ou dans le terminal du bureau si le terminal intégré est désactivé). Quelques différences :
 
 - **Glisser-déposer** : en session Wayland (toujours le cas sous GNOME), on ne peut pas lâcher un fichier de TwinPanel dans une autre application ; l'inverse marche.
 - **Partager** : par courriel, ou vers un appareil relié par KDE Connect.

@@ -84,8 +84,8 @@ cat > "$DEB/usr/share/metainfo/be.chrypox.TwinPanel.metainfo.xml" <<EOF
     <name>Georges Christophe (chrypox)</name>
   </developer>
   <description>
-    <p>TwinPanel is a two-panel file manager with tabs, archives, SFTP, FTP and WebDAV connections, an integrated terminal, search and batch renaming. The Linux version is a beta.</p>
-    <p xml:lang="fr">TwinPanel est un gestionnaire de fichiers à deux panneaux, avec onglets, archives, connexions SFTP, FTP et WebDAV, terminal intégré, recherche et renommage par lot. La version Linux est une bêta.</p>
+    <p>TwinPanel is a two-panel file manager with tabs, archives, SFTP, FTP and WebDAV connections, an integrated terminal, search and batch renaming.</p>
+    <p xml:lang="fr">TwinPanel est un gestionnaire de fichiers à deux panneaux, avec onglets, archives, connexions SFTP, FTP et WebDAV, terminal intégré, recherche et renommage par lot.</p>
     <p>The source code is public. The TwinPanel 1.0 license allows free use, but forbids selling the software and distributing modified versions.</p>
     <p xml:lang="fr">Le code source est public. La licence TwinPanel 1.1 permet un usage gratuit, mais interdit de vendre le logiciel et de diffuser des versions modifiées.</p>
   </description>
@@ -125,7 +125,7 @@ cat > "$DEB/usr/share/metainfo/be.chrypox.TwinPanel.metainfo.xml" <<EOF
   </screenshots>
   <content_rating type="oars-1.1"/>
   <releases>
-    <release version="$VERSION" date="$(date +%F)" type="development"/>
+    <release version="$VERSION" date="$(date +%F)" type="stable"/>
   </releases>
 </component>
 EOF
@@ -160,7 +160,7 @@ Depends: libc6, libgcc-s1, libstdc++6, zlib1g, libssl3t64 | libssl3, libicu78 | 
 Recommends: libsecret-tools, xdg-utils
 Suggests: cups-client
 Homepage: https://github.com/georgeschris01/TwinPanel
-Description: Two-panel file manager (beta for Linux)
+Description: Two-panel file manager
  TwinPanel is a two-panel file manager with tabs, archives, SFTP, FTP and
  WebDAV connections, an integrated terminal, search and batch renaming.
 EOF
@@ -184,7 +184,7 @@ if command -v rpmbuild >/dev/null; then
 Name:           twinpanel
 Version:        $DEB_VERSION
 Release:        1
-Summary:        Two-panel file manager (beta for Linux)
+Summary:        Two-panel file manager
 License:        LicenseRef-TwinPanel-1.0
 URL:            https://github.com/georgeschris01/TwinPanel
 ExclusiveArch:  x86_64
